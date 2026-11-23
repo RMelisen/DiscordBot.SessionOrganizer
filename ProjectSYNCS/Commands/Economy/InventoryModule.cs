@@ -229,7 +229,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
                     f == filter ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: f == filter, row: 1);
             if (done.ContainsKey(set.Key))
                 components.WithButton($"Déposer la collection (+{PebbleEconomy.Cailloux(set.Reward)})",
-                    $"col:dep:{userId}:{set.Key}:{filter}", ButtonStyle.Success, new Emoji("📥"),
+                    $"col:dep:{userId}:{set.Key}:{filter}", ButtonStyle.Primary, new Emoji("📥"),
                     disabled: !CanTurnIn(set.Key, quantities), row: 2);
         }
         return (embed, components.Build());

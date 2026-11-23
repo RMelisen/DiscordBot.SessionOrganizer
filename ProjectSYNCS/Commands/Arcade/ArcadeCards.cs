@@ -58,9 +58,9 @@ public static class ArcadeCards
 
     // The private row. The round rides in the id, so a row from a tied round can't count twice.
     public static MessageComponent DuelMoveButtons(DuelGame d) => new ComponentBuilder()
-        .WithButton(Duel.Name(DuelMove.Rock), $"duel:rps:{d.Id}:{d.Round}:{(int)DuelMove.Rock}", ButtonStyle.Secondary, new Emoji(Duel.Emoji(DuelMove.Rock)))
-        .WithButton(Duel.Name(DuelMove.Paper), $"duel:rps:{d.Id}:{d.Round}:{(int)DuelMove.Paper}", ButtonStyle.Secondary, new Emoji(Duel.Emoji(DuelMove.Paper)))
-        .WithButton(Duel.Name(DuelMove.Scissors), $"duel:rps:{d.Id}:{d.Round}:{(int)DuelMove.Scissors}", ButtonStyle.Secondary, new Emoji(Duel.Emoji(DuelMove.Scissors)))
+        .WithButton(Duel.Name(DuelMove.Rock), $"duel:rps:{d.Id}:{d.Round}:{(int)DuelMove.Rock}", ButtonStyle.Primary, new Emoji(Duel.Emoji(DuelMove.Rock)))
+        .WithButton(Duel.Name(DuelMove.Paper), $"duel:rps:{d.Id}:{d.Round}:{(int)DuelMove.Paper}", ButtonStyle.Primary, new Emoji(Duel.Emoji(DuelMove.Paper)))
+        .WithButton(Duel.Name(DuelMove.Scissors), $"duel:rps:{d.Id}:{d.Round}:{(int)DuelMove.Scissors}", ButtonStyle.Primary, new Emoji(Duel.Emoji(DuelMove.Scissors)))
         .Build();
 
     // The reveal: both moves, then her line.

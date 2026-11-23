@@ -37,12 +37,12 @@ public static class PlynlingPlayCards
             {
                 case PlynlingGame.HideAndSeek:
                     for (var rock = 0; rock < PlynlingGameState.Rocks; rock++)
-                        row.WithButton($"{rock + 1}",$"plyn:hide:{session.Id}:{rock}", ButtonStyle.Secondary);
+                        row.WithButton($"{rock + 1}",$"plyn:hide:{session.Id}:{rock}", ButtonStyle.Primary);
                     break;
                 case PlynlingGame.RockPaperScissors:
-                    row.WithButton("✊ Pierre", $"plyn:rps:{session.Id}:{(int)RpsThrow.Rock}", ButtonStyle.Secondary)
-                       .WithButton("✋ Papier", $"plyn:rps:{session.Id}:{(int)RpsThrow.Paper}", ButtonStyle.Secondary)
-                       .WithButton("✌️ Ciseaux", $"plyn:rps:{session.Id}:{(int)RpsThrow.Scissors}", ButtonStyle.Secondary);
+                    row.WithButton("✊ Pierre", $"plyn:rps:{session.Id}:{(int)RpsThrow.Rock}", ButtonStyle.Primary)
+                       .WithButton("✋ Papier", $"plyn:rps:{session.Id}:{(int)RpsThrow.Paper}", ButtonStyle.Primary)
+                       .WithButton("✌️ Ciseaux", $"plyn:rps:{session.Id}:{(int)RpsThrow.Scissors}", ButtonStyle.Primary);
                     break;
                 default:
                     row.WithButton("🔢 Deviner", $"plyn:guess:{session.Id}", ButtonStyle.Primary);

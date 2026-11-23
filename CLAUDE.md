@@ -174,7 +174,8 @@ players missed their turn):
 
 - **Green `Success`** — yes, I'm in, commit: Rejoindre, Accepter, Publier, Terminer, Acheter.
 - **Red `Danger`** — no, stop, or it can hurt: Refuser, Annuler, Clôturer, Abandonner, « Doubler ».
-  In a confirm step, red is the dangerous answer (« Oui, annuler ») and « Non » is grey.
+  In a confirm step, red is the dangerous answer (« Oui, annuler ») and « Non » is grey. Placing a
+  bet is the game's pick (blurple); raising a stake already in play is red.
 - **Blurple `Primary`** — do this; **every "pick one of these"** (visit and event choices, quiz
   answers); the selected tab. A button that opens a form or the next step (« Créer une session »)
   is blurple; green is the answer or the final commit inside that flow.

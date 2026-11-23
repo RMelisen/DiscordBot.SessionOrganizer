@@ -144,7 +144,7 @@ internal sealed partial class ChatterService
         var line = $"{_picker.Pick(BotResponses.ReminderSetLines)}\n<t:{unix}:F> (<t:{unix}:R>)\n"
                    + MessageFormat.Quote(text, InputCaps.Reminder);
         var components = new ComponentBuilder()
-            .WithButton("Annuler", $"chatreq:remundo:{reminder.Id}:{message.Author.Id}", ButtonStyle.Secondary)
+            .WithButton("Annuler", $"chatreq:remundo:{reminder.Id}:{message.Author.Id}", ButtonStyle.Danger)
             .Build();
         return await SendActionAsync(message, path, RequestTopic.Reminder, line, components);
     }

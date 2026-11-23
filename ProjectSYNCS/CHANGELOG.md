@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.7 — 2026-11-23
+
+- The moves of pierre-papier-ciseaux (duels and Plynlings), cache-cache, Puissance 4 and the quote game are now blurple, like every other choice.
+- In Morpion, the open squares are now the blurple ones.
+- « Déposer la collection » is now blurple; the green button is the confirmation after it.
+- The « Annuler » under a reminder set from chat is now red.
+
 ## 8.2.6 — 2026-11-23
 
 - A Plynling visit's choices are now blurple, with « 💌 » in green as the special move.

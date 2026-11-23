@@ -203,7 +203,7 @@ public static class PartyCards
         var b = new ComponentBuilder();
         foreach (var (id, name) in q.Choices)
             b.WithButton(Trim(name, 80), $"quote:guess:{q.Id}:{id}",
-                over && id == q.AuthorId ? ButtonStyle.Success : ButtonStyle.Secondary, disabled: over);
+                !over ? ButtonStyle.Primary : id == q.AuthorId ? ButtonStyle.Success : ButtonStyle.Secondary, disabled: over);
         return b.Build();
     }
 
@@ -270,14 +270,14 @@ public static class PartyCards
         if (g.Kind == BoardKind.Connect4)
         {
             for (var c = 0; c < Connect4.Cols; c++)
-                b.WithButton($"{c + 1}", $"c4:drop:{g.Id}:{c}", ButtonStyle.Secondary,
+                b.WithButton($"{c + 1}", $"c4:drop:{g.Id}:{c}", ButtonStyle.Primary,
                     disabled: over || !Connect4.CanDrop(g.Board, c), row: c < 5 ? 0 : 1);
             if (!over) b.WithButton("Abandonner", $"board:quit:{g.Id}", ButtonStyle.Danger, row: 1);
         }
         else
         {
             for (var i = 0; i < 9; i++)
-                b.WithButton(null, $"ttt:play:{g.Id}:{i}", g.Board[i] == 0 ? ButtonStyle.Secondary : ButtonStyle.Primary,
+                b.WithButton(null, $"ttt:play:{g.Id}:{i}", g.Board[i] == 0 ? ButtonStyle.Primary : ButtonStyle.Secondary,
                     new Emoji(TicTacToe.Symbol(g.Board[i])), disabled: over || g.Board[i] != 0, row: i / 3);
             if (!over) b.WithButton("Abandonner", $"board:quit:{g.Id}", ButtonStyle.Danger, row: 3);
         }
