@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.3.0 — 2026-11-23
+
+- Cosmetics now live on one screen with three tabs — Garde-robe, Boutique, Fabrication — opened by
+  `/inventory cosmetics` (on the shop) or `/plynling wardrobe` (on the wardrobe). `/inventory craft` is gone:
+  crafting is the third tab.
+- Picking a cosmetic in the shop or the recipes tries it on your Plynling's real card before you pay:
+  its colours, banner, title and accessory change in the preview, and a cadre shows on its future grave.
+- « Acheter et porter » and « Fabriquer et porter » put the new cosmetic on straight away; an owned one
+  gets a « Porter » button.
+- A recipe now names exactly what is missing (« Il te manque : 2 × Améthyste, 1 × Opale »).
+- The cosmetics screen also opens without a Plynling: the shop and crafting work, there's just nothing to try on.
+
 ## 8.2.7 — 2026-11-23
 
 - The moves of pierre-papier-ciseaux (duels and Plynlings), cache-cache, Puissance 4 and the quote game are now blurple, like every other choice.

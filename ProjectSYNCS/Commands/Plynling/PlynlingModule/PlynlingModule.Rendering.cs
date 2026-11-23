@@ -48,13 +48,6 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             bathSoap: await plynlings.GetBathSoapAsync(plynling, now),
             title: await plynlings.GetLatestTitleAsync(plynling));
 
-
-    /// <summary>
-    /// The card: picture (the sprite for its mood, or its memorial once dead), heading,
-    /// bars, an optional line in her voice, and — only while alive and not frozen — a
-    /// "Caresser" and "Laver" buttons and a "Nourrir…" select.
-    /// </summary>
-    /// <remarks>
     public const int ListPageSize = 10;
 
     public static int ListPages(int count) => Math.Max(1, (count + ListPageSize - 1) / ListPageSize);
@@ -105,6 +98,40 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             .Build();
     }
 
+    /// <summary>
+    /// The top of a Plynling's card: its colour, the thème's banner, and the heading beside its picture.
+    /// Shared by the card and the cosmetics screen's try-on, which passes a changed
+    /// <paramref name="outfit"/> — so the preview is the card itself, never a look-alike.
+    /// A worn thème recolours the card and opens it with its banner — the one cosmetic that costs a
+    /// component; the title and the accessory ride in the heading's text.
+    /// </summary>
+    public static ContainerBuilder CardHead(Plynling plynling, DateTimeOffset now, string? partnerName = null, string? title = null,
+        Outfit? outfit = null)
+    {
+        var info = PlynlingCatalog.Info(plynling.Species);
+        var picture = plynling.DiedAt is null
+            ? PlynlingArt.SpriteOf(plynling, now)
+            : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now)));
+        var worn = outfit ?? Outfit.Of(plynling);
+
+        var container = new ContainerBuilder()
+            .WithAccentColor(new Color(worn.Theme?.Accent ?? info.Accent));
+        if (worn.Theme?.Banner is { } banner)
+            container.AddComponent(new TextDisplayBuilder(banner));
+        return container
+            .AddComponent(new SectionBuilder()
+                .WithAccessory(new ThumbnailBuilder()
+                    .WithMedia(new UnfurledMediaItemProperties(picture))
+                    .WithDescription(info.Name))
+                .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now, partnerName, title, worn))));
+    }
+
+    /// <summary>
+    /// The card: picture (the sprite for its mood, or its memorial once dead), heading,
+    /// bars, an optional line in her voice, and — only while alive and not frozen — a
+    /// "Caresser" and "Laver" buttons and a "Nourrir…" select.
+    /// </summary>
+    /// <remarks>
     /// Static and Context-free so its component budget is checkable without a gateway.
     /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c> or <c>plyn:soap</c>, <c>plyn:heal</c>, <c>plyn:feed</c>, <c>plyn:traits</c>, <c>plyn:events</c>): duplicated
     /// custom ids are rejected outright by Discord, disabled components included.
@@ -116,25 +143,9 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         IReadOnlyDictionary<PlynlingFood, int>? pantry = null, IReadOnlyList<TraitInfo>? traits = null, int pendingEvents = 0,
         int bathSoap = 0, string? title = null)
     {
-        var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
-        var picture = alive
-            ? PlynlingArt.SpriteOf(plynling, now)
-            : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now)));
-
-        // A worn thème recolours the card and opens it with its banner — the one cosmetic that
-        // costs a component; the title and the accessory ride in the heading's text.
-        var theme = CosmeticSlots.Worn(plynling, CosmeticSlot.Theme);
-        var container = new ContainerBuilder()
-            .WithAccentColor(new Color(theme?.Accent ?? info.Accent));
-        if (theme?.Banner is { } banner)
-            container.AddComponent(new TextDisplayBuilder(banner));
+        var container = CardHead(plynling, now, partnerName, title);
         container
-            .AddComponent(new SectionBuilder()
-                .WithAccessory(new ThumbnailBuilder()
-                    .WithMedia(new UnfurledMediaItemProperties(picture))
-                    .WithDescription(info.Name))
-                .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now, partnerName, title))))
             .AddComponent(new SeparatorBuilder())
             .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Status(plynling, now)));
         // Its personality under the status: the title, the trait emojis, then its stress level and its

@@ -333,9 +333,34 @@ no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey` are read and
 **The shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` = the basics, then
 `RotatingPerSlot` (2) per slot drawn with `new Random(week * 10 + slot)` (seeded: same for everyone,
 across restarts), then the season's items. The week is the Paris ISO week (`WeekKey`, `yyyyww`),
-turning Monday 00:00 Paris. The buy select carries its week (`cos:buy:{week}`) and `BuyAsync` refuses
-any other week, so a shop left open over the weekend can't buy what rotated out. The three screens are
-`CosmeticCards` (static, measurable), ephemeral, redrawn in place by `CosmeticComponentHandler` with a
-one-line notice — except a purchase that goes through, which redraws clean and gets the same
-ephemeral receipt as `/inventory shop` (`ShopCards.Receipt` around `CosmeticCards.Bought`). A craft
-keeps its notice: it is not a purchase. The wardrobe has one select per slot, `cos:wear:{slot}`, each led by « Aucun ».
+turning Monday 00:00 Paris. The shop select and the buy buttons carry their week and `BuyAsync`
+refuses any other week, so a shop left open over the weekend can't buy what rotated out.
+
+**One screen, three tabs** (`CosmeticCards`, static and measured by the checks, section 59): Garde-robe,
+Boutique, Fabrication, in one ephemeral Components V2 message. `/inventory cosmetics` opens it on the
+shop, `/plynling wardrobe` on the wardrobe (`/inventory craft` was folded into it in 8.3.0). Every
+click defers, then `CosmeticComponentHandler` re-reads everything (`CosmeticCards.LoadAsync`) and
+redraws in place.
+
+- **The try-on is the real card head.** `PlynlingModule.CardHead` (colour, banner, heading, sprite)
+  is shared by the card and the screen; the screen passes a copy of the `Outfit` with the picked item
+  put on (`Outfit.With`), so a preview never writes to the tracked Plynling. Anything that changes
+  how a worn cosmetic shows goes through `Outfit`, so the card and the try-on stay identical. A cadre
+  previews as the grave's first line (`PlynlingCardUi.GraveFirstLine`), since a living Plynling has
+  no death date for `GraveLine`.
+- **A wardrobe pick is worn at once** (wearing is free); a shop or recipe pick is only tried on, and
+  opens the item view: « Acheter » / « Acheter et porter », « Fabriquer » / « Fabriquer et porter »
+  (disabled until affordable or ready, a recipe naming what it lacks: `CosmeticCards.Missing`), or
+  « Porter » for one already owned. **« …et porter » wears it in the purchase's own `EconomySave`
+  unit** (`CosmeticResult.Worn`); a Plynling that died meanwhile leaves the purchase standing, worn
+  by nobody, and the notice says so.
+- A purchase that goes through redraws clean and gets the same ephemeral receipt as
+  `/inventory shop` (`ShopCards.Receipt` around `CosmeticCards.Bought`). A craft keeps its notice on
+  the card: it is not a purchase.
+- **Custom-ids use the `cosm:` prefix**, one verb per control: `cosm:tab:{tab}`, `cosm:slot:{slot}`,
+  `cosm:pick:{tab}:{week}` (the one select; the wardrobe's « Aucun » is `none:{slot}`),
+  `cosm:buy`/`cosm:buyw:{week}:{key}`, `cosm:make`/`cosm:makew:{key}`, `cosm:wear:{tab}:{key}`,
+  `cosm:back:{tab}`. The view (tab, slot, picked key) lives only in the ids, so a restart loses nothing.
+  The old screens' `cos:` ids answer nothing, on purpose: a new prefix keeps every wildcard clear of them.
+- Without a living Plynling the screen still opens: shop and recipes work, the head is a plain title,
+  « …et porter » and « Porter » are hidden, and the wardrobe lists what is owned.

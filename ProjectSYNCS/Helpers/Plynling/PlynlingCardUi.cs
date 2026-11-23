@@ -35,14 +35,17 @@ public static class PlynlingCardUi
 
     // partnerName: its living partner, if it has one (one at most), already known by the caller.
     // epithet: its latest story title (« la Nez-en-l'air »), shown after the name.
-    public static string Heading(Plynling p, DateTimeOffset now, string? partnerName = null, string? epithet = null)
+    // outfit: what it wears, by default what is stored on it; the cosmetics screen's try-on passes a
+    // changed copy, so a preview never writes to the Plynling.
+    public static string Heading(Plynling p, DateTimeOffset now, string? partnerName = null, string? epithet = null, Outfit? outfit = null)
     {
         var info = PlynlingCatalog.Info(p.Species);
         var age = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
+        var worn = outfit ?? Outfit.Of(p);
         // The gender sign sits on the species line, not in the heading: a "## " line renders
         // ♂/♀ at heading size, far too big beside the name.
-        var title = CosmeticSlots.Worn(p, CosmeticSlot.Title) is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
-        var accessory = CosmeticSlots.Worn(p, CosmeticSlot.Accessory) is { } a ? $"\nPorte {a.Emoji} {a.Name}" : "";
+        var title = worn.Title is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
+        var accessory = worn.Accessory is { } a ? $"\nPorte {a.Emoji} {a.Name}" : "";
         return $"## {SafeName(p.Name)}{(epithet is null ? "" : ", " + LowerArticle(epithet))}\n" + title +
                $"{p.Gender.Symbol()} {info.Name}\n" +
                $"À <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
@@ -151,13 +154,18 @@ public static class PlynlingCardUi
 
     public static string GraveLine(Plynling p, DateTimeOffset now)
     {
-        var info = PlynlingCatalog.Info(p.Species);
         var lived = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
-        // A worn cadre wraps the grave's first line.
-        var frame = CosmeticSlots.Worn(p, CosmeticSlot.Grave);
-        var (left, right) = frame is null ? ("", "") : ($"{frame.GraveLeft} ", $" {frame.GraveRight}");
-        return $"{left}**{SafeName(p.Name)}** {p.Gender.Symbol()} · {info.Name} — à <@{p.OwnerId}>{right}\n" +
+        return $"{GraveFirstLine(p, CosmeticSlots.Worn(p, CosmeticSlot.Grave))}\n" +
                $"*a vécu {lived}* · {p.Gender.Agree("mort", "morte")} <t:{p.DiedAt!.Value.ToUnixTimeSeconds()}:R>";
+    }
+
+    // A grave's first line, wrapped in its cadre. Also the cosmetics screen's cadre preview on a
+    // living Plynling, which has no death date for GraveLine's second line.
+    public static string GraveFirstLine(Plynling p, CosmeticInfo? frame)
+    {
+        var info = PlynlingCatalog.Info(p.Species);
+        var (left, right) = frame is null ? ("", "") : ($"{frame.GraveLeft} ", $" {frame.GraveRight}");
+        return $"{left}**{SafeName(p.Name)}** {p.Gender.Symbol()} · {info.Name} — à <@{p.OwnerId}>{right}";
     }
 }
 

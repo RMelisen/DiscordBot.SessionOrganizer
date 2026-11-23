@@ -114,11 +114,10 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "et médicaments (−10 % dès 5).\n" +
                 "**`/inventory give`** · **`/inventory trade`** · **`/inventory sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
             .AddField("Cosmétiques",
-                "**`/plynling wardrobe`** — Habille ton Plynling : un thème pour sa carte, un titre, un accessoire, " +
-                "et un cadre pour sa tombe.\n" +
-                "**`/inventory cosmetics`** — La boutique : des basiques toujours là, une sélection qui change chaque lundi, " +
-                "et des articles de saison.\n" +
-                "**`/inventory craft`** — Fabrique des cosmétiques rares avec tes objets de collection.\n" +
+                "**`/inventory cosmetics`** — La **garde-robe** (thème, titre, accessoire, cadre de tombe), la " +
+                "**boutique** (sélection renouvelée chaque lundi) et la **fabrication**. Choisis un article pour " +
+                "l'**essayer** sur ton Plynling avant de payer.\n" +
+                "**`/plynling wardrobe`** — Le même écran, ouvert sur la garde-robe.\n" +
                 "Tes cosmétiques restent à toi et servent à tous tes Plynlings. On peut les offrir ou les échanger, pas les vendre.")
             .AddField("Partir en vacances",
                 "**`/plynling freeze`** — Gèle ton Plynling (14 jours au plus) : plus rien ne bouge. " +

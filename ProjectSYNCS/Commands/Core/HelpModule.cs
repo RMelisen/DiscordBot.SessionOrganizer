@@ -173,8 +173,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "de chaque objet) contre sa récompense et un badge : Bronze, Argent, Or, Platine, Diamant.\n" +
                 "**`/inventory shop`** — Nourriture, savon et médicaments pour ton garde-manger (−10 % dès 5), et des " +
                 "**sachets** de 3 objets de collection au hasard, ouverts tout de suite (−10 % par 5).\n" +
-                "**`/inventory cosmetics`** — Des cosmétiques pour ton Plynling, nouvelle sélection chaque lundi.\n" +
-                "**`/inventory craft`** — Fabrique des cosmétiques avec tes objets de collection.\n" +
+                "**`/inventory cosmetics`** — Garde-robe, boutique (nouvelle sélection chaque lundi) et fabrication : " +
+                "essaie avant d'acheter.\n" +
                 "**`/inventory give`** — Offre un objet à quelqu'un.\n" +
                 "**`/inventory trade`** — Propose un échange d'objets (l'offre dure 1 h).\n" +
                 "**`/inventory sell`** — Revends des objets contre des cailloux.")

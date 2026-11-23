@@ -579,10 +579,13 @@ looks after her.
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
 - **Cosmetics:** 60 things a Plynling can wear, one per slot — a **thème** that recolours its
   card and adds a banner, a **titre** under its name (in its gender), an **accessoire**
-  (« porte 🧣 une écharpe ») and a **cadre** for its grave. `/inventory cosmetics` is the shop:
-  a few basics always on sale, two items per slot that change every Monday, and seasonal ones
-  (300 to 5 000 cailloux). `/inventory craft` makes eight special ones from collectibles.
-  `/plynling wardrobe` dresses your Plynling. Cosmetics belong to you, not the Plynling: they
+  (« porte 🧣 une écharpe ») and a **cadre** for its grave. `/inventory cosmetics` is one screen
+  with three tabs: the **wardrobe**, the **shop** (a few basics always on sale, two items per slot
+  that change every Monday, and seasonal ones, 300 to 5 000 cailloux) and **crafting** (eight
+  special ones made from collectibles, with exactly what is missing listed). Picking anything
+  **tries it on** your Plynling's real card before you pay, and « Acheter et porter » /
+  « Fabriquer et porter » put it on at once. `/plynling wardrobe` opens the same screen on the
+  wardrobe. Cosmetics belong to you, not the Plynling: they
   stay yours when it dies (its grave keeps what it wore) and dress the next one; they can be
   given and traded, but not sold.
 - **Cailloux** come from `/work` (every 4 hours; once a day she lets a shift through up to

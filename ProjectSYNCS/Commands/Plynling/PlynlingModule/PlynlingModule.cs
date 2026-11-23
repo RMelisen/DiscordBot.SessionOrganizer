@@ -417,18 +417,16 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
+    // The cosmetics screen (CosmeticCards) opened on the wardrobe — the same screen as
+    // /inventory cosmetics. Without a living Plynling it still opens: the shop and recipes work.
     [SlashCommand("wardrobe", "Habiller ton Plynling avec tes cosmétiques")]
     public async Task WardrobeAsync()
     {
-        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, DateTimeOffset.UtcNow);
-        if (plynling is null || plynling.DiedAt is not null)
-        {
-            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
-            return;
-        }
-        var owned = await _cosmetics.OwnedAsync(Context.Guild.Id, Context.User.Id);
-        var (embed, components) = CosmeticCards.BuildWardrobe(plynling, owned, null);
-        await RespondAsync(embed: embed, components: components, ephemeral: true, allowedMentions: AllowedMentions.None);
+        await DeferAsync(ephemeral: true);
+        var now = DateTimeOffset.UtcNow;
+        var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
+        await FollowupAsync(components: CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe), data, now, null),
+            flags: MessageFlags.ComponentsV2, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     // Free text, like a Tomodachi Life word: it only ever appears through generic story

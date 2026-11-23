@@ -5,47 +5,274 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-// The three cosmetics screens — the shop, the recipes, the wardrobe — as static, Context-free
-// builders, so their sizes are checkable without a gateway. All three are ephemeral messages
-// that a pick in their own select redraws in place, with a one-line notice of what happened.
+// The cosmetics screen's three tabs.
+public enum CosmeticTab { Wardrobe, Shop, Craft }
+
+// Where the screen stands: its tab, the wardrobe's slot, and the item picked in the shop or the
+// recipes — tried on in the preview, nothing bought. All of it rides in the custom-ids, so a
+// restart loses nothing.
+public sealed record CosmeticView(CosmeticTab Tab, CosmeticSlot Slot = CosmeticSlot.Theme, string? Picked = null);
+
+// What the screen is drawn from: the person's living Plynling (null without one), everything they
+// hold by key, their cailloux, and what the card's heading shows besides the Plynling.
+public sealed record CosmeticScreenData(
+    Plynling? Plynling, IReadOnlyDictionary<string, int> Held, long Balance, string? PartnerName = null, string? Epithet = null)
+{
+    public bool Owns(CosmeticInfo c) => Held.GetValueOrDefault(c.Key) > 0;
+}
+
+// The cosmetics screen — wardrobe, shop and recipes in one ephemeral Components V2 message, opened
+// by /inventory cosmetics (on the shop) and /plynling wardrobe (on the wardrobe), redrawn in place by
+// CosmeticComponentHandler. Its top is the Plynling's own card head (PlynlingModule.CardHead) with
+// what is picked put on a copy of its Outfit: the try-on is the real card, never a look-alike.
+// Static and Context-free, so the checks measure it.
 //
-// One verb per select: `cos:buy:{week}`, `cos:craft`, `cos:wear:{slot}` — the four wardrobe
-// selects differ by slot, so no two ids on a message can collide.
+// One verb per control, so no id repeats on a message: cosm:tab:{tab}, cosm:slot:{slot},
+// cosm:pick:{tab}:{week} (the one select; « Aucun » is none:{slot}), cosm:buy:{week}:{key},
+// cosm:buyw:{week}:{key}, cosm:make:{key}, cosm:makew:{key}, cosm:wear:{tab}:{key}, cosm:back:{tab}.
+// The prefix is new (the old screens used cos:), so no handler here answers an old screen's select.
 public static class CosmeticCards
 {
-    // ---- the shop ------------------------------------------------------------------------------
+    public const string NonePrefix = "none:";
 
-    public static (Embed Embed, MessageComponent Components) BuildShop(DateTimeOffset now, IReadOnlySet<string> owned, long balance, string? notice)
+    public static async Task<CosmeticScreenData> LoadAsync(PlynlingService plynlings, CosmeticService cosmetics, ulong guildId, ulong userId,
+        DateTimeOffset now)
+    {
+        var p = await plynlings.GetCurrentAsync(guildId, userId, now);
+        if (p?.DiedAt is not null) p = null;   // it starved since anyone looked: it comes back dead
+        var (held, balance) = await cosmetics.HeldAsync(guildId, userId);
+        return p is null
+            ? new CosmeticScreenData(null, held, balance)
+            : new CosmeticScreenData(p, held, balance, (await plynlings.GetPartnerAsync(p))?.Name, await plynlings.GetLatestTitleAsync(p));
+    }
+
+    public static MessageComponent Build(CosmeticView view, CosmeticScreenData data, DateTimeOffset now, string? notice)
     {
         var shop = CosmeticCatalog.Shop(now);
-        string Line(CosmeticInfo c) =>
-            $"{c.Emoji} **{CosmeticCatalog.Label(c)}** · {SourceLabel(c)} · {PebbleEconomy.Cailloux(c.Price)}" + (owned.Contains(c.Key) ? " ✅" : "");
-
-        var embed = new EmbedBuilder()
-            .WithTitle("Boutique de cosmétiques")
-            .WithColor(Color.Purple)
-            .WithDescription((notice is null ? "" : notice + "\n\n") +
-                             $"Tu as **{PebbleEconomy.Cailloux(balance)}** · nouvelle sélection <t:{CosmeticCatalog.NextRotation(now).ToUnixTimeSeconds()}:R>")
-            .AddField("Toujours", string.Join("\n", shop.Where(c => c.Source == CosmeticSource.Basic).Select(Line)))
-            .AddField("Cette semaine", string.Join("\n", shop.Where(c => c.Source == CosmeticSource.Rotating).Select(Line)));
-        var seasonal = shop.Where(c => c.Source == CosmeticSource.Seasonal).ToList();
-        if (seasonal.Count > 0) embed.AddField("De saison", string.Join("\n", seasonal.Select(Line)));
-        embed.WithFooter("Ce que tu achètes t'appartient : tu pourras en habiller tous tes Plynlings (/plynling wardrobe).");
-
-        var components = new ComponentBuilder();
-        var buyable = shop.Where(c => !owned.Contains(c.Key)).ToList();
-        if (buyable.Count > 0)
+        // A pick only stands on its own tab, and only while it is still on offer there.
+        var picked = CosmeticCatalog.ByKey(view.Picked) is { } c && view.Tab switch
         {
-            var menu = new SelectMenuBuilder()
-                .WithCustomId($"cos:buy:{CosmeticCatalog.WeekKey(now)}")
-                .WithPlaceholder("Acheter…");
-            foreach (var c in buyable)
-                menu.AddOption($"{CosmeticCatalog.Label(c)} — {PebbleEconomy.Cailloux(c.Price)}", c.Key,
-                    $"{CosmeticCatalog.SlotLabel(c.Slot)} · {SourceLabel(c)}", EmoteMarkup.Parse(c.Emoji));
-            components.WithSelectMenu(menu);
+            CosmeticTab.Shop => shop.Contains(c),
+            CosmeticTab.Craft => c.Source == CosmeticSource.Crafted,
+            _ => false,
+        } ? c : null;
+
+        var container = Head(view, data, now, picked);
+        container.AddComponent(new SeparatorBuilder());
+
+        var tabs = new ActionRowBuilder();
+        foreach (var tab in Enum.GetValues<CosmeticTab>())
+            tabs.WithButton(TabLabel(tab), $"cosm:tab:{tab}", tab == view.Tab ? ButtonStyle.Primary : ButtonStyle.Secondary);
+        container.AddComponent(tabs);
+
+        switch (view.Tab)
+        {
+            case CosmeticTab.Wardrobe: WardrobeBody(container, view.Slot, data); break;
+            case CosmeticTab.Shop: ShopBody(container, shop, picked, data, now); break;
+            default: CraftBody(container, picked, data); break;
         }
-        return (embed.Build(), components.Build());
+
+        if (notice is not null)
+            container.AddComponent(new TextDisplayBuilder(notice));
+        return new ComponentBuilderV2().AddComponent(container).Build();
     }
+
+    // ---- the preview ---------------------------------------------------------------------------
+
+    private static ContainerBuilder Head(CosmeticView view, CosmeticScreenData data, DateTimeOffset now, CosmeticInfo? picked)
+    {
+        if (data.Plynling is not { } p)
+        {
+            var bare = new ContainerBuilder().WithAccentColor(new Color(picked?.Accent ?? 0x9B59B6));
+            if (picked?.Banner is { } banner) bare.AddComponent(new TextDisplayBuilder(banner));
+            return bare.AddComponent(new TextDisplayBuilder("## 👗 Cosmétiques\nAdopte un Plynling pour essayer tes cosmétiques sur lui."));
+        }
+
+        var worn = Outfit.Of(p);
+        var tried = picked is null ? worn : worn.With(picked);
+        var container = PlynlingModule.CardHead(p, now, data.PartnerName, data.Epithet, tried);
+        if (picked is not null && worn.In(picked.Slot)?.Key != picked.Key)
+            container.AddComponent(new TextDisplayBuilder(
+                $"-# Essai : {picked.Emoji} {Shown(picked, p)} — {(data.Owns(picked) ? "à toi, pas encore porté" : "pas encore à toi")}"));
+        // A cadre only shows on a grave: its preview is the grave's first line, as it would read.
+        if (picked?.Slot == CosmeticSlot.Grave || (picked is null && view.Tab == CosmeticTab.Wardrobe && view.Slot == CosmeticSlot.Grave))
+            container.AddComponent(new TextDisplayBuilder($"-# Sa tombe, le jour venu :\n{PlynlingCardUi.GraveFirstLine(p, tried.Grave)}"));
+        return container;
+    }
+
+    // ---- the wardrobe --------------------------------------------------------------------------
+
+    private static void WardrobeBody(ContainerBuilder container, CosmeticSlot slot, CosmeticScreenData data)
+    {
+        if (data.Plynling is not { } p)
+        {
+            var lines = Enum.GetValues<CosmeticSlot>()
+                .Select(s => (Slot: s, Owned: CosmeticCatalog.InSlot(s).Where(data.Owns).Select(c => $"{c.Emoji} {CosmeticCatalog.ShortName(c)}").ToList()))
+                .Where(x => x.Owned.Count > 0)
+                .Select(x => $"**{CosmeticCatalog.SlotLabel(x.Slot)}** : {string.Join(" · ", x.Owned)}")
+                .ToList();
+            container.AddComponent(new TextDisplayBuilder(lines.Count == 0
+                ? "Aucun cosmétique pour l'instant. Va voir la **Boutique** !"
+                : string.Join("\n", lines)));
+            return;
+        }
+
+        var slots = new ActionRowBuilder();
+        foreach (var s in Enum.GetValues<CosmeticSlot>())
+            slots.WithButton(CosmeticCatalog.SlotLabel(s), $"cosm:slot:{s}", s == slot ? ButtonStyle.Primary : ButtonStyle.Secondary);
+        container.AddComponent(slots);
+
+        var owned = CosmeticCatalog.InSlot(slot).Where(data.Owns).ToList();
+        var worn = CosmeticSlots.Worn(p, slot);
+        if (owned.Count == 0)
+        {
+            container.AddComponent(new TextDisplayBuilder(
+                $"Rien à toi dans « {CosmeticCatalog.SlotLabel(slot)} » pour l'instant : la **Boutique** et la **Fabrication** en ont."));
+            return;
+        }
+
+        container.AddComponent(new TextDisplayBuilder(
+            $"**{CosmeticCatalog.SlotLabel(slot)}** · {owned.Count} à toi. Choisis : c'est porté tout de suite."));
+        var menu = new SelectMenuBuilder()
+            .WithCustomId($"cosm:pick:{CosmeticTab.Wardrobe}:0")
+            .WithPlaceholder($"{CosmeticCatalog.SlotLabel(slot)}…")
+            .AddOption("Aucun", NonePrefix + slot, isDefault: worn is null);
+        foreach (var c in owned)
+            menu.AddOption(Shown(c, p), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key);
+        container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+    }
+
+    // ---- the shop ------------------------------------------------------------------------------
+
+    private static void ShopBody(ContainerBuilder container, IReadOnlyList<CosmeticInfo> shop, CosmeticInfo? picked, CosmeticScreenData data,
+        DateTimeOffset now)
+    {
+        string Line(CosmeticInfo c) =>
+            $"{c.Emoji} {CosmeticCatalog.Label(c)} · {SourceLabel(c)} · {PebbleEconomy.Cailloux(c.Price)}" + (data.Owns(c) ? " ✅" : "");
+        string Section(string title, CosmeticSource source) =>
+            shop.Any(c => c.Source == source) ? $"\n**{title}**\n" + string.Join("\n", shop.Where(c => c.Source == source).Select(Line)) : "";
+
+        container.AddComponent(new TextDisplayBuilder(
+            $"Tu as **{PebbleEconomy.Cailloux(data.Balance)}** · nouvelle sélection <t:{CosmeticCatalog.NextRotation(now).ToUnixTimeSeconds()}:R>" +
+            Section("Toujours", CosmeticSource.Basic) + Section("Cette semaine", CosmeticSource.Rotating) + Section("De saison", CosmeticSource.Seasonal)));
+
+        var week = CosmeticCatalog.WeekKey(now);
+        var menu = new SelectMenuBuilder()
+            .WithCustomId($"cosm:pick:{CosmeticTab.Shop}:{week}")
+            .WithPlaceholder(data.Plynling is null ? "Voir un article…" : "Essayer un article…");
+        foreach (var c in shop)
+            menu.AddOption($"{CosmeticCatalog.Label(c)} — {PebbleEconomy.Cailloux(c.Price)}", c.Key,
+                $"{CosmeticCatalog.SlotLabel(c.Slot)} · {(data.Owns(c) ? "déjà à toi" : SourceLabel(c))}", EmoteMarkup.Parse(c.Emoji),
+                isDefault: c.Key == picked?.Key);
+        container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+
+        if (picked is null) return;
+        var owned = data.Owns(picked);
+        var poor = data.Balance < picked.Price;
+        container.AddComponent(new TextDisplayBuilder(
+            $"### {picked.Emoji} {CosmeticCatalog.Label(picked)}\n" +
+            $"{CosmeticCatalog.SlotLabel(picked.Slot)} · {SourceLabel(picked)} · **{PebbleEconomy.Cailloux(picked.Price)}**\n" +
+            (owned ? Ownership(picked, data) : poor ? $"Il te manque **{PebbleEconomy.Cailloux(picked.Price - data.Balance)}**." : "Tu peux te l'offrir.")));
+
+        var row = new ActionRowBuilder();
+        if (!owned)
+        {
+            row.WithButton("Acheter", $"cosm:buy:{week}:{picked.Key}", ButtonStyle.Success, disabled: poor);
+            if (data.Plynling is not null)
+                row.WithButton("Acheter et porter", $"cosm:buyw:{week}:{picked.Key}", ButtonStyle.Success, disabled: poor);
+        }
+        else AddWear(row, CosmeticTab.Shop, picked, data);
+        row.WithButton("Retour", $"cosm:back:{CosmeticTab.Shop}", ButtonStyle.Secondary);
+        container.AddComponent(row);
+    }
+
+    // ---- the recipes ---------------------------------------------------------------------------
+
+    private static void CraftBody(ContainerBuilder container, CosmeticInfo? picked, CosmeticScreenData data)
+    {
+        var recipes = CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted).ToList();
+        container.AddComponent(new TextDisplayBuilder(
+            "Transforme tes objets de collection en cosmétiques. Les objets utilisés disparaissent, " +
+            "mais restent découverts dans ton carnet.\n" +
+            string.Join("\n", recipes.Select(c => $"{c.Emoji} {CosmeticCatalog.Label(c)} · {RecipeStatus(c, data)}"))));
+
+        var menu = new SelectMenuBuilder()
+            .WithCustomId($"cosm:pick:{CosmeticTab.Craft}:0")
+            .WithPlaceholder("Voir une recette…");
+        foreach (var c in recipes)
+            menu.AddOption(CosmeticCatalog.Label(c), c.Key, $"{CosmeticCatalog.SlotLabel(c.Slot)} · {RecipeStatus(c, data)}",
+                EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == picked?.Key);
+        container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+
+        if (picked is null) return;
+        var owned = data.Owns(picked);
+        var missing = Missing(picked, data);
+        var lines = picked.Recipe.Select(r =>
+        {
+            var item = ItemCatalog.ByKey(r.ItemKey)!;
+            var have = data.Held.GetValueOrDefault(r.ItemKey);
+            return $"{(have >= r.Count ? "✅" : "❌")} {item.Emoji} {ItemCatalog.ClearName(item)} {Math.Min(have, r.Count)}/{r.Count}";
+        }).Append($"{(data.Balance >= picked.Price ? "✅" : "❌")} 🪨 {PebbleEconomy.Cailloux(picked.Price)}");
+        container.AddComponent(new TextDisplayBuilder(
+            $"### {picked.Emoji} {CosmeticCatalog.Label(picked)}\n{CosmeticCatalog.SlotLabel(picked.Slot)}\n" +
+            string.Join("\n", lines) + "\n" +
+            (owned ? Ownership(picked, data) : missing.Count == 0 ? "Tout est prêt !" : $"Il te manque : {string.Join(", ", missing)}.")));
+
+        var row = new ActionRowBuilder();
+        if (!owned)
+        {
+            row.WithButton("Fabriquer", $"cosm:make:{picked.Key}", ButtonStyle.Success, disabled: missing.Count > 0);
+            if (data.Plynling is not null)
+                row.WithButton("Fabriquer et porter", $"cosm:makew:{picked.Key}", ButtonStyle.Success, disabled: missing.Count > 0);
+        }
+        else AddWear(row, CosmeticTab.Craft, picked, data);
+        row.WithButton("Retour", $"cosm:back:{CosmeticTab.Craft}", ButtonStyle.Secondary);
+        container.AddComponent(row);
+    }
+
+    /// <summary>What a recipe still lacks, named: « 2 × Améthyste », then the cailloux.</summary>
+    public static List<string> Missing(CosmeticInfo recipe, CosmeticScreenData data)
+    {
+        var missing = recipe.Recipe
+            .Select(r => (Item: ItemCatalog.ByKey(r.ItemKey)!, Lack: r.Count - data.Held.GetValueOrDefault(r.ItemKey)))
+            .Where(x => x.Lack > 0)
+            .Select(x => $"{x.Lack} × {ItemCatalog.ClearName(x.Item)}")
+            .ToList();
+        if (data.Balance < recipe.Price) missing.Add(PebbleEconomy.Cailloux(recipe.Price - data.Balance));
+        return missing;
+    }
+
+    private static string RecipeStatus(CosmeticInfo c, CosmeticScreenData data)
+    {
+        if (data.Owns(c)) return "déjà à toi ✅";
+        var missing = Missing(c, data).Count;
+        return missing == 0 ? "prêt ✅" : $"il manque {missing} {(missing > 1 ? "choses" : "chose")}";
+    }
+
+    // ---- shared pieces -------------------------------------------------------------------------
+
+    // An owned item's line in the item view: worn already, or waiting in the wardrobe.
+    private static string Ownership(CosmeticInfo c, CosmeticScreenData data) =>
+        data.Plynling is { } p && CosmeticSlots.Worn(p, c.Slot)?.Key == c.Key
+            ? $"À toi, et {PlynlingCardUi.SafeName(p.Name)} le porte."
+            : "Déjà à toi.";
+
+    private static void AddWear(ActionRowBuilder row, CosmeticTab tab, CosmeticInfo c, CosmeticScreenData data)
+    {
+        if (data.Plynling is { } p && CosmeticSlots.Worn(p, c.Slot)?.Key != c.Key)
+            row.WithButton("Porter", $"cosm:wear:{tab}:{c.Key}", ButtonStyle.Primary);
+    }
+
+    private static string TabLabel(CosmeticTab tab) => tab switch
+    {
+        CosmeticTab.Wardrobe => "👗 Garde-robe",
+        CosmeticTab.Shop => "🛍️ Boutique",
+        _ => "🔨 Fabrication",
+    };
+
+    // How it reads on this Plynling: a title in its gender, the rest by its short name.
+    private static string Shown(CosmeticInfo c, Plynling p) =>
+        c.Slot == CosmeticSlot.Title ? CosmeticCatalog.TitleFor(c, p.Gender) : CosmeticCatalog.ShortName(c);
 
     private static string SourceLabel(CosmeticInfo c) => c.Source switch
     {
@@ -55,91 +282,22 @@ public static class CosmeticCards
         _ => ItemCatalog.RarityLabel(c.Rarity),
     };
 
-    // ---- the recipes ---------------------------------------------------------------------------
-
-    public static (Embed Embed, MessageComponent Components) BuildCraft(IReadOnlyDictionary<string, int> held, IReadOnlySet<string> owned, long balance, string? notice)
-    {
-        var recipes = CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted).ToList();
-        var embed = new EmbedBuilder()
-            .WithTitle("Fabrication")
-            .WithColor(Color.Purple)
-            .WithDescription((notice is null ? "" : notice + "\n\n") +
-                             "Transforme tes objets de collection en cosmétiques. Les objets utilisés disparaissent, " +
-                             "mais restent découverts dans ton carnet.");
-        foreach (var c in recipes)
-        {
-            var lines = c.Recipe.Select(r =>
-            {
-                var item = ItemCatalog.ByKey(r.ItemKey)!;
-                var have = held.GetValueOrDefault(r.ItemKey);
-                return $"{item.Emoji} {ItemCatalog.ClearName(item)} {Math.Min(have, r.Count)}/{r.Count} {(have >= r.Count ? "✅" : "❌")}";
-            }).ToList();
-            lines.Add($"🪨 Cailloux {Math.Min(balance, c.Price)}/{c.Price} {(balance >= c.Price ? "✅" : "❌")}");
-            embed.AddField($"{c.Emoji} {CosmeticCatalog.Label(c)}" + (owned.Contains(c.Key) ? " · déjà à toi ✅" : ""), string.Join("\n", lines), inline: true);
-        }
-
-        var components = new ComponentBuilder();
-        var craftable = recipes.Where(c => !owned.Contains(c.Key)).ToList();
-        if (craftable.Count > 0)
-        {
-            var menu = new SelectMenuBuilder().WithCustomId("cos:craft").WithPlaceholder("Fabriquer…");
-            foreach (var c in craftable)
-            {
-                var ready = c.Recipe.All(r => held.GetValueOrDefault(r.ItemKey) >= r.Count) && balance >= c.Price;
-                menu.AddOption(CosmeticCatalog.Label(c), c.Key, ready ? "Tout est prêt ✅" : "Il manque quelque chose", EmoteMarkup.Parse(c.Emoji));
-            }
-            components.WithSelectMenu(menu);
-        }
-        return (embed.Build(), components.Build());
-    }
-
-    // ---- the wardrobe --------------------------------------------------------------------------
-
-    public const string NoneValue = "none";
-
-    public static (Embed Embed, MessageComponent Components) BuildWardrobe(Plynling p, IReadOnlyList<CosmeticInfo> owned, string? notice)
-    {
-        string Shown(CosmeticInfo c) => c.Slot switch
-        {
-            CosmeticSlot.Title => CosmeticCatalog.TitleFor(c, p.Gender),
-            _ => CosmeticCatalog.ShortName(c),
-        };
-
-        var embed = new EmbedBuilder()
-            .WithTitle($"Garde-robe de {PlynlingCardUi.SafeName(p.Name)}")
-            .WithColor(Color.Purple)
-            .WithDescription((notice is null ? "" : notice + "\n\n") +
-                             "Choisis ce que ton Plynling porte. Tes cosmétiques restent à toi, même s'il part.");
-        var components = new ComponentBuilder();
-        var row = 0;
-        foreach (var slot in Enum.GetValues<CosmeticSlot>())
-        {
-            var worn = CosmeticSlots.Worn(p, slot);
-            embed.AddField(CosmeticCatalog.SlotLabel(slot), worn is null ? "—" : $"{worn.Emoji} {Shown(worn)}", inline: true);
-
-            var menu = new SelectMenuBuilder()
-                .WithCustomId($"cos:wear:{slot}")
-                .WithPlaceholder(CosmeticCatalog.SlotLabel(slot))
-                .AddOption("Aucun", NoneValue, isDefault: worn is null);
-            foreach (var c in owned.Where(c => c.Slot == slot))
-                menu.AddOption(Shown(c), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key);
-            components.WithSelectMenu(menu, row++);
-        }
-        return (embed.Build(), components.Build());
-    }
-
     // A bought cosmetic's receipt line, under ShopCards.Receipt's heading.
-    public static string Bought(CosmeticInfo c, long balance) =>
+    public static string Bought(CosmeticInfo c, long balance, bool worn) =>
         $"{c.Emoji} **{CosmeticCatalog.Label(c)}** est à toi, pour {PebbleEconomy.Cailloux(c.Price)}. " +
-        $"Il te reste {PebbleEconomy.Cailloux(balance)}.\n-# À porter depuis `/plynling wardrobe`.";
+        $"Il te reste {PebbleEconomy.Cailloux(balance)}." + (worn ? "\n-# Ton Plynling le porte déjà." : "");
 
-    // The one-line notice after a buy, a craft or a change of clothes.
-    public static string Notice(CosmeticOutcome outcome, CosmeticInfo? c, long price = 0) => outcome switch
+    // The one-line notice after a buy, a craft or a change of clothes. wantedWorn: « …et porter » was
+    // asked, so a Done that wore nothing says why (the Plynling is gone).
+    public static string Notice(CosmeticOutcome outcome, CosmeticInfo? c, long price = 0, bool wantedWorn = false, bool worn = false) => outcome switch
     {
+        CosmeticOutcome.Done when wantedWorn && !worn =>
+            $"✅ {c?.Emoji} **{(c is null ? "" : CosmeticCatalog.Label(c))}** est à toi — mais tu n'as plus de Plynling pour le porter.",
+        CosmeticOutcome.Done when worn => $"✅ {c?.Emoji} **{(c is null ? "" : CosmeticCatalog.Label(c))}** est à toi, et c'est porté !",
         CosmeticOutcome.Done => $"✅ {c?.Emoji} **{(c is null ? "" : CosmeticCatalog.Label(c))}** est à toi !",
         CosmeticOutcome.AlreadyOwned => "Tu l'as déjà.",
         CosmeticOutcome.TooPoor => $"❌ Il te faut {PebbleEconomy.Cailloux(price)}.",
-        CosmeticOutcome.NotInShop => "❌ Cet article n'est plus en boutique — rouvre `/inventory cosmetics`.",
+        CosmeticOutcome.NotInShop => "❌ Cet article n'est plus en boutique : la sélection a changé.",
         CosmeticOutcome.MissingIngredients => "❌ Il te manque des objets pour cette recette.",
         CosmeticOutcome.NotOwned => "❌ Tu ne l'as pas (ou plus).",
         CosmeticOutcome.NoPlynling => PlynlingText.NoPlynling,

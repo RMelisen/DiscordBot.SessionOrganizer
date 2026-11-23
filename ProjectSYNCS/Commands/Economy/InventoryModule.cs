@@ -27,36 +27,32 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly InventoryService _inventory;
     private readonly TradeOffers _trades;
+    private readonly CosmeticService _cosmetics;
+    private readonly PlynlingService _plynlings;
 
-    public InventoryModule(InventoryService inventory, TradeOffers trades)
+    public InventoryModule(InventoryService inventory, TradeOffers trades, CosmeticService cosmetics, PlynlingService plynlings)
     {
         _inventory = inventory;
         _trades = trades;
+        _cosmetics = cosmetics;
+        _plynlings = plynlings;
     }
 
-    [SlashCommand("cosmetics", "La boutique de cosmétiques pour ton Plynling (nouvelle sélection chaque lundi)")]
+    // The cosmetics screen (CosmeticCards), opened on the shop: wardrobe, shop and recipes in one
+    // place, with a try-on. /plynling wardrobe opens the same screen on the wardrobe.
+    [SlashCommand("cosmetics", "Cosmétiques : essaie, achète, fabrique et habille ton Plynling")]
     public async Task CosmeticsAsync()
     {
-        var (held, balance) = await HeldAsync();
-        var (embed, components) = CosmeticCards.BuildShop(DateTimeOffset.UtcNow, Owned(held), balance, null);
-        await RespondAsync(embed: embed, components: components, ephemeral: true);
-    }
-
-    [SlashCommand("craft", "Fabriquer des cosmétiques avec tes objets de collection")]
-    public async Task CraftAsync()
-    {
-        var (held, balance) = await HeldAsync();
-        var (embed, components) = CosmeticCards.BuildCraft(held, Owned(held), balance, null);
-        await RespondAsync(embed: embed, components: components, ephemeral: true);
+        await DeferAsync(ephemeral: true);
+        var now = DateTimeOffset.UtcNow;
+        var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
+        await FollowupAsync(components: CosmeticCards.Build(new CosmeticView(CosmeticTab.Shop), data, now, null),
+            flags: MessageFlags.ComponentsV2, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     private async Task<(Dictionary<string, int> Held, long Balance)> HeldAsync() =>
         ((await _inventory.GetAllAsync(Context.Guild.Id, Context.User.Id)).ToDictionary(i => i.Key, i => i.Quantity),
          await _inventory.BalanceAsync(Context.Guild.Id, Context.User.Id));
-
-    // The cosmetics held — at least one; a row at 0 is only « discovered ».
-    public static HashSet<string> Owned(IReadOnlyDictionary<string, int> held) =>
-        held.Where(kv => kv.Value > 0 && CosmeticCatalog.ByKey(kv.Key) is not null).Select(kv => kv.Key).ToHashSet();
 
     // The shop card: foods, soap and medicine, bought by picking a line then a quantity
     // (ShopCards, ShopComponentHandler).
@@ -383,7 +379,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
                 embed.AddField(CosmeticCatalog.SlotPlural(slot), string.Join(" · ", owned));
             }
             embed.WithDescription(any
-                ? "Pour habiller ton Plynling : `/plynling wardrobe`."
+                ? "Pour les essayer et habiller ton Plynling : `/inventory cosmetics`."
                 : "Aucun cosmétique pour l'instant. La boutique : `/inventory cosmetics`.");
         }
 

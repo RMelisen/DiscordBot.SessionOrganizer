@@ -5585,5 +5585,8 @@ StoryEngineChecks.Run(Fail);
 // 55. The 50 old C# events, frozen before they moved to story files: OldEventChecks.cs.
 OldEventChecks.Run(Fail);
 
+// 59. The cosmetics screen: every tab and item view inside the caps, the try-on: CosmeticScreenChecks.cs.
+CosmeticScreenChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

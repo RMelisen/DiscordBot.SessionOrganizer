@@ -1,6 +1,5 @@
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
@@ -8,45 +7,106 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Interactions.Components;
 
-// The cosmetics screens' selects. Each screen is an ephemeral message only its owner sees, so
-// whoever picks is whoever the screen is about; every pick redraws that message with a notice.
+// The cosmetics screen's controls (CosmeticCards). The screen is an ephemeral message only its owner
+// sees, so whoever clicks is whoever the screen is about. Every click defers first — most read or
+// write the database before anything can be shown — then redraws the screen in place.
 public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly CosmeticService _cosmetics;
-    private readonly InventoryService _inventory;
     private readonly PlynlingService _plynlings;
     private readonly ILogger<CosmeticComponentHandler> _logger;
 
-    public CosmeticComponentHandler(CosmeticService cosmetics, InventoryService inventory, PlynlingService plynlings,
-        ILogger<CosmeticComponentHandler> logger)
+    public CosmeticComponentHandler(CosmeticService cosmetics, PlynlingService plynlings, ILogger<CosmeticComponentHandler> logger)
     {
         _cosmetics = cosmetics;
-        _inventory = inventory;
         _plynlings = plynlings;
         _logger = logger;
     }
 
-    // The shop's « Acheter… », carrying the week its message was drawn from.
-    [ComponentInteraction("cos:buy:*", ignoreGroupNames: true)]
-    public async Task OnBuyAsync(string weekStr, string[] selected)
+    [ComponentInteraction("cosm:tab:*", ignoreGroupNames: true)]
+    public async Task OnTabAsync(string tabStr)
     {
+        if (!Enum.TryParse<CosmeticTab>(tabStr, out var tab)) return;
+        await DeferAsync();
+        await RedrawAsync(new CosmeticView(tab), null);
+    }
+
+    [ComponentInteraction("cosm:back:*", ignoreGroupNames: true)]
+    public Task OnBackAsync(string tabStr) => OnTabAsync(tabStr);
+
+    [ComponentInteraction("cosm:slot:*", ignoreGroupNames: true)]
+    public async Task OnSlotAsync(string slotStr)
+    {
+        if (!Enum.TryParse<CosmeticSlot>(slotStr, out var slot)) return;
+        await DeferAsync();
+        await RedrawAsync(new CosmeticView(CosmeticTab.Wardrobe, slot), null);
+    }
+
+    // The screen's one select. In the wardrobe a pick is worn at once (« Aucun » takes the slot off);
+    // in the shop and the recipes it is only tried on.
+    [ComponentInteraction("cosm:pick:*:*", ignoreGroupNames: true)]
+    public async Task OnPickAsync(string tabStr, string weekStr, string[] selected)
+    {
+        if (!Enum.TryParse<CosmeticTab>(tabStr, out var tab)) return;
+        var value = selected.FirstOrDefault() ?? "";
         var now = DateTimeOffset.UtcNow;
-        var key = selected.FirstOrDefault() ?? "";
+        await DeferAsync();
+
+        switch (tab)
+        {
+            case CosmeticTab.Wardrobe:
+            {
+                var off = value.StartsWith(CosmeticCards.NonePrefix, StringComparison.Ordinal);
+                var cosmetic = off ? null : CosmeticCatalog.ByKey(value);
+                var slot = CosmeticSlot.Theme;
+                if (off ? !Enum.TryParse(value[CosmeticCards.NonePrefix.Length..], out slot) : cosmetic is null)
+                {
+                    await RedrawAsync(new CosmeticView(tab), PlynlingText.UnknownItem);
+                    return;
+                }
+                if (cosmetic is not null) slot = cosmetic.Slot;
+                var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, slot, cosmetic?.Key, now);
+                var notice = outcome != CosmeticOutcome.Done ? CosmeticCards.Notice(outcome, cosmetic)
+                    : cosmetic is null ? $"{CosmeticCatalog.SlotLabel(slot)} retiré."
+                    : WornNotice(plynling!.Name, cosmetic);
+                await RedrawAsync(new CosmeticView(tab, slot), notice);
+                return;
+            }
+            case CosmeticTab.Shop when !int.TryParse(weekStr, out var week) || week != CosmeticCatalog.WeekKey(now):
+                await RedrawAsync(new CosmeticView(tab), CosmeticCards.Notice(CosmeticOutcome.NotInShop, null));
+                return;
+            default:
+                await RedrawAsync(new CosmeticView(tab, Picked: value), null);
+                return;
+        }
+    }
+
+    [ComponentInteraction("cosm:buy:*:*", ignoreGroupNames: true)]
+    public Task OnBuyAsync(string weekStr, string key) => BuyAsync(weekStr, key, wear: false);
+
+    [ComponentInteraction("cosm:buyw:*:*", ignoreGroupNames: true)]
+    public Task OnBuyWearAsync(string weekStr, string key) => BuyAsync(weekStr, key, wear: true);
+
+    private async Task BuyAsync(string weekStr, string key, bool wear)
+    {
+        await DeferAsync();
+        var now = DateTimeOffset.UtcNow;
         var week = int.TryParse(weekStr, out var w) ? w : 0;
-        var (outcome, _) = await _cosmetics.BuyAsync(Context.Guild.Id, Context.User.Id, key, week, now);
+        var result = await _cosmetics.BuyAsync(Context.Guild.Id, Context.User.Id, key, week, now, wear);
         var cosmetic = CosmeticCatalog.ByKey(key);
-        var (held, balance) = await HeldAsync();
-        var bought = outcome == CosmeticOutcome.Done && cosmetic is not null;
-        var (embed, components) = CosmeticCards.BuildShop(now, InventoryModule.Owned(held), balance,
-            bought ? null : CosmeticCards.Notice(outcome, cosmetic, cosmetic?.Price ?? 0));
-        await RedrawAsync(embed, components);
+        var bought = result.Outcome == CosmeticOutcome.Done && cosmetic is not null;
+        // A purchase that went through redraws clean (its receipt follows); a « …et porter » whose
+        // Plynling is gone says so on the card.
+        var notice = bought && (!wear || result.Worn) ? null
+            : CosmeticCards.Notice(result.Outcome, cosmetic, cosmetic?.Price ?? 0, wear, result.Worn);
+        await RedrawAsync(new CosmeticView(CosmeticTab.Shop, Picked: key), notice);
         if (!bought) return;
 
         // Like /inventory shop: a purchase that went through gets its own ephemeral receipt, which the
-        // next pick doesn't erase. A failed receipt is logged and dropped — the purchase stands.
+        // next click doesn't erase. A failed receipt is logged and dropped — the purchase stands.
         try
         {
-            await FollowupAsync(ShopCards.Receipt(CosmeticCards.Bought(cosmetic!, balance)), ephemeral: true,
+            await FollowupAsync(ShopCards.Receipt(CosmeticCards.Bought(cosmetic!, result.Balance, result.Worn)), ephemeral: true,
                 allowedMentions: AllowedMentions.None);
         }
         catch (Exception ex)
@@ -55,49 +115,52 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         }
     }
 
-    [ComponentInteraction("cos:craft", ignoreGroupNames: true)]
-    public async Task OnCraftAsync(string[] selected)
+    [ComponentInteraction("cosm:make:*", ignoreGroupNames: true)]
+    public Task OnMakeAsync(string key) => MakeAsync(key, wear: false);
+
+    [ComponentInteraction("cosm:makew:*", ignoreGroupNames: true)]
+    public Task OnMakeWearAsync(string key) => MakeAsync(key, wear: true);
+
+    // A craft keeps its notice on the card: it is not a purchase, so no receipt.
+    private async Task MakeAsync(string key, bool wear)
     {
-        var key = selected.FirstOrDefault() ?? "";
-        var (outcome, _) = await _cosmetics.CraftAsync(Context.Guild.Id, Context.User.Id, key, DateTimeOffset.UtcNow);
+        await DeferAsync();
+        var result = await _cosmetics.CraftAsync(Context.Guild.Id, Context.User.Id, key, DateTimeOffset.UtcNow, wear);
         var cosmetic = CosmeticCatalog.ByKey(key);
-        var (held, balance) = await HeldAsync();
-        var (embed, components) = CosmeticCards.BuildCraft(held, InventoryModule.Owned(held), balance,
-            CosmeticCards.Notice(outcome, cosmetic, cosmetic?.Price ?? 0));
-        await RedrawAsync(embed, components);
+        await RedrawAsync(new CosmeticView(CosmeticTab.Craft, Picked: key),
+            CosmeticCards.Notice(result.Outcome, cosmetic, cosmetic?.Price ?? 0, wear, result.Worn));
     }
 
-    // One select per slot; « Aucun » takes the slot off.
-    [ComponentInteraction("cos:wear:*", ignoreGroupNames: true)]
-    public async Task OnWearAsync(string slotStr, string[] selected)
+    // « Porter » on an owned item in the shop or the recipes: worn, and the item view stays.
+    [ComponentInteraction("cosm:wear:*:*", ignoreGroupNames: true)]
+    public async Task OnWearAsync(string tabStr, string key)
     {
-        var now = DateTimeOffset.UtcNow;
-        if (!Enum.TryParse<CosmeticSlot>(slotStr, out var slot)) return;
-        var value = selected.FirstOrDefault();
-        var key = value is null or CosmeticCards.NoneValue ? null : value;
-        var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, slot, key, now);
-        if (plynling is null)
+        if (!Enum.TryParse<CosmeticTab>(tabStr, out var tab)) return;
+        await DeferAsync();
+        if (CosmeticCatalog.ByKey(key) is not { } cosmetic)
         {
-            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+            await RedrawAsync(new CosmeticView(tab), PlynlingText.UnknownItem);
             return;
         }
-        var notice = outcome == CosmeticOutcome.Done
-            ? (key is null ? $"{CosmeticCatalog.SlotLabel(slot)} retiré." : $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(plynling.Name)} porte maintenant ça !")
-            : CosmeticCards.Notice(outcome, CosmeticCatalog.ByKey(key));
-        var owned = await _cosmetics.OwnedAsync(Context.Guild.Id, Context.User.Id);
-        var (embed, components) = CosmeticCards.BuildWardrobe(plynling, owned, notice);
-        await RedrawAsync(embed, components);
+        var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, cosmetic.Slot, key, DateTimeOffset.UtcNow);
+        var notice = outcome == CosmeticOutcome.Done ? WornNotice(plynling!.Name, cosmetic) : CosmeticCards.Notice(outcome, cosmetic);
+        await RedrawAsync(new CosmeticView(tab, Picked: key), notice);
     }
 
-    private async Task<(Dictionary<string, int> Held, long Balance)> HeldAsync() =>
-        ((await _inventory.GetAllAsync(Context.Guild.Id, Context.User.Id)).ToDictionary(i => i.Key, i => i.Quantity),
-         await _inventory.BalanceAsync(Context.Guild.Id, Context.User.Id));
+    private static string WornNotice(string name, CosmeticInfo c) =>
+        $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(name)} porte maintenant {c.Emoji} {CosmeticCatalog.ShortName(c)} !";
 
-    private Task RedrawAsync(Embed embed, MessageComponent components) =>
-        ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+    // Re-reads everything, so the screen always shows what is true after the click.
+    private async Task RedrawAsync(CosmeticView view, string? notice)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
+        var card = CosmeticCards.Build(view, data, now, notice);
+        await ModifyOriginalResponseAsync(m =>
         {
-            m.Embed = embed;
-            m.Components = components;
+            m.Components = card;
+            m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
+    }
 }
