@@ -199,6 +199,8 @@ public static class StoryValidator
                 foreach (var e in outcome.Effects.Where(e => e.Kind is EffectKind.Couple or EffectKind.Heartbreak && !scene.Handover))
                     error(e.Pos, $"[{e.Kind.ToString().ToLowerInvariant()}]: only in a handover scene (the other owner's answer)");
                 if (WorstCase(Join(outcome.Prose)).Length > ProseCap) error(outcome.Pos, $"outcome prose over {ProseCap} characters at worst");
+                if (outcome.Face is { B: not null } && !hasOther)
+                    error(outcome.Pos, "[… B:…]: the face tag names the other Plynling, but the arc has no 'other'");
                 foreach (var e in outcome.Effects.Where(e => e.Kind is EffectKind.Epithet or EffectKind.Keepsake or EffectKind.Trait or EffectKind.Unlock))
                     error(e.Pos, isShort
                         ? $"[{e.Kind.ToString().ToLowerInvariant()} {e.Key}]: a short event gives no mark (epithet, keepsake, trait, unlock)"

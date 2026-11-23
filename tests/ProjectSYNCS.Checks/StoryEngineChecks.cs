@@ -586,7 +586,7 @@ public static class StoryEngineChecks
         }
         var text = File.ReadAllText(Path.Combine(Root, "tests", "ProjectSYNCS.Checks", "Stories", "test_short.story")).Replace("\r\n", "\n");
         File.WriteAllText(Path.Combine(broken, "bad.story"), text.Replace("[cailloux 10] [end]", "[frobnicate 10] [end]")
-            .Replace("    Le caillou tombe dans l'herbe.\n    [end]", "    Le caillou tombe dans l'herbe.\n    [-> nowhere]"));
+            .Replace("    [sad] Le caillou tombe dans l'herbe.\n    [end]", "    [sad] Le caillou tombe dans l'herbe.\n    [-> nowhere]"));
         File.Copy(Path.Combine(Root, "tests", "ProjectSYNCS.Checks", "Stories", "test_everything.story"), Path.Combine(good, "test_everything.story"));
         try
         {

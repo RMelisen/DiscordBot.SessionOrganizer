@@ -5585,5 +5585,8 @@ StoryEngineChecks.Run(Fail);
 // 55. The 50 old C# events, frozen before they moved to story files: OldEventChecks.cs.
 OldEventChecks.Run(Fail);
 
+// 59. The pictures on an event's story (faces, face tags, the stage then): EventFaceChecks.cs.
+EventFaceChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

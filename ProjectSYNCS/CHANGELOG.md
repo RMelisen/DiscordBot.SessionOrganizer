@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.3.0 — 2026-11-23
+
+- Plynling event stories now end on faces that match the outcome: happy, sad or angry, instead of always calm.
+- Event stories show each Plynling at the age it was when the event happened, even when paged back much later.
+- The Plynling personality card's « État » list shows what each modifier does next to when it expires.
+
 ## 8.2.10 — 2026-11-23
 
 - Eighteen new Plynling events that can follow a visit: one for each kind of bond (couples, enemies, rivals, friends, best friends, acquaintances) and twelve that fit any pair.

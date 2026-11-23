@@ -65,7 +65,10 @@ public sealed record StoryParagraph(IReadOnlyList<StoryLine> Lines);
 public sealed record StoryRoll(PlynlingStat Stat, int Difficulty, bool Vs = false);
 
 // Next is the scene or ending it leads to; End is [end] (the event stops here, Next is null). Both null/false only on a parse error.
-public sealed record StoryOutcome(IReadOnlyList<StoryParagraph> Prose, IReadOnlyList<StoryEffect> Effects, string? Next, bool End, StoryPos Pos);
+// Face: a face tag opening an option outcome's first line ([sad] for {A}, [A:… B:…] for each), which
+// overrides the faces its effects would give on the story's last page (PlynlingEventFaces).
+public sealed record StoryOutcome(IReadOnlyList<StoryParagraph> Prose, IReadOnlyList<StoryEffect> Effects, string? Next, bool End, StoryPos Pos,
+    FaceTag? Face = null);
 
 // A plain option has Outcome; an option with a Roll has Success and Failure instead. Stance ([accept],
 // [refuse]) leans a handover scene decided alone.

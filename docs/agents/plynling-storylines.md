@@ -228,6 +228,19 @@ flags exactly and count every other condition as possible.
   (by a click or alone). They differ only for a locked story option: shown, not visible. A click on a stale card for an
   option no longer visible answers « Ce choix n'est plus possible. » and applies nothing. Never use `Shown` to decide what an option
   may do, nor `Visible` to decide what to print.
+- **The pictures on the public story** (`PlynlingEventCards.BuildStory`): both Plynlings calm on every page but the
+  last, the outcome, which shows the faces it left them (`PlynlingEventFaces`). {A}: happy when only good came of it
+  (stress relief, a pleasant modifier, a need lifted, cailloux, an item, a mark, affinity gained, a closer bond, a
+  couple), sad when only bad (a failed roll, stress gained, an unpleasant modifier, affinity lost, a cooler bond, a couple
+  too late, a keepsake that hurts) — angry instead when the bond is hostile, which it knows only if the event moved it —
+  calm when mixed or neither; a lesson alone is neither. {B}: the bond and affinity moved, a heartbreak. Only what
+  applied counts (alone, a negative modifier did not). **A face tag** opening an option outcome's first line overrides
+  it: `[happy]`, `[content]`, `[sad]`, `[angry]` for {A}, `[A:… B:…]` for each (`StoryOutcome.Face`); before any
+  `[if …]` on that line, never in a scene's prose or an ending, and a `B:` face needs an `other:`. Use one where the
+  effects would read wrong (a tearful happy ending, a proud failure), not everywhere. The checks print the split.
+- **The stage shown** is the one each Plynling had when the event resolved: the instance stores both ages
+  (`SelfAgeSeconds`, `TargetAgeSeconds`, from 8.3.0); older rows estimate it (`PlynlingLife.AgeAt`, which can come
+  out younger if a freeze came and went since). The private choice card shows the Plynling as it is now.
 - The card heading shows `Name, la Title` (the latest epithet, article lower-cased); « Personnalité » has an
   « Histoire » field (titles, keepsakes, memories prefixed by their holder). An ending's title, keepsake or swap shows
   as a last line of the outcome, only when it applied.

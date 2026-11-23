@@ -22,5 +22,5 @@ pace: now
     Le caillou ricoche trois fois.
     [end]
   ? failure
-    Le caillou tombe dans l'herbe.
+    [sad] Le caillou tombe dans l'herbe.
     [end]

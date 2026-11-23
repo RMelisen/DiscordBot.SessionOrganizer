@@ -7,13 +7,21 @@ public sealed record EventCast(string Name, PlynlingGender Gender, PlynlingSpeci
 {
     public static EventCast Of(Plynling p, DateTimeOffset now) =>
         new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species, PlynlingLife.Stage(p, now), p.OwnerId);
+
+    // As it was when its event resolved: the stored age, or an estimate for older rows.
+    public static EventCast Then(Plynling p, long? ageSeconds, DateTimeOffset resolvedAt, DateTimeOffset now) =>
+        new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species,
+            PlynlingLife.StageAt(ageSeconds is { } s ? TimeSpan.FromSeconds(s) : PlynlingLife.AgeAt(p, resolvedAt, now)), p.OwnerId);
 }
 
 // Where the answer to an ask stands: still awaited, given, or lost for good (cancelled — the other
 // one died or was abandoned — or never asked, because the other one was frozen or gone by then).
 public enum ReplyState { Waiting, Answered, Lost }
 
-public sealed record EventStory(int InstanceId, int PlynlingId, string Heading, IReadOnlyList<string> Pages, EventCast Self, EventCast? Target, uint Accent);
+// SelfFace / TargetFace: the two faces on the last page, the outcome (PlynlingEventFaces); the other
+// pages show both calm.
+public sealed record EventStory(int InstanceId, int PlynlingId, string Heading, IReadOnlyList<string> Pages, EventCast Self, EventCast? Target, uint Accent,
+    PlynlingMood SelfFace = PlynlingMood.Content, PlynlingMood TargetFace = PlynlingMood.Content);
 
 /// <summary>
 /// An event told as pages — the scene, the choice, the challenge if any, the outcome — built only
@@ -51,7 +59,8 @@ public static class PlynlingEventStory
             pages.Add($"🎲 **{PlynlingStats.Name(c.Stat)}**{(c.VsTarget && target is not null ? $" contre **{target.Name}**" : "")} — {chance} % de chances… " +
                       (inst.ChallengeSucceeded == true ? "**réussi !**" : "**raté.**"));
         pages.Add(OutcomeText(inst, self, target, reply, ctx));
-        return new EventStory(inst.Id, inst.PlynlingId, $"📜 {def.Title}", pages, self, target, accent);
+        var (selfFace, targetFace) = PlynlingEventFaces.Outcome(inst, def, option);
+        return new EventStory(inst.Id, inst.PlynlingId, $"📜 {def.Title}", pages, self, target, accent, selfFace, targetFace);
     }
 
     /// <summary>
