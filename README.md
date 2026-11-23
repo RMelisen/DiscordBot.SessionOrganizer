@@ -571,8 +571,9 @@ looks after her.
   the feeder's pantry first — one of that food for their own Plynling, two for someone
   else's — and only charges cailloux when there isn't enough.
 - **Packs:** the shop also sells **sachets de collection**, 150 cailloux for three random
-  collectibles, opened on the spot (one or five at a time, no discount). A pack can complete a set,
-  which pays the set at once.
+  collectibles, opened on the spot (one or five at a time, 10 % off the five). A pack can complete a
+  set, which pays the set at once. Every purchase that goes through (here and in the cosmetics
+  shop) is confirmed in a private message under the card.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).

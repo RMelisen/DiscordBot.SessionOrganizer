@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
@@ -14,12 +15,15 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly CosmeticService _cosmetics;
     private readonly InventoryService _inventory;
     private readonly PlynlingService _plynlings;
+    private readonly ILogger<CosmeticComponentHandler> _logger;
 
-    public CosmeticComponentHandler(CosmeticService cosmetics, InventoryService inventory, PlynlingService plynlings)
+    public CosmeticComponentHandler(CosmeticService cosmetics, InventoryService inventory, PlynlingService plynlings,
+        ILogger<CosmeticComponentHandler> logger)
     {
         _cosmetics = cosmetics;
         _inventory = inventory;
         _plynlings = plynlings;
+        _logger = logger;
     }
 
     // The shop's « Acheter… », carrying the week its message was drawn from.
@@ -32,9 +36,23 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         var (outcome, _) = await _cosmetics.BuyAsync(Context.Guild.Id, Context.User.Id, key, week, now);
         var cosmetic = CosmeticCatalog.ByKey(key);
         var (held, balance) = await HeldAsync();
+        var bought = outcome == CosmeticOutcome.Done && cosmetic is not null;
         var (embed, components) = CosmeticCards.BuildShop(now, InventoryModule.Owned(held), balance,
-            CosmeticCards.Notice(outcome, cosmetic, cosmetic?.Price ?? 0));
+            bought ? null : CosmeticCards.Notice(outcome, cosmetic, cosmetic?.Price ?? 0));
         await RedrawAsync(embed, components);
+        if (!bought) return;
+
+        // Like /inventory shop: a purchase that went through gets its own ephemeral receipt, which the
+        // next pick doesn't erase. A failed receipt is logged and dropped — the purchase stands.
+        try
+        {
+            await FollowupAsync(ShopCards.Receipt(CosmeticCards.Bought(cosmetic!, balance)), ephemeral: true,
+                allowedMentions: AllowedMentions.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cosmetic receipt failed for {UserId}", Context.User.Id);
+        }
     }
 
     [ComponentInteraction("cos:craft", ignoreGroupNames: true)]

@@ -186,7 +186,7 @@ public class InventoryService
     /// <summary>
     /// A collection pack from /inventory shop, opened at once: the cailloux and every find land in one
     /// save, and a find that completes a set pays it in that same save (GrantAsync). Rolled inside the
-    /// work, so a retry simply rolls again. No bulk discount.
+    /// work, so a retry simply rolls again. Priced by <see cref="ItemCatalog.PackCost"/> (−10 % from 5).
     /// </summary>
     public Task<PackResult> OpenPackAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now, Random rng) =>
         EconomySave.RetryAsync(_db_context, () => OpenPackOnceAsync(guildId, userId, quantity, now, rng));
@@ -194,7 +194,7 @@ public class InventoryService
     private async Task<PackResult> OpenPackOnceAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now, Random rng)
     {
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
-        var price = ItemCatalog.PackPrice * quantity;
+        var price = ItemCatalog.PackCost(quantity);
         if (!ItemCatalog.PackQuantities.Contains(quantity)) return new PackResult(PackOutcome.BadQuantity, 0, wallet.Balance, Array.Empty<ItemFind>());
         if (wallet.Balance < price) return new PackResult(PackOutcome.TooPoor, price, wallet.Balance, Array.Empty<ItemFind>());
 

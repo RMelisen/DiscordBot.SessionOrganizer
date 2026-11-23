@@ -128,6 +128,11 @@ public static class CosmeticCards
         return (embed.Build(), components.Build());
     }
 
+    // A bought cosmetic's receipt line, under ShopCards.Receipt's heading.
+    public static string Bought(CosmeticInfo c, long balance) =>
+        $"{c.Emoji} **{CosmeticCatalog.Label(c)}** est à toi, pour {PebbleEconomy.Cailloux(c.Price)}. " +
+        $"Il te reste {PebbleEconomy.Cailloux(balance)}.\n-# À porter depuis `/plynling wardrobe`.";
+
     // The one-line notice after a buy, a craft or a change of clothes.
     public static string Notice(CosmeticOutcome outcome, CosmeticInfo? c, long price = 0) => outcome switch
     {

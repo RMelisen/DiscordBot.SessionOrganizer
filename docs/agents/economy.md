@@ -198,20 +198,22 @@ wallet in that same save. They check `Local` first, so two adds in one save don'
 **`/inventory shop` sells `ItemCatalog.Shop` and nothing else**: the four foods at their menu
 price, then the care items (Savon 20, Médicament 30), all at `BulkPrice` (−10 % from 5). It is one
 ephemeral card (`ShopCards`, static and measured by the checks project): `shop:pick` (the select)
-redraws it with ×1/×5/×10 buttons `shop:buy:{key}:{qty}`, disabled when unaffordable, and every
-purchase redraws it with a notice. `InventoryService.BuyAsync(key, qty)` refuses any key not in
+redraws it with ×1/×5/×10 buttons `shop:buy:{key}:{qty}`, disabled when unaffordable. A purchase
+that goes through redraws the card clean and confirms in its own ephemeral follow-up
+(`ShopCards.Receipt`, owner's call: the redrawn card alone went unnoticed, and the next click erased
+it); a refusal (too poor, unknown) is a notice on the card. Not a confirmation *before* buying. `InventoryService.BuyAsync(key, qty)` refuses any key not in
 `Shop`, so a forged custom-id can't buy a collectible. A new buyable item is a line in `Shop`, not
 a new subcommand.
 
 **Collection packs** are the shop card's other line: `ItemCatalog.PackKey` is the select's value
 and **never an item** (nothing called a pack is ever held). Picking it shows ×1/×5 buttons
-`shop:pack:{qty}` (their own verb); `InventoryService.OpenPackAsync` takes `PackPrice` × qty (no
-bulk discount) and grants `PackSize` (3) `DrawCollectible` finds each through `GrantAsync`, in one
+`shop:pack:{qty}` (their own verb); `InventoryService.OpenPackAsync` takes `PackCost(qty)` (the
+shop's `BulkPrice`, so ×5 is −10 %) and grants `PackSize` (3) `DrawCollectible` finds each through `GrantAsync`, in one
 save, so a pack that completes a set pays it at once. Rolled inside the work, so a retry rolls
 again. **`PackPrice` (150) is set by the checks' simulation, not by feel**: a find sells for ~4.5,
 but set rewards (100 to 1 000, paid again on every turn-in) make it worth more; section 52 plays
-5 000 packs with the best possible player and fails if a pack returns more than 70 % of its price
-(today ~14 %). Re-run it after changing a set's reward, the rarity split or the catalog.
+5 000 packs with the best possible player and fails if a pack returns more than 70 % of its
+discounted price by five (135). Re-run it after changing a set's reward, the rarity split or the catalog.
 
 **Feeding serves from the pantry first** — one of that food for your own Plynling, two for someone
 else's (the pantry's version of the double price) — and charges cailloux only when there isn't
@@ -333,4 +335,6 @@ across restarts), then the season's items. The week is the Paris ISO week (`Week
 turning Monday 00:00 Paris. The buy select carries its week (`cos:buy:{week}`) and `BuyAsync` refuses
 any other week, so a shop left open over the weekend can't buy what rotated out. The three screens are
 `CosmeticCards` (static, measurable), ephemeral, redrawn in place by `CosmeticComponentHandler` with a
-one-line notice. The wardrobe has one select per slot, `cos:wear:{slot}`, each led by « Aucun ».
+one-line notice — except a purchase that goes through, which redraws clean and gets the same
+ephemeral receipt as `/inventory shop` (`ShopCards.Receipt` around `CosmeticCards.Bought`). A craft
+keeps its notice: it is not a purchase. The wardrobe has one select per slot, `cos:wear:{slot}`, each led by « Aucun ».

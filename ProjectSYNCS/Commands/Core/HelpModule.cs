@@ -172,7 +172,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +
                 "de chaque objet) contre sa récompense et un badge : Bronze, Argent, Or, Platine, Diamant.\n" +
                 "**`/inventory shop`** — Nourriture, savon et médicaments pour ton garde-manger (−10 % dès 5), et des " +
-                "**sachets** de 3 objets de collection au hasard, ouverts tout de suite.\n" +
+                "**sachets** de 3 objets de collection au hasard, ouverts tout de suite (−10 % par 5).\n" +
                 "**`/inventory cosmetics`** — Des cosmétiques pour ton Plynling, nouvelle sélection chaque lundi.\n" +
                 "**`/inventory craft`** — Fabrique des cosmétiques avec tes objets de collection.\n" +
                 "**`/inventory give`** — Offre un objet à quelqu'un.\n" +

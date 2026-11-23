@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.3 — 2026-11-23
+
+- `/inventory shop` and `/inventory cosmetics` now confirm every purchase that goes through in its own private message, so the receipt (and a pack's finds) stays visible after the next click.
+- Collection packs bought five at a time are 10 % off, like the shop's other items.
+
 ## 8.2.2 — 2026-11-23
 
 - Under SYNCS's morning hello, a question, a bit of news or a one-word reply now gets her usual answer to it instead of a generic line about the hello.

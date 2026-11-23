@@ -225,9 +225,12 @@ public static class EconomySinkChecks
 
     private static void PackPrice()
     {
+        // Against the cheapest a pack can be bought: by five, with the bulk discount.
         var back = PackReturn(5000);
-        Console.WriteLine($"pack: {ItemCatalog.PackPrice} cailloux, returns {back:0.0} at best ({back / ItemCatalog.PackPrice:P0})");
-        Expect(back <= 0.7 * ItemCatalog.PackPrice, $"a pack returns {back:0.0}, more than 70 % of its {ItemCatalog.PackPrice}");
+        var unit = ItemCatalog.PackCost(5) / 5.0;
+        Console.WriteLine($"pack: {unit:0.#} cailloux by five, returns {back:0.0} at best ({back / unit:P0})");
+        Expect(back <= 0.7 * unit, $"a pack returns {back:0.0}, more than 70 % of its {unit:0.#}");
+        Expect(ItemCatalog.PackCost(1) == ItemCatalog.PackPrice && ItemCatalog.PackCost(5) == 675, $"pack costs: {ItemCatalog.PackCost(1)}, {ItemCatalog.PackCost(5)}");
     }
 
     private static async Task PacksAsync()
@@ -253,16 +256,28 @@ public static class EconomySinkChecks
             Expect(ProjectSYNCS.Commands.ShopCards.PackNotice(r).Contains(r.Finds[0].Item.Name), "the pack notice does not list its finds");
         }
 
+        // Five packs at once: the discounted price, and a receipt that fits a message.
         using (var db = new Db())
         {
-            db.Wallet(Me, ItemCatalog.PackPrice * 5 - 1);
+            db.Wallet(Me, 1000);
             PackResult r;
             using (var c = db.New()) r = await new InventoryService(c, null!).OpenPackAsync(G, Me, 5, now, new Random(7));
-            Expect(r.Outcome == PackOutcome.TooPoor && r.Price == ItemCatalog.PackPrice * 5 && r.Finds.Count == 0, $"pack ×5 too poor: {r.Outcome} {r.Price}");
+            Expect(r.Outcome == PackOutcome.Opened && r.Price == 675 && r.Balance == 1000 - 675 + r.Finds.SelectMany(f => f.Completed).Sum(s => s.Reward),
+                $"pack ×5: {r.Outcome}, price {r.Price}, balance {r.Balance}");
+            var receipt = ProjectSYNCS.Commands.ShopCards.Receipt(ProjectSYNCS.Commands.ShopCards.PackNotice(r));
+            Expect(receipt.Length <= 2000, $"pack ×5 receipt is {receipt.Length} characters");
+        }
+
+        using (var db = new Db())
+        {
+            db.Wallet(Me, ItemCatalog.PackCost(5) - 1);
+            PackResult r;
+            using (var c = db.New()) r = await new InventoryService(c, null!).OpenPackAsync(G, Me, 5, now, new Random(7));
+            Expect(r.Outcome == PackOutcome.TooPoor && r.Price == ItemCatalog.PackCost(5) && r.Finds.Count == 0, $"pack ×5 too poor: {r.Outcome} {r.Price}");
             using (var c = db.New()) r = await new InventoryService(c, null!).OpenPackAsync(G, Me, 2, now, new Random(7));
             Expect(r.Outcome == PackOutcome.BadQuantity, "pack ×2: " + r.Outcome);
             using var c2 = db.New();
-            Expect(!c2.InventoryItems.Any() && c2.PebbleWallets.Single(w => w.UserId == Me).Balance == ItemCatalog.PackPrice * 5 - 1, "a refused pack moved something");
+            Expect(!c2.InventoryItems.Any() && c2.PebbleWallets.Single(w => w.UserId == Me).Balance == ItemCatalog.PackCost(5) - 1, "a refused pack moved something");
             Expect(ProjectSYNCS.Commands.ShopCards.PackNotice(new PackResult(PackOutcome.TooPoor, 300, 299, Array.Empty<ItemFind>())).Contains("299"), "too poor does not name the balance");
         }
 

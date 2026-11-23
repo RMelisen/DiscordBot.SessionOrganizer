@@ -50,10 +50,13 @@ public static class ItemCatalog
     // /inventory shop's collection packs: PackSize collectibles from DrawCollectible, opened at once.
     // PackKey is the shop select's value, never an item: nothing called a pack is ever held. The price
     // comes from the checks' simulation (section 52): set rewards make a find worth more than it sells for.
+    // Packs take the shop's bulk discount like every other line (PackCost).
     public const string PackKey = "pack.collection";
     public const int PackSize = 3;
     public const long PackPrice = 150;
     public static readonly int[] PackQuantities = { 1, 5 };
+
+    public static long PackCost(int quantity) => BulkPrice(PackPrice, quantity);
 
     public static readonly IReadOnlyList<CollectionSet> Sets = new[]
     {
@@ -128,7 +131,7 @@ public static class ItemCatalog
         _ => "toute l'année",
     };
 
-    // 10 % off from 5, on every shop line.
+    // 10 % off from 5, on every shop line, packs included.
     public static long BulkPrice(long unit, int quantity)
     {
         var full = unit * quantity;

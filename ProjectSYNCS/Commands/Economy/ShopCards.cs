@@ -11,6 +11,8 @@ namespace ProjectSYNCS.Commands;
 // Verbs: `shop:pick` (the select), `shop:buy:{key}:{quantity}` — the quantities differ, so the
 // three buttons can never collide — and `shop:pack:{quantity}` for the collection packs, which are
 // opened at once rather than stored (ItemCatalog.PackKey is the select's value, never an item).
+// A purchase that went through is also confirmed in its own ephemeral message (Receipt), which
+// stays in the channel when the card is redrawn by the next click; refusals stay on the card.
 public static class ShopCards
 {
     public static readonly int[] Quantities = { 1, 5, 10 };
@@ -36,7 +38,7 @@ public static class ShopCards
             .AddField("Soins", string.Join("\n", ItemCatalog.Shop.Where(s => s.Item.Kind == ItemKind.Care).Select(Line)))
             .AddField("Sachets",
                 $"{(picked == ItemCatalog.PackKey ? "▸ " : "")}{PackEmoji} **{PackName}** · {PebbleEconomy.Cailloux(ItemCatalog.PackPrice)}\n" +
-                $"-# {PackEffect}, sans remise")
+                $"-# {PackEffect}, −10 % dès 5")
             .WithFooter("La nourriture et les soins vont dans ton garde-manger ; les sachets s'ouvrent tout de suite.");
 
         var menu = new SelectMenuBuilder()
@@ -52,8 +54,8 @@ public static class ShopCards
         if (picked == ItemCatalog.PackKey)
             foreach (var quantity in ItemCatalog.PackQuantities)
             {
-                var price = ItemCatalog.PackPrice * quantity;
-                components.WithButton($"×{quantity} — {PebbleEconomy.Cailloux(price)}",
+                var price = ItemCatalog.PackCost(quantity);
+                components.WithButton($"×{quantity} — {PebbleEconomy.Cailloux(price)}{(quantity >= 5 ? " (−10 %)" : "")}",
                     $"shop:pack:{quantity}", ButtonStyle.Success, disabled: price > balance, row: 1);
             }
         else if (picked is not null && ItemCatalog.ShopUnitPrice(picked) is { } unit)
@@ -85,6 +87,10 @@ public static class ShopCards
         _ => PlynlingText.UnknownItem,
     };
 
+    // The ephemeral message confirming a purchase that went through: Notice or PackNotice, under a
+    // heading. Message content holds 2 000; five packs' notice stays well under it (checked).
+    public static string Receipt(string notice) => "✅ **Achat confirmé !**\n" + notice;
+
     // What opening packs found, the same item gathered as « 2 × », then each set a find completed.
     // In the embed's description, which holds 4 096: five packs are 15 finds at most.
     public static string PackNotice(PackResult result)
@@ -100,7 +106,8 @@ public static class ShopCards
         var sets = result.Finds.SelectMany(f => f.Completed).Select(set =>
             $"\nTu as complété la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)} · " +
             $"badge {CollectionTiers.Badge(set, CollectionTier.Bronze)} **Bronze**");
-        return $"{PackEmoji} Tu ouvres {(packs > 1 ? $"{packs} sachets" : "un sachet")} ({PebbleEconomy.Cailloux(result.Price)}) : " +
+        return $"{PackEmoji} Tu ouvres {(packs > 1 ? $"{packs} sachets" : "un sachet")} ({PebbleEconomy.Cailloux(result.Price)}" +
+               $"{(packs >= 5 ? ", −10 %" : "")}) : " +
                string.Join(", ", found) + "." + string.Concat(sets) +
                $"\n-# Il te reste {PebbleEconomy.Cailloux(result.Balance)}.";
     }
