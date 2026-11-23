@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.10 — 2026-11-23
+
+- Eighteen new Plynling events that can follow a visit: one for each kind of bond (couples, enemies, rivals, friends, best friends, acquaintances) and twelve that fit any pair.
+- Each of these waits a week before it can come back for the same Plynling.
+
 ## 8.2.9 — 2026-11-23
 
 - Eight more Plynling visit scenes: one only rivals can draw, a dawn scene, a night walk to a secret spot, a scene of their own for teens and one for adults, and three everyday village scenes.

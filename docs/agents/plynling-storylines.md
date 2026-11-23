@@ -76,7 +76,8 @@ rows: never rename or remove one. Memory, epithet and keepsake keys are global a
 
 - **First scene** = the arc's opener. `trigger: draw` is a `Pulse`; every other trigger is `Triggered`:
   `adoption` on `OnAction.Adopted`, `stage teen|adult` on `BecameTeen|BecameAdult`, `sick` on `FellSick`,
-  `recovered` on `Recovered`, `visit` on `AfterVisit` (the visitor is `{B}`), bare `death` on `Bereaved` (any
+  `recovered` on `Recovered`, `visit` on `AfterVisit` (queued for both the visitor and the host, `{B}` being the other one, so a visit
+  arc never says who went to whose home; each rolls 33 % a day), bare `death` on `Bereaved` (any
   mourner; the one who died is `{B}`), and `break 1|2|3` on no on-action, with `BreakLevel` n (the break
   `QueueBreaksAsync` picks when stress climbs past a level). `visit` and `death` need `other: anyone` and
   take no `other_if:`: the other Plynling comes with the trigger and the engine never filters it, so a bond
@@ -300,6 +301,7 @@ result; a memory only when a later event will plausibly read it. Built on a vill
 | L'arrivée | `Stories/Milestone/arrival.story` | long milestone, triggered by adoption; replaces the C# adoption moment; names the childhood trait with `{T}`; awaiting the owner's review |
 | Wave 1, bébé and ado (30 arcs) | `Stories/Village/*.story` | short drawn events; shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-1-shortlist.md`; bébé and ado retired their old pulses in 7.74.2 (`plynling-events.md`); dev-guild playthrough not done |
 | Wave 2, adulte and ancien (54 arcs) | `Stories/Village/*.story` | short drawn events: 30 `stage: adult, elder` (an ancien also draws the adulte events, owner's rule), 10 adulte only, 10 ancien only, 4 seasonal (`requires: [season …]`); shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-2-shortlist.md`; old adulte/ancien pulses still drawn; dev-guild playthrough not done |
+| After-visit (18 arcs) | `Stories/{Love,Rivalry,Friendship,Personal,Village}/*.story` | short `trigger: visit` arcs with `cooldown: 7d`, beside `forgot`: one per bond through `requires: [relation …]` (lovers, enemies, rivals, friends, bestfriends, acquaintances) and 12 for any bond; sheet `docs/plynling-visit-followups-sheet.md`, approved 2026-11-23; dev-guild playthrough not done |
 | The old C# events (50 keys, 28 arcs) | `Stories/{Friendship,Love,Rivalry,Milestone,Personal,Hardship}/*.story` | moved in 8.0.0, same texts, options and effects, each scene with its `was:`: the asks and their handover answers (campfire, secret, befriend, pact, declare, letters, rival, mend), the moments (teen, adult, forgot, sick, recovered, bereaved), the bébé dream and the ado apprenticeship (echoes in adulte), and the 12 breaks (`Hardship/break_*`); dev-guild playthrough not done |
 
 ## Visit files
