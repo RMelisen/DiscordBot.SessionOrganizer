@@ -169,7 +169,8 @@ namespace ProjectSYNCS.Services;
 //     WorkLines ................ /work
 //     WorkGraceLines ........... on top of a /work paid a few minutes early (the once-a-day grace)
 //     WorkReadyLines ........... the DM when /work is ready again (WorkReminderService)
-//     DailyLines ............... on top of a /daily claim
+//     DailyLines ............... on top of a /daily claim; Owner…, Tata…, Chouchou… twins
+//                                (DailyPool picks by who claims)
 //     QuizIntroLines ........... on the card of her pop quiz (QuizMasterService)
 //     QuizWinLines · QuizOwnerWinLines ............... someone found it / Papa found it
 //     QuizTimeoutLines ......... nobody found it in an hour

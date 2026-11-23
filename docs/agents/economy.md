@@ -149,7 +149,8 @@ unchanged.
   current one, so a reset takes no tier away.
 - Cailloux log under `earn.daily` (« /daily »).
 - The reply is built once, `EconomyModule.DailyReply`, and shared with `;daily`: public, one of her
-  lines on top (`DailyLines`: said on any day, so none assumes a streak or a reset), then two lines,
+  lines on top (`DailyLines`: said on any day, so none assumes a streak or a reset; Papa, Tata and a
+  chouchou get their twins through `BotResponses.DailyPool`), then two lines,
   « trouvé : » before the item because items carry no grammatical gender. A refusal is private.
   It's a command answer, so silence mode doesn't apply. No reminder, on purpose.
 

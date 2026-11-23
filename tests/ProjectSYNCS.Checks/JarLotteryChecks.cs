@@ -662,7 +662,7 @@ public static class JarLotteryChecks
             $"double daily: {doubled.Amount} vs {plain.Amount}, doubled {doubled.Doubled}");
         Expect(!plain.Doubled, "daily without a jar is doubled");
         Expect(!nextDay.Doubled && nextDay.Amount == plain.Amount, $"daily the next day: doubled {nextDay.Doubled}, {nextDay.Amount}");
-        var (text, _) = EconomyModule.DailyReply(doubled, A, new ResponsePicker());
+        var (text, _) = EconomyModule.DailyReply(doubled, A, false, new ResponsePicker());
         Expect(text.Contains("bocal"), "the doubled /daily reply doesn't name the jar");
     }
 

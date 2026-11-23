@@ -11,11 +11,13 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PebbleService _pebbles;
     private readonly ResponsePicker _picker;
+    private readonly ChouchouBook _chouchous;
 
-    public EconomyModule(PebbleService pebbles, ResponsePicker picker)
+    public EconomyModule(PebbleService pebbles, ResponsePicker picker, ChouchouBook chouchous)
     {
         _pebbles = pebbles;
         _picker = picker;
+        _chouchous = chouchous;
     }
 
     // Public, in her voice: routine actions are public because they happen in a
@@ -53,8 +55,10 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
     public async Task DailyAsync()
     {
         await DeferAsync();
-        var result = await _pebbles.ClaimDailyAsync(Context.Guild.Id, Context.User.Id, DateTimeOffset.UtcNow, Random.Shared);
-        var (text, refused) = DailyReply(result, Context.User.Id, _picker);
+        var now = DateTimeOffset.UtcNow;
+        var result = await _pebbles.ClaimDailyAsync(Context.Guild.Id, Context.User.Id, now, Random.Shared);
+        var chouchou = await _chouchous.IsFavouriteAsync(Context.Guild.Id, Context.User.Id, now);
+        var (text, refused) = DailyReply(result, Context.User.Id, chouchou, _picker);
         if (refused)
         {
             await DeleteOriginalResponseAsync();
@@ -71,14 +75,14 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // What /daily answers, shared with the ;daily shortcut. « trouvé : » rather than an agreed
-    // participle, because items carry no grammatical gender. A claim opens on one of her lines; a
-    // refusal stays bare.
-    public static (string Text, bool Refused) DailyReply(DailyResult result, ulong userId, ResponsePicker picker)
+    // participle, because items carry no grammatical gender. A claim opens on one of her lines (Papa,
+    // Tata and a /bribe chouchou have their own, BotResponses.DailyPool); a refusal stays bare.
+    public static (string Text, bool Refused) DailyReply(DailyResult result, ulong userId, bool chouchou, ResponsePicker picker)
     {
         if (!result.Claimed)
             return ($"Déjà réclamé aujourd'hui. Prochain `/daily` <t:{result.NextClaimAt.ToUnixTimeSeconds()}:R> · série : {DailyStreak.Days(result.Streak)}", true);
 
-        var text = $"{picker.Pick(BotResponses.DailyLines)}\nSérie : {DailyStreak.Days(result.Streak)}\n+{PebbleEconomy.Cailloux(result.Amount)}";
+        var text = $"{picker.Pick(BotResponses.DailyPool(userId, chouchou))}\nSérie : {DailyStreak.Days(result.Streak)}\n+{PebbleEconomy.Cailloux(result.Amount)}";
         if (result.Doubled) text += "\n🫙 Journée double, grâce au bocal !";
         if (result.Find is not { } find) return (text, false);
         return (PlynlingText.FindLines($"{text}  ·  trouvé : {PlynlingText.ItemLabel(find.Item)}", find, userId), false);

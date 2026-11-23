@@ -4481,16 +4481,30 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     var dPicker = new ResponsePicker();
     for (var i = 0; i < 60; i++)
     {
-        var (dText, dRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 12, 62, null, dAt), 1, dPicker);
+        var (dText, dRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 12, 62, null, dAt), 1, false, dPicker);
         var dLines = dText.Split('\n');
         if (dRefused || dLines.Length != 3 || dLines[0].Trim().Length == 0 || dLines[1] != "Série : 12 jours" || dLines[2] != "+62 cailloux")
             Fail($"daily reply: {dText}");
     }
     var dItem = ItemCatalog.All.First(i => i.Kind == ItemKind.Collectible);
     var dAllSets = new ItemFind(dItem, ItemCatalog.Sets.ToList());
-    var (dFound, _) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 365, 100, dAllSets, dAt), ulong.MaxValue, dPicker);
+    var (dFound, _) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 365, 100, dAllSets, dAt), ulong.MaxValue, false, dPicker);
     if (!dFound.Split('\n', 2)[1].StartsWith("Série : 365 jours\n+100 cailloux  ·  trouvé : ") || dFound.Length > 2000) Fail($"daily reply with a find ({dFound.Length})");
-    var (dNo, dNoRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(false, 3, 0, null, dAt), 1, dPicker);
+    var (dNo, dNoRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(false, 3, 0, null, dAt), 1, false, dPicker);
+    // Papa, Tata and a chouchou open on their own lines; Papa and Tata win over a chouchou flag.
+    foreach (var (dWho, dChouchou, dPool) in new (ulong, bool, string)[]
+             {
+                 (AvailabilityService.OwnerId, false, "OwnerDailyLines"), (AvailabilityService.OwnerId, true, "OwnerDailyLines"),
+                 ((ulong)Field("TataId"), true, "TataDailyLines"), (1, true, "ChouchouDailyLines"), (1, false, "DailyLines"),
+             })
+    {
+        var dLines = (string[])Field(dPool);
+        if (dLines.Length < 6) Fail($"daily: {dPool} has {dLines.Length} lines");
+        var (dOwn, _) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 2, 50, null, dAt), dWho, dChouchou, dPicker);
+        if (!dLines.Contains(dOwn.Split('\n')[0])) Fail($"daily: {dWho} (chouchou {dChouchou}) didn't get {dPool}: {dOwn}");
+        if (dPool != "DailyLines" && dLines.Any(l => l.Contains('{') || l.Contains("onjour") || l.Contains("onsoir")))
+            Fail($"daily: {dPool} has a placeholder or a greeting tied to the hour");
+    }
     if (!dNoRefused || !dNo.Contains($"<t:{dAt.ToUnixTimeSeconds()}:R>")) Fail("daily reply: refusal");
     if (PlynlingShortcut.Parse(";daily") != new Shortcut(ShortcutKind.Daily) || PlynlingShortcut.Parse(";pl daily") != new Shortcut(ShortcutKind.Daily)
         || PlynlingShortcut.Parse(";daily x") != new Shortcut(ShortcutKind.Unknown) || PlynlingShortcut.Parse(";dailyx") is not null) Fail("daily shortcut");

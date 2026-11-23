@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.4 — 2026-11-23
+
+- `/daily` (and `;daily`) now opens on lines of her own for her creator, for Tata, and for a `/bribe` chouchou, and has 30 more lines for everyone else.
+
 ## 8.2.3 — 2026-11-23
 
 - `/inventory shop` and `/inventory cosmetics` now confirm every purchase that goes through in its own private message, so the receipt (and a pack's finds) stays visible after the next click.
