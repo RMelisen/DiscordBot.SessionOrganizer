@@ -29,9 +29,11 @@ public static class PlynlingVisitCards
 
     public const string ConfessLabel = "💌 Lui avouer ses sentiments";
 
-    // Green, like the old « Accueillir »: grey options read as decoration and the invited owner missed
-    // the knock. Both steps share it; « 💌 » stays blurple so it stands apart from the scene's options.
-    private const ButtonStyle ChoiceStyle = ButtonStyle.Success;
+    // Blurple, as every "pick one" is (CLAUDE.md, Button colours): grey options read as decoration and
+    // the invited owner missed the knock. Both steps share it. « 💌 » is green, the theme's one
+    // exception: the special move must stand apart from the scene's options.
+    private const ButtonStyle ChoiceStyle = ButtonStyle.Primary;
+    private const ButtonStyle ConfessStyle = ButtonStyle.Success;
 
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
@@ -72,7 +74,7 @@ public static class PlynlingVisitCards
         var row = new ActionRowBuilder();
         foreach (var o in scene.Options)
             row.WithButton(Label(o.Label, visitor, host), ChoiceId(visitor.Id, hostOwnerId, at, scene.Key, o.Key), ChoiceStyle);
-        if (offerConfession) row.WithButton(ConfessLabel, ConfessId(visitor.Id, hostOwnerId, at, scene.Key), ButtonStyle.Primary);
+        if (offerConfession) row.WithButton(ConfessLabel, ConfessId(visitor.Id, hostOwnerId, at, scene.Key), ConfessStyle);
         return new ComponentBuilderV2()
             .AddComponent(Frame(visitor, scene, visitor, host)
                 .AddComponent(WithVisitor(visitor, now, $"**{a}** part rendre visite à <@{hostOwnerId}>.\n\n{Say(scene.Intro, visitor, host)}"))

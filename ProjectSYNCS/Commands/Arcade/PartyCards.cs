@@ -142,7 +142,7 @@ public static class PartyCards
         : new ComponentBuilder()
             .WithButton("Tirer", $"bj:hit:{g.Id}", ButtonStyle.Primary)
             .WithButton("Rester", $"bj:stand:{g.Id}", ButtonStyle.Secondary)
-            .WithButton("Doubler", $"bj:double:{g.Id}", ButtonStyle.Success, disabled: g.Player.Count != 2 || g.Doubled)
+            .WithButton("Doubler", $"bj:double:{g.Id}", ButtonStyle.Danger, disabled: g.Player.Count != 2 || g.Doubled)
             .Build();
 
     // ---- Bomb -------------------------------------------------------------------------------------

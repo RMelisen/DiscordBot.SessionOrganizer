@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.6 — 2026-11-23
+
+- A Plynling visit's choices are now blurple, with « 💌 » in green as the special move.
+- « Créer une session » on polls and « Événement » on the Plynling card are now blurple, like the other buttons that start something.
+- Blackjack's « Doubler » is now red, like the other risky moves.
+
 ## 8.2.5 — 2026-11-23
 
 - A Plynling visit's choice buttons (the visitor's options and the host's reactions) are green again, like the old « Accueillir », so the invited owner sees it is their turn.

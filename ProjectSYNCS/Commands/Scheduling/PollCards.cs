@@ -84,7 +84,7 @@ public static class PollCards
                     disabled: true);
             // A closed date poll can become a session while one of its slots is still ahead.
             else if (poll.Options.Any(o => o.ScheduledAt > now))
-                last.WithButton("Créer une session", $"poll:tosession:{poll.Id}", ButtonStyle.Success, new Emoji("🗓️"));
+                last.WithButton("Créer une session", $"poll:tosession:{poll.Id}", ButtonStyle.Primary, new Emoji("🗓️"));
         }
         last.WithButton("Mes votes", $"poll:mine:{poll.Id}", ButtonStyle.Secondary, new Emoji("🗳️"));
         builder.AddComponent(last);
@@ -111,7 +111,7 @@ public static class PollCards
     /// </summary>
     public static MessageComponent PlanButton(int pollId) =>
         new ComponentBuilder()
-            .WithButton("Créer une session", $"poll:plan:{pollId}", ButtonStyle.Success, new Emoji("🗓️"))
+            .WithButton("Créer une session", $"poll:plan:{pollId}", ButtonStyle.Primary, new Emoji("🗓️"))
             .Build();
 
     /// <summary>How one option reads on the card and in her lines: a date as a timestamp, a label sanitised.</summary>

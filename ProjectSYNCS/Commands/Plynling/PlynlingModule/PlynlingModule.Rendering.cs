@@ -196,7 +196,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             var personalityRow = new ActionRowBuilder()
                 .WithButton("Personnalité", $"plyn:traits:{plynling.Id}", ButtonStyle.Secondary);
             if (pendingEvents > 0)
-                personalityRow.WithButton($"Événement ({pendingEvents})", $"plyn:events:{plynling.Id}", ButtonStyle.Success, new Emoji("✨"));
+                personalityRow.WithButton($"Événement ({pendingEvents})", $"plyn:events:{plynling.Id}", ButtonStyle.Primary, new Emoji("✨"));
             builder.AddComponent(personalityRow);
         }
         return builder.Build();

@@ -167,6 +167,21 @@ A `MessageFlags.ComponentsV2` message has **no content and no embeds**, **re-ass
 every `UpdateAsync`**, and sends with **`AllowedMentions.None`** (a `TextDisplay` is real content:
 `<@id>` pings; `None` keeps the pill silent). Avatars go through `Helpers/Core/AvatarUi`.
 
+### Button colours
+
+**One meaning per colour**, so a card reads at a glance (grey choices once read as decoration and
+players missed their turn):
+
+- **Green `Success`** — yes, I'm in, commit: Rejoindre, Accepter, Publier, Terminer, Acheter.
+- **Red `Danger`** — no, stop, or it can hurt: Refuser, Annuler, Clôturer, Abandonner, « Doubler ».
+  In a confirm step, red is the dangerous answer (« Oui, annuler ») and « Non » is grey.
+- **Blurple `Primary`** — do this; **every "pick one of these"** (visit and event choices, quiz
+  answers); the selected tab. A button that opens a form or the next step (« Créer une session »)
+  is blurple; green is the answer or the final commit inside that flow.
+- **Grey `Secondary`** — neutral: pagers, unselected tabs, disabled leftovers.
+
+The one exception is the visit's « 💌 », green among blurple options because it is the special move.
+
 ### Mentions and hostile text
 
 - **Relayed text never mass-pings**: sent on someone's behalf with
