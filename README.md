@@ -586,7 +586,7 @@ looks after her.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
-- **Cosmetics:** 98 things a Plynling can wear, one per slot — a **thème** that recolours its
+- **Cosmetics:** 97 things a Plynling can wear, one per slot — a **thème** that recolours its
   card and adds a banner, a **titre** under its name (in its gender), an **accessoire**
   (« porte 🧣 une écharpe »), drawn on the Plynling's picture — some in a colour or a place you pick
   for free in the wardrobe — an **aura** worn with it, animated around the Plynling (twinkling

@@ -339,8 +339,8 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is five keys on it.** `CosmeticCatalog` holds the 98
-(`cos.<slot>.<name>`, stored, **append-only** — two retired in 8.5.0, see below) with slot data (a thème's accent and banner, a titre's
+**Cosmetics are items; what a Plynling wears is five keys on it.** `CosmeticCatalog` holds the 97
+(`cos.<slot>.<name>`, stored, **append-only** — three retired, see below) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
 no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey`, `AuraKey` are read and written only through
@@ -372,9 +372,12 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line. Not drawn on
   the sick and frozen faces: the try-on then says « Son aura ne se voit pas tant qu'il est malade ou gelé. »
   Art and file cost: `plynling.md` *Art*.
-- **Retired accessories**: the sac à dos and the casque audio left the catalogue in 8.5.0; the data
-  migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. Their keys
-  stay retired — never reuse them.
+- **Retired cosmetics**: the sac à dos and the casque audio left the catalogue in 8.5.0; the data
+  migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. The
+  Citrouilles cadre (`cos.grave.citrouilles`, autumn) left in 8.8.0, the owner's call;
+  `RetirePumpkinGraveFrame` refunded 2 400 (the seasonal price) the same way and cleared `GraveKey`
+  on any Plynling, dead or alive. To retire another, copy one of those migrations. Their keys stay
+  retired — never reuse them.
 
 **The shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` = the basics, then
 `RotatingPerSlot` (2) per slot drawn with `new Random(week * 10 + slot)` (seeded: same for everyone,

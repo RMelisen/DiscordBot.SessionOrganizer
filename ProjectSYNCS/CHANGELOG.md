@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.8.0 — 2026-11-23
+
+- The Citrouilles grave frame is gone from the game. Each copy owned is refunded 2 400 cailloux, and
+  graves that wore it no longer have a frame.
+
 ## 8.7.0 — 2026-11-23
 
 - Plynlings have five body stats from the ado stage on: Force, Agilité, Endurance, Intelligence and Vitesse.
