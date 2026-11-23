@@ -345,6 +345,7 @@ The intro: paragraphs, no tags, no fields.
 - **Keys**: a scene or choice key rides in the custom-ids of open visit messages (two hours) and in
   `ResponsePicker`'s history, and is stored nowhere. Renaming one closes the visits open on it as expired, so treat
   keys as forever anyway.
-- **Writing**: Claude writes a sheet in French (`docs/plynling-visit-scenes-sheet.md` for the launch's 20 + 1), the
+- **Writing**: Claude writes a sheet in French (`docs/plynling-visit-scenes-sheet.md` for the launch's 20 + 1,
+  `docs/plynling-visit-scenes-sheet-2.md` for the second wave's 8), the
   owner reviews it, and the files are copied from the approved sheet word for word; any wording change goes back to
   the owner.

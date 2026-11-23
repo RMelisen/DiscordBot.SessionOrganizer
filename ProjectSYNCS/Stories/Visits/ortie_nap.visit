@@ -1,0 +1,44 @@
+# visit: ortie_nap
+title: L'heure de l'Ortie
+place: 🪑 Devant chez l'Ortie
+bonds: lovers
+hours: 9-20
+stages: elder
+
+{A} et {B} passent devant chez l'Ortie, bras dessus bras dessous, comme tous les jours. Sur le banc devant la porte, l'Ortie dort, assise, une cuillère de bois à la main. Autour d'elle, ses enfants commencent à crier. Il en manque un : toujours le même.
+
+* story | Raconter une histoire d'autrefois aux petits  [lean sociability +1] [lean energy -1]
+  ? good
+  {A} rassemble les petits et raconte une histoire d'autrefois, du temps où {A} sortait à peine de la Souche. Pas un ne crie. Au fond, {B} écoute aussi, et connaît l'histoire par cœur : c'est la leur.
+  ? bad
+  {A} raconte une histoire d'autrefois, avec une tempête et un sanglier. Le plus petit pousse un cri de sanglier, très réussi, et les deux autres l'imitent, encore mieux.
+
+* fetch | Aller chercher celui qui manque  [lean energy +1] [lean honor +1]
+  ? good
+  {A} va chercher celui qui manque et le trouve, comme toujours, dans le noyer du Noyer, les poches pleines. Jacquet redescend sans discuter : on ne discute pas avec un{a:|e} ancien{a:|ne}.
+  ? bad
+  {A} va chercher Jacquet dans le noyer du Noyer, et le Noyer se tient juste en dessous. On parle longtemps de noix, très poliment, pendant que Jacquet descend de l'autre côté.
+
+* hush | Inventer le jeu du silence  [lean rationality +2]
+  ? good
+  {A} invente un jeu : le premier qui fait un bruit a perdu. Les petits deviennent muets comme des galets. Le plus petit tient si fort qu'il en devient tout rouge.
+  ? bad
+  {A} invente le jeu du silence, et les petits le prennent très au sérieux. Le premier qui fait un bruit, c'est {A}, en éternuant. Ils le crient tous en même temps.
+
+> rock | Bercer le plus petit  [lean compassion +2]
+  ? good
+  {B} prend le plus petit sur ses genoux et le berce, et continue longtemps après qu'il s'est endormi, pour le plaisir. Ça faisait longtemps que {B} n'avait pas tenu quelqu'un d'aussi petit.
+  ? bad
+  {B} prend le plus petit pour le bercer, et le plus petit attrape le nez de {B}. Il ne le lâche plus. Il a la poigne de sa mère.
+
+> guard | Veiller sur le sommeil de l'Ortie  [lean honor +1] [lean sociability -1]
+  ? good
+  {B} s'assoit près de l'Ortie et chasse d'un geste tout ce qui pourrait la réveiller : une mouche, un voisin, le Noyer qui passait dire bonjour. Elle dort une heure entière, la première depuis des années.
+  ? bad
+  {B} veille sur le sommeil de l'Ortie, de si près que, quand elle ouvre un œil, c'est la première chose qu'elle voit. « Je ne dormais pas », dit-elle. Elle se rendort aussitôt.
+
+> nap | Faire la sieste aussi, tant qu'on y est  [lean energy -2]
+  ? good
+  {B} s'assoit au bout du banc et ferme les yeux, juste un instant. L'Ortie se réveille la tête sur l'épaule de {B}, et ne dit pas merci. Le lendemain, il y a une tarte aux noix sur le seuil.
+  ? bad
+  {B} fait la sieste aussi, et ronfle. Les petits trouvent ça très drôle et ronflent en chœur. L'Ortie se réveille en sursaut et demande qui a amené le moulin.

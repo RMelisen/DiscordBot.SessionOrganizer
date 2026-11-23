@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.8 — 2026-11-23
+
+- Eight new Plynling visit scenes, written for one bond each: four only couples can draw (tender, from a dark walk home to babies being written into the register) and four only enemies can draw (squabbles that end in a moment's truce).
+- Couples and enemies now have a scene of their own at night, and elder and baby couples one each.
+
 ## 8.2.7 — 2026-11-23
 
 - The moves of pierre-papier-ciseaux (duels and Plynlings), cache-cache, Puissance 4 and the quote game are now blurple, like every other choice.

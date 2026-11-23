@@ -1,0 +1,43 @@
+# visit: daisy_mirror
+title: Les jumelles
+place: 🌼 Dans les hautes herbes du Communal
+bonds: lovers
+hours: 8-20
+
+Depuis le puits, {A} et {B} sont suivi{p:s|es} par deux petites têtes blanches qui dépassent des herbes : les jumelles du Communal. Quand {A} sourit à {B}, les jumelles se sourient. Quand {B} rougit, les jumelles rougissent aussi, très fort, exprès.
+
+* apple | Leur promettre une pomme si elles filent  [lean rationality +1] [lean greed -1]
+  ? good
+  {A} promet une pomme à chacune si elles filent. Elles se consultent, acceptent, et filent vers le clos du Tilleul, où les pommes sont, de toute façon, à portée de main.
+  ? bad
+  {A} promet une pomme si elles filent. Les jumelles reviennent avec une pomme, et la croquent ensemble, chacune de son côté, en regardant {A} et {B} droit dans les yeux.
+
+* stiff | Marcher dignement, comme si de rien n'était  [lean honor +1] [lean sociability -1]
+  ? good
+  {A} marche très dignement, les mains dans le dos, comme on va au conseil. Les jumelles imitent, les mains dans le dos, et trouvent ça si ennuyeux qu'elles abandonnent au bout de dix pas.
+  ? bad
+  {A} marche très dignement, comme si de rien n'était, et les jumelles aussi, en exagérant tant que la chèvre commune s'arrête de mâcher pour regarder.
+
+* hold | Prendre la main, tant pis  [lean boldness +2]
+  ? good
+  {A} prend la main de {B}, tant pis, devant tout le monde. Les jumelles se prennent la main aussi, puis s'en vont en se balançant, comme si c'était leur idée depuis le début.
+  ? bad
+  {A} prend la main de {B}, tant pis. Les jumelles poussent un « oooh » si long qu'on l'entend jusqu'au moulin. Le Chardon sort voir ce qui se passe.
+
+> chase | Leur courir après en riant  [lean energy +2]
+  ? good
+  {B} leur court après en riant, et les jumelles s'enfuient en piaillant dans les herbes. On ne les rattrape pas, on n'essaie pas vraiment. On revient essoufflé{p:s|es}, et plus du tout gêné{p:s|es}.
+  ? bad
+  {B} leur court après et se prend les pieds dans les herbes hautes. Les jumelles reviennent, s'assoient de chaque côté, et attendent poliment la suite.
+
+> ignore | Faire semblant de ne pas les voir  [lean rationality +1] [lean energy -1]
+  ? good
+  {B} fait semblant de ne pas les voir, si bien qu'au bout d'un moment, les jumelles doutent d'exister. Elles vont vérifier auprès du Tilleul.
+  ? bad
+  {B} fait semblant de ne pas les voir, et les jumelles se plantent juste devant, nez à nez. Il devient très difficile de ne pas les voir.
+
+> wink | Leur faire un clin d'œil complice  [lean sociability +1] [lean boldness +1]
+  ? good
+  {B} leur fait un clin d'œil complice. Les jumelles, flattées d'être dans le secret, montent la garde au bord des herbes et chassent tous les curieux, même le Noyer.
+  ? bad
+  {B} leur fait un clin d'œil complice. Les jumelles en rendent trois chacune, puis courent crier sur la place : « On est dans le secret ! » Personne ne sait lequel, mais tout le monde a une idée.

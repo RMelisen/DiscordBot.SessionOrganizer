@@ -1,0 +1,43 @@
+# visit: long_bench
+title: Le grand banc
+place: 🪵 Sur le chemin de la place du Puits
+bonds: enemies
+hours: 7-20
+
+Le conseil a décidé qui porterait les bancs du banquet, et c'est tombé sur {A} et {B}. Il ne reste que le grand banc, le plus long, celui qui se porte à deux. Clément et Gaspard, les fils du Noyer, sont assis sur le muret. Ils parient déjà sur qui lâchera son bout le premier.
+
+* lead | Choisir le chemin sans demander  [lean boldness +2]
+  ? good
+  {A} choisit le chemin, sans demander, et c'est le bon : le plus court, le plus plat. Le banc arrive sur la place sans une égratignure, et les fils du Noyer perdent leur pari tous les deux.
+  ? bad
+  {A} choisit le chemin, sans demander, et le chemin passe par la porte de la tisserande, qui est très étroite. Le banc y reste coincé un bon moment. La tisserande file sans lever les yeux, et commente.
+
+* yield | Laisser passer devant  [lean compassion +1] [lean honor +1]
+  ? good
+  {A} laisse passer devant, sans un mot. Ça surprend tellement que tout le chemin se fait en silence. Clément et Gaspard, déçus, se rendent leurs paris.
+  ? bad
+  {A} laisse passer devant, très poliment, et on se retrouve à vouloir porter le banc par le même bout. Clément et Gaspard en tombent du muret.
+
+* fast | Porter son bout au pas de course  [lean energy +1] [lean vengefulness +1]
+  ? good
+  {A} porte son bout au pas de course, pour forcer l'autre à suivre. Il faut suivre, et on suit. On arrive sur la place essoufflé{p:s|es}, à égalité, ce qui ne plaît à personne et arrange tout le monde.
+  ? bad
+  {A} part au pas de course avec son bout, et le banc, qui ne court pas, s'arrête net. {A} aussi, un peu plus loin, mais sans le banc.
+
+> pull | Tirer de son côté  [lean vengefulness +1] [lean energy +1]
+  ? good
+  {B} tire de son côté, par principe. Le banc ne va nulle part pendant un moment, puis on s'aperçoit que c'est très fatigant, et on se met d'accord sans le dire. Les fils du Noyer rentrent chez eux, déçus.
+  ? bad
+  {B} tire de toutes ses forces, juste quand l'autre bout lâche, et part s'asseoir dans le fossé avec le banc par-dessus, comme dans un fauteuil.
+
+> rest | Poser son bout et s'asseoir dessus  [lean energy -2]
+  ? good
+  {B} pose son bout au milieu du chemin et s'assoit dessus. Au bout d'un moment, l'autre bout s'assoit aussi. On reste là, chacun à son bout, dos à dos, et c'est la meilleure pause de la journée.
+  ? bad
+  {B} pose son bout pour s'asseoir, et le banc bascule comme une balançoire. Clément et Gaspard réclament leur tour.
+
+> bet | Parier avec les fils du Noyer  [lean greed +1] [lean boldness +1]
+  ? good
+  {B} va parier avec les fils du Noyer, sur soi-même, et gagne. {B} partage les gains, de très mauvaise grâce : trois noix chacun.
+  ? bad
+  {B} lâche son bout pour aller serrer la main des fils du Noyer et prendre le pari. Le pari est perdu sur-le-champ. Le banc, lui, est dans le fossé.

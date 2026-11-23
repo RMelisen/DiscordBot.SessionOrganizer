@@ -1,0 +1,44 @@
+# visit: pousse_register
+title: Le registre des pousses
+place: 📜 Devant la cabane de la Mère Lichen
+bonds: lovers
+hours: 8-18
+stages: baby
+
+L'Intendant est descendu de Roncebelle pour inscrire les nouvelles pousses. Il a sorti son registre, sa plume et son air sérieux. « Nom, taille, signe particulier. » {A} et {B} se présentent devant lui en se tenant par la main, et ne la lâchent pas.
+
+* answer | Répondre à tout, très sérieusement  [lean honor +2]
+  ? good
+  {A} répond à tout, très sérieusement, en se tenant bien droit{a:|e}. Au « signe particulier », {A} réfléchit longtemps, puis montre {B}. L'Intendant l'écrit : il note ce qu'on lui dit.
+  ? bad
+  {A} répond à tout, très sérieusement, mais à la place de {B}, et {B} à la place de {A}. Le registre de Roncebelle compte désormais deux pousses qui n'existent pas tout à fait.
+
+* tiptoe | Se mettre sur la pointe des pieds  [lean boldness +1] [lean honor -1]
+  ? good
+  {A} se met sur la pointe des pieds pour la taille, et tire {B} vers le haut, pour être pareil{p:s|les}. L'Intendant mesure, note, et dit sans lever les yeux : « Il est d'usage de grandir. Vous êtes en avance. »
+  ? bad
+  {A} se met sur la pointe des pieds, très haut, et bascule sur {B}. On se relève couvert{p:s|es} de mousse. L'Intendant note : « Taille : variable. »
+
+* gift | Lui offrir une fraise de la Lisière  [lean compassion +1] [lean sociability +1]
+  ? good
+  {A} lui tend une fraise de la Lisière, la plus rouge. L'Intendant ne sait pas où la noter. Il finit par la manger, et dit merci deux fois, la seconde tout bas.
+  ? bad
+  {A} lui tend une fraise de la Lisière, qui tombe sur le registre. À la page des pousses, il y a maintenant une tache rouge en forme de cœur. L'Intendant la contemple longtemps. Il n'ose pas la noter.
+
+> other | Donner le nom de l'autre en premier  [lean compassion +1] [lean sociability +1]
+  ? good
+  Quand l'Intendant demande son nom, {B} répond par celui de {A}, {b:tout fier|toute fière}. L'Intendant hésite, puis écrit les deux noms sur la même ligne, en tout petit, pour qu'ils tiennent.
+  ? bad
+  {B} donne le nom de {A} en premier, puis le sien, puis celui de {A} encore, pour être sûr{b:|e}. L'Intendant compte trois pousses. Il recompte. Il en trouve toujours une de trop.
+
+> squeeze | Serrer la main encore plus fort  [lean honor +1] [lean boldness +1]
+  ? good
+  {B} serre la main de {A} encore plus fort, au cas où l'Intendant voudrait les séparer. Il n'y pense pas une seconde : il en a vu d'autres, autrefois, à la Maison des Pousses. Il se détourne un instant, très occupé par sa plume.
+  ? bad
+  {B} serre la main de {A} si fort qu'on ne peut plus la lâcher du tout, même pour signer. L'Intendant attend, poliment. La Mère Lichen, sur sa pierre, dit « pas encore ».
+
+> look | Demander à voir le registre  [lean rationality +2]
+  ? good
+  {B} demande à voir le registre. L'Intendant, flatté, montre les colonnes, les lignes, les ratures. {B} ne sait pas lire, mais hoche la tête à chaque page, et l'Intendant n'a jamais eu de public aussi attentif.
+  ? bad
+  {B} demande à voir le registre, et l'Intendant explique chaque colonne, chaque ligne, chaque rature. Ça dure jusqu'au goûter. {B} s'endort contre la cabane, à la colonne des tailles.
