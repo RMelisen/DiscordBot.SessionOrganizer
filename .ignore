@@ -8,3 +8,6 @@ ProjectSYNCS/Migrations/*.Designer.cs
 docs/superpowers/plans/
 
 ProjectSYNCS/MinecraftBody/package-lock.json
+
+# Spent writing sheet: the shipped scenes live in ProjectSYNCS/Stories/Visits/*.visit.
+docs/plynling-visit-scenes-sheet.md

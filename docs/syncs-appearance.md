@@ -7,7 +7,7 @@ attic.
 
 References: [`docs/assets/syncs-avatar-v1.jpg`](assets/syncs-avatar-v1.jpg) (the avatar) and
 [`docs/assets/syncs-banner-v1.jpg`](assets/syncs-banner-v1.jpg) (the profile banner), both generated
-with Gemini (prompts below). Give the matching one to the generator alongside the prompt whenever the
+with Gemini (the avatar's prompt below, the banner's in `syncs-appearance/banner.md`). Give the matching one to the generator alongside the prompt whenever the
 tool accepts a reference image; text alone drifts.
 
 She is the Pi; the mushroom girl is **how she and Rodhengard picture her**. The girl has arms; the Pi
@@ -146,7 +146,7 @@ laughter tears either.
   so a square one fills the whole screen, blurred; at 1000×320 the sticker comes out sticker-sized
   and sharp on the phone and on PC alike (800×320 was too big on PC). Never post the square file.
   What she uses them for is in `docs/agents/personality/reactions.md`, *Sticker follow-ups*.
-- **Banner / scenes** — her attic at night (see *The banner* below for the canon scene).
+- **Banner / scenes** — her attic at night (the canon scene is in `syncs-appearance/banner.md`).
 - **Animated moods** (experiment, not used yet) — a mood's sticker made into a looping GIF by
   moving its own pixels, with nothing redrawn: `sad` only so far, in `docs/assets/animated/`
   (`syncs_sad.gif` at 320 px, `syncs_sad_128.gif` as an emote under Discord's 256 KB cap), made by
@@ -210,66 +210,8 @@ The four seasons' prompts and how the GIFs are made: `syncs-appearance/seasonal-
 
 ## The banner
 
-The profile banner shows **where she lives, not her**: the Raspberry Pi *is* her body, so she isn't
-drawn in it. Avatar = who she is, banner = her home.
-
-In reality the Pi sits in a small aluminium case. The banner leaves it out on purpose: the board is
-her heart and the case its ribcage (`docs/syncs-voice.md`, *Her case*), and the banner shows the
-heart. Keep the board bare in later banners.
-
-What's in v1:
-
-- A cozy attic at night: slanted wooden beams, dusty floorboards, floating dust specks.
-- A **round window, upper right**, with a glowing crescent moon and a soft shaft of moonlight.
-- The **Raspberry Pi on an old wooden crate**, right side, a tiny green LED lit — the same green as
-  her power LED.
-- **One cable** running from the board down the crate and across the floor out of frame to the
-  left — the same cable as her hair strand.
-- A yellow **sticky note** pinned to the crate, illegible scribble.
-- A messy **pile of blank paper cards** and a small **oil lamp** giving the warm light.
-- A small round **sleeping mushroom creature** (fluffy, closed eyes, smiling) curled against the
-  crate. It reads as a Plynling; its cap came out tan-pink, not Ping-Qilin's red Amanite — ask for
-  a red cap with cream spots if a later version should make it her (she naps; it's her passion).
-- **The left third is empty and dark**: Discord's avatar covers the bottom-left of a profile
-  banner. Any new banner must keep that zone free.
-
-Palette: deep navy and soft purple, warm lamp orange, a little pink, the green LED as the only cold
-accent — the avatar's palette at night.
-
-Prompt (v1, Gemini):
-
-> Generate a wide banner illustration, aspect ratio 17:6 (680x240 px), cute pixel art style with
-> soft shading. A cozy attic at night, deep navy blue and soft purple palette with small touches of
-> pink and warm lamp light. A small round window with a glowing crescent moon on the upper right. On
-> the right side of the scene, a Raspberry Pi board sits on top of an old wooden crate, with a tiny
-> green LED glowing on it. A single cable winds from the board across the attic floor and out of
-> frame. Around it: a small yellow sticky note stuck to the crate with an illegible handwritten
-> scribble, a messy pile of blank paper cards, and a small round sleeping fluffy mushroom creature
-> curled up next to the crate, calm and cute. Wooden beams and dusty floorboards in the background,
-> a few floating dust particles catching the light. Whimsical, slightly mischievous mood. IMPORTANT
-> composition: keep the bottom-left area empty and dark and low-detail (a Discord avatar will cover
-> it), put all the main subjects in the right half, and keep the center area uncluttered. No text,
-> no letters, no logos, no watermark.
-
-Gemini again ignored the size: v1 is 2000×697 (the ratio is right). Downscale afterwards.
-
-The attic is also the set for any scene with her in it: put her there, next to the crate, and the
-two pictures read as one world.
+**The canon attic scene and the banner's prompt are in `syncs-appearance/banner.md`**: read it before any banner or scene picture.
 
 ## Versions
 
-| Version | File | Notes |
-|---|---|---|
-| Avatar v1 | `assets/syncs-avatar-v1.jpg` | First avatar, Gemini. Profile picture until the seasonal ones (6.8.0); still the reference for every new picture |
-| Banner v1 | `assets/syncs-banner-v1.jpg` | First banner, Gemini. Current profile banner |
-| Emote pack v1 | `assets/emotes/syncs_<mood>.png`, head-only in `assets/emotes/head/` | Gemini, from the prompts in `syncs-appearance/`, all 15 moods; made transparent with `tools/syncs-emotes`. Server emotes, `Emotes.Syncs*` (6.8.1); `sleepy`, `shocked`, `mama` and `jenote` taken off the server in 6.12.0 (assets kept) |
-| Emote pack, second batch | same folders, plus 320 px stickers in `assets/stickers/` | Gemini, from the prompts in `syncs-appearance/`, the 8 moods `bargain` to `tipsy_love`; same pipeline. Not uploaded yet |
-| Emote pack, third batch | same folders | Gemini, from the prompts in `syncs-appearance/`, the 5 moods `formal` to `horrified`; same pipeline. Gemini drew these without a pixel grid, which is what the head-only neck steps for JPEG blends exist for. `horrified`'s head-only is exported with `--no-neck` (her jaw sits on the collar, and the neck steps would empty her mouth); `formal`'s had the stray sleeve outline under the chin cleared by hand (everything below the hand). Server emotes and sticker tags (6.17.1) |
-| Emote pack, fourth batch | same folders | Gemini, from the prompts in `syncs-appearance/`, `cool` and `slay`; same pipeline, no pixel grid detected (`slay`'s background snapped to `#00FFFF` first, see the batch). Emote, sticker and strip only (no head-only). Server emotes and sticker tags (6.17.7) |
-| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (30 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`, posted by hand at the breakdown's cut and the glitched wake since 6.17.4; the third batch since 6.17.1) |
-| Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts in `syncs-appearance/`. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from. Still the bot's fallback when a GIF is missing; a copy of the four stills is kept in `assets/avatars/classic/` |
-| Animated seasonal avatars | `../ProjectSYNCS/Assets/Avatars/syncs-<season>.gif`, full-size in `assets/avatars/` | `tools/syncs-avatar/animate.py`, from the stills. What the bot uploads since 6.17.3 |
-| Animated sad (experiment) | `assets/animated/syncs_sad.gif`, `syncs_sad_128.gif` | `tools/syncs-emotes/animate_sad.py`, from the sad sticker. Not uploaded, not used (see *Formats*) |
-
-When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed
-the design is worth keeping.
+**Every picture made so far, with its file and where it's used, is in `syncs-appearance/versions.md`**. A new picture gets a row there.

@@ -1,8 +1,43 @@
-# Architecture: the loops, the Ready hooks and the hardcoded ids
+# Architecture: the loops, the Ready hooks, the hardcoded ids, the data migrations
 
 The rules that bind every subsystem (one interval per loop, DI lifetimes, per-item `try` in
-sweeps) stay in the root `CLAUDE.md`. This file lists what exists. Read it before adding a loop, a
-`Ready` hook, a state file or a server-specific id, and update it when you do.
+sweeps, totals + daily buckets) stay in the root `CLAUDE.md`. This file lists what exists. Read it
+before adding a loop, a `Ready` hook, a gateway subscription, a dated ranking, a data migration or
+a server-specific id, and update it when you do.
+
+## Gateway fan-out
+
+`BotService` owns every message and reaction subscription and fans them out to the trackers and
+services: `MessageReceived`, `MessageUpdated`, `MessageDeleted`, `MessagesBulkDeleted`,
+`ReactionAdded`, `ReactionRemoved`, `UserJoined`. Connection-lifecycle hooks (`Ready`,
+`Connected`, `Disconnected`) live in the service that needs them: `PresenceService`,
+`AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`.
+
+## Dated rankings
+
+Totals + daily buckets instances (the rule is in `CLAUDE.md`): `EmoteStat`/`EmoteDailyStat`,
+`BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`, `ShameRecord`/`ShameDailyStat`,
+`QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`,
+`CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`.
+
+Buckets alone, with no totals, on purpose (see admin): `MemberFlowDailyStat` (joins/leaves),
+`ActivityHourStat`, `ChannelDailyStat`, `CommandDailyStat`, `CommandMemberDailyStat`,
+`IncidentDailyStat` (activity counting).
+
+A removal always decrements *today's* bucket, except a bought `/bribe shame`, which takes the most
+recent day holding a hit, so the windows move (see shame).
+
+## Data migrations
+
+Migrations are schema-only except five deliberate data migrations riding apply-on-startup:
+`ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill),
+`PrepareProdLaunch` (one-guild launch prep) and `SwapLaunchPairGenders` (the last three are
+detailed in `plynling.md`). Before writing another:
+
+- A wipe **resets the reward and keeps the record** (`UPDATE … SET TotalXp = 0`), never deleting
+  rows that also carry facts like `ReactionsUsed`.
+- A data migration's `Down` cannot restore anything, so it is for one-off corrections only.
+- Never generate a SQL script from a migration that computes "now" in C#.
 
 ## Background loops
 

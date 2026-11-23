@@ -1,25 +1,23 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Project S.Y.N.C.S. — a French-language Discord bot for gaming sessions, polls and votes, with a
+personality, XP and a virtual-pet game (Plynlings). Features: `README.md`.
 
-Project S.Y.N.C.S. — a French-language Discord bot for scheduling gaming sessions, polls and
-votes, with a personality, an XP system and a virtual-pet game (Plynlings). See `README.md` for
-the user-facing feature list.
-
-This file holds only what applies **everywhere**. Each subsystem has its own notes — **read the
-matching file before changing that subsystem**; the rules there are as binding as these.
+This file holds only what applies **everywhere**. **Read the subsystem's file before changing that
+subsystem**; its rules bind like these. A new rule goes in the subsystem file unless it truly
+spans subsystems; write the rule and its reason, not the story — git keeps the history.
 
 | Working on… | Read first |
 |---|---|
 | Chatter, reactions, `MessageCues`, favouritism, rivals, `/yesno`, `/rate` | `docs/agents/personality.md` |
-| "good bot" / "bad bot" verdicts, `BotFeedbackTracker`, `/goodbot` | `docs/agents/bot-feedback.md` |
-| XP, `/level`, `/leaderboard`, voice XP, `/emotestats`, member badges, « Succès » | `docs/agents/xp.md` |
+| "good bot" / "bad bot", `BotFeedbackTracker`, `/goodbot` | `docs/agents/bot-feedback.md` |
+| XP, `/level`, `/leaderboard`, voice XP, `/emotestats`, badges, « Succès » | `docs/agents/xp.md` |
 | `/shame` | `docs/agents/shame.md` |
 | Sessions, polls, votes, giveaways, `ReminderService`, `/tonight`, `/teams`, `/remindme` | `docs/agents/scheduling.md` |
 | Pop quiz, `QuizBank`, `/quiz leaderboard` | `docs/agents/quiz.md` |
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
-| Plynling storylines: the story engine, story files, `StoryParser`, `StoryValidator`, the walk checks, the path report | `docs/agents/plynling-storylines.md` |
+| Plynling storylines: story engine, story files, `StoryParser`, `StoryValidator`, walk checks, path report | `docs/agents/plynling-storylines.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
 | Plynling storylines, or anything set in the village (Humeval) | `docs/village-lore.md` |
 | Writing any line SYNCS says in her own voice | `docs/syncs-voice.md` |
@@ -27,16 +25,12 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
 | `/arcade` games, `ArcadeTables`, `ArcadeRunner`, `ArcadeService` | `docs/agents/arcade.md` |
 | Her Minecraft body, `MinecraftBodyService`, `MinecraftBody/`, `/minecraft` | `docs/agents/minecraft.md` |
-| Her Minecraft orders (`McCommand`, gathering, errands, crafting, the camp) and free time | `docs/agents/minecraft-orders.md` |
+| Her Minecraft orders (`McCommand`, gathering, errands, crafting, the camp), free time | `docs/agents/minecraft-orders.md` |
 | How her Minecraft body moves: water, fights, body language, `tools/mc-pathtest` | `docs/agents/minecraft-body.md` |
 | `/confess`, the free Steam games alert | `docs/agents/community.md` |
-| `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
-| `/report`, the monthly digest, joins/leaves counting, activity counting | `docs/agents/admin.md` |
-| Adding a loop, a `Ready` hook or a server-specific id; `PresenceService` | `docs/agents/architecture.md` |
+| `/admin`, `/config`, `/debug`, permissions, `/report`, monthly digest, joins/leaves, activity counting | `docs/agents/admin.md` |
+| A loop, a `Ready` hook, a gateway subscription, a dated ranking, a data migration, a server-specific id; `PresenceService` | `docs/agents/architecture.md` |
 | `Dockerfile`, `run.sh`, `config.yaml` beyond the version, CI, state files under `/data` | `docs/agents/deployment.md` |
-
-When you add a rule, put it in the subsystem file unless it genuinely applies across subsystems.
-Write the rule and its reason, not the story of how it was discovered — git keeps the history.
 
 ## Commands
 
@@ -44,332 +38,231 @@ Write the rule and its reason, not the story of how it was discovered — git ke
 cd ProjectSYNCS
 dotnet build                     # net10.0
 dotnet run                       # needs Discord:Token
-dotnet ef migrations add <Name>  # migrations are applied automatically on startup
-
-dotnet user-secrets set "Discord:Token" "<token>"           # dev credential
+dotnet ef migrations add <Name>  # applied automatically on startup
+dotnet user-secrets set "Discord:Token" "<token>"
 dotnet user-secrets set "Discord:DevelopmentGuildId" "<id>" # instant registration
+
+dotnet run --project tests/ProjectSYNCS.Checks   # prints failures, exits 1 on any
 ```
 
-Leave `Discord:RegisterCommandsGlobally` at `false` in dev: guild-scoped commands register
-instantly, global ones take up to an hour. Guild registration runs with `deleteMissing: true`, so
-the dev guild's command list is replaced by whatever the assembly declares on every start.
+Keep `Discord:RegisterCommandsGlobally` `false` in dev: guild commands register instantly (with
+`deleteMissing: true`, so the dev guild's list is replaced every start), global ones take an hour.
 
-The bot needs the two privileged intents (`GuildMembers`, `MessageContent`) enabled in the Discord
-developer portal. Without `MessageContent` the personality subsystem silently reads empty strings.
-**`AlwaysDownloadUsers` must stay on** — the intent only *permits* the member download, the flag
-performs it. Without it `Guild.GetUser` returns null for anyone not seen since the last restart,
-and every avatar on `/level`, `/leaderboard` and `/shame` falls back to Discord's generic logo.
-First thing to check if those placeholders reappear.
+The bot needs the privileged intents `GuildMembers` and `MessageContent` (without it the
+personality reads empty strings). **`AlwaysDownloadUsers` must stay on**: the intent only permits
+the member download, the flag performs it; without it `Guild.GetUser` is null for anyone unseen
+since restart and the avatars on `/level`, `/leaderboard`, `/shame` fall back to Discord's logo.
 
 **`tests/ProjectSYNCS.Checks`** checks how she reads chat (`MessageCues`, `Opinion`, `ShipAsk`), the
-pools that answer it, and the listening pieces around them (streaks, facts, `/debug answers`):
-
-```bash
-dotnet run --project tests/ProjectSYNCS.Checks   # prints failures + a few summary lines, exits 1 on any
-```
-
-Run it before shipping a change to the cues or the pools, and add a case for every misfire found
-in the wild. It also parses, validates and walks every Plynling story file; `-- story <arc>` (or
-`all`) writes an arc's path report to `tests/ProjectSYNCS.Checks/out/`. It is a plain console (no test framework), outside `ProjectSYNCS/` because the bot's
-project compiles every `.cs` under its folder; it is not in the add-on image and needs no version
-bump. CI only builds the add-on image (see *Version and deployment*). Everything else: verify by
-building and, when it matters, running against the dev guild. Notes elsewhere that mention "the
-harness" refer to the owner's scratch checks for other subsystems, which are not in this repo.
+pools that answer it, the listening pieces (streaks, facts, `/debug answers`), and parses,
+validates and walks every Plynling story file (`-- story <arc|all>` writes path reports to its
+`out/`). Run it before shipping a change to cues, pools or stories, and add a case for every
+misfire found in the wild. It is a plain console outside `ProjectSYNCS/` (whose csproj compiles
+every `.cs` under it), not in the image, no bump. CI only builds the image. Otherwise verify by
+building and, when it matters, running against the dev guild. "The harness" in other notes means
+the owner's scratch checks, not in this repo.
 
 ## Language
 
 **Command and option names are English; every other user-facing string — descriptions, replies,
-embeds, button labels, choice display names, errors — is French.** Code, comments and logs are in
-English. Renaming a command or option changes what people type: do it rarely, and in one batch.
+embeds, labels, choice names, errors — is French.** Code, comments and logs are English. Renaming a
+command or option changes what people type: rarely, and in one batch.
 
 ## Architecture
 
-`Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted services.
+`Program.cs` is the composition root: DI, `MigrateAsync()`, hosted services. **`BotService`** does
+login, command registration, interaction dispatch and owns every message and reaction
+subscription; connection hooks (`Ready`…) live in the service that needs them. **Every
+`BackgroundService` loop has its own interval on purpose** — never share one.
 
-- **`BotService`** — gateway login, command registration, interaction dispatch, and the gateway
-  fan-out (`MessageReceived`, `MessageUpdated`, `MessageDeleted`, `MessagesBulkDeleted`, `ReactionAdded`, `ReactionRemoved`, `UserJoined` to the trackers and
-  services).
-  It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
-  `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
-  `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
-- **Every `BackgroundService` loop has its own interval on purpose** — never share one. The list
-  of loops, the services that sleep until a slot instead, and the `Ready` hooks is in
-  `docs/agents/architecture.md`; a new one gets a line there.
-
-Layers: `Commands/` (slash modules + `static` embed/component builders), `Interactions/`
-(`Components/` handlers, `Modals/` DTOs, `Autocomplete/`), `Services/` (EF repositories +
-behaviour), `Models/`, `Data/AppDbContext.cs`, `Helpers/` (pure logic — put anything you want to
-be checkable without a gateway here).
-
-`Commands/`, `Helpers/`, `Services/` and `Models/` are split into **subsystem subfolders** named after
-`docs/agents/` (`Plynling/`, `Xp/`, `Voice/`, `Personality/`, `Feedback/`, `Shame/`,
-`Scheduling/`, `Quiz/`, `Economy/`, `Arcade/`, `Admin/`, `Pi/`, `Minecraft/`, `Community/`), plus `Core/` for what every subsystem
-leans on (`AppTime`, `BotChat`, `Emotes`, `CooldownGate`, `SessionPermissions`, `BotService`…).
-**Folders are not namespaces**: every file keeps the flat `ProjectSYNCS.Commands` /
-`.Helpers` / `.Services` / `.Models` namespace, so moving a file between subfolders changes no `using` and
-the EF snapshot's type names. A new file goes in the subfolder of the subsystem that owns it.
+Layers: `Commands/` (slash modules + `static` card builders), `Interactions/` (`Components/`
+handlers, `Modals/` DTOs, `Autocomplete/`), `Services/` (EF repositories + behaviour), `Models/`,
+`Data/AppDbContext.cs`, `Helpers/` (pure logic — put anything checkable without a gateway here).
+These are split into subsystem subfolders named after `docs/agents/`, plus `Core/` for shared
+pieces. **Folders are not namespaces**: every file keeps the flat `ProjectSYNCS.Commands` /
+`.Helpers` / `.Services` / `.Models` namespace, so moves change no `using` nor the EF snapshot. A
+new file goes in its owning subsystem's subfolder.
 
 **Big classes are `partial` over a folder named after the class**, one file per theme, each under
-about 40 KB so it can be read whole (`BotResponses/`, `MessageCues/`, `PlynlingEvents/`,
-`ChatterService/`, `QuizBank/`, the big modules). Grow the
-theme's file; start a new one rather than letting one swell.
-**A static field's initializer never reads a static field in another file**: the order across
-partial files is undefined, so it may read null. A catalog spread over files is one method per file,
-joined in the field (`PlynlingEvents.All`).
+~40 KB so it can be read whole; start a new theme file rather than letting one swell. **A static
+field's initializer never reads a static field in another file** (cross-file order is undefined,
+it may read null): a catalog spread over files is one method per file, joined in the field
+(`PlynlingEvents.All`).
 
 **Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
-belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools, `/arcade` her games, `/minecraft` her life on the Minecraft server. Discord
-allows **25 subcommands per top-level command** and the 26th throws at registration on startup —
-count before adding to `/plynling` (15), `/inventory` (8), `/arcade` (11) or `/minecraft` (7); a new batch goes to the group that owns
-the thing, or a new group. `/pl` is a second registration of `/plynling`'s commands (see
-`plynling.md` before touching `PlynlingModule`). Component handlers live in `Interactions/Components/`; the module keeps
-the commands and the static card builders those handlers render through.
+belongings, `/admin` moderation, `/config` settings, `/debug` the owner's tools, `/arcade` her
+games, `/minecraft` her Minecraft life. **Discord allows 25 subcommands per top-level command**
+and the 26th throws at startup — count before adding. `/pl` re-registers `/plynling` (read
+`plynling.md` before touching `PlynlingModule`). Component handlers live in
+`Interactions/Components/`; modules keep the commands and the static builders.
 
-**DI lifetimes are not arbitrary.** `AppDbContext` and the services wrapping it are **transient**.
-Anything holding in-memory state (cooldowns, bounded sets, line history, caches) is a
-**singleton** — registering one as transient silently drops its state (`ResponsePicker` would
-forget every line, `ReactionService` would react to every message).
-
-**Singletons never inject a DB service.** They take `IServiceProvider` and open
-`CreateAsyncScope()` around each unit of work; injecting a transient would pin one `AppDbContext`
-for the process lifetime. Match this in any new background or gateway-driven work.
-
-All in-memory state (drafts, cooldowns, line history, trade offers…) resets on
-restart **by design**.
+**DI lifetimes are not arbitrary.** `AppDbContext` and services wrapping it are **transient**.
+Anything with in-memory state (cooldowns, bounded sets, line history, caches) is a **singleton** —
+as transient it silently loses its state. **Singletons never inject a DB service**: they take
+`IServiceProvider` and open `CreateAsyncScope()` per unit of work, or one `AppDbContext` gets
+pinned for the process lifetime. All in-memory state resets on restart **by design**.
 
 ## Conventions that will bite you
 
 ### Data
 
 - **SQLite cannot translate `DateTimeOffset` comparisons.** Filter booleans/ids in SQL,
-  `ToListAsync()`, then apply date windows and ordering **in memory** (see
-  `EventService.GetActiveEventsAsync`). `.Where(e => e.ScheduledAt > now)` throws at runtime.
-- **Snowflakes are `ulong`; SQLite integers are signed.** Every snowflake property needs
-  `.HasConversion<long>()` in `OnModelCreating`. A derived model property needs `[NotMapped]`
-  (see `EmoteStat.Markup`) or EF demands a migration for a column that should not exist.
-- **Anything stored by int or by string key is append-only**: enums stored as ints
-  (`PlynlingSpecies`, `PlynlingBond`, `JournalKind`, `DeathCause`, `UptimeEventKind`, passions) and stored keys
-  (item keys, cosmetic keys, badge keys, economy metric keys). Inserting in the middle or renaming
-  silently turns or orphans every existing row.
+  `ToListAsync()`, then apply date windows and ordering in memory
+  (`EventService.GetActiveEventsAsync`). `.Where(e => e.ScheduledAt > now)` throws at runtime.
+- **Snowflakes are `ulong`, SQLite integers signed**: every snowflake property needs
+  `.HasConversion<long>()`. A derived property needs `[NotMapped]` (`EmoteStat.Markup`) or EF wants
+  a column.
+- **Anything stored by int or string key is append-only**: int enums (`PlynlingSpecies`,
+  `PlynlingBond`, `JournalKind`, `DeathCause`, `UptimeEventKind`, passions) and keys (item,
+  cosmetic, badge, economy metric). Inserting mid-list or renaming silently turns or orphans rows.
 - **Totals + daily buckets** is the one pattern for dated rankings: an all-time totals table plus a
-  per-day table keyed by `Day`, an `int` `yyyymmdd` from `AppTime.DayKey` (so windows filter in
-  SQL), both written in the same call. Instances: `EmoteStat`/`EmoteDailyStat`,
-  `BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`,
-  `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`,
-  `CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`. **The buckets do not sum to the totals and must not be made
-  to** — everything before the buckets existed lives only in the totals. A removal always
-  decrements *today's* bucket, except a bought `/bribe shame`, which takes the most recent day holding
-  a hit, so the windows move (see shame). Follow this shape for any new dated leaderboard.
-  `MemberFlowDailyStat` (joins/leaves), `ActivityHourStat`, `ChannelDailyStat`, `CommandDailyStat`,
-  `CommandMemberDailyStat` and `IncidentDailyStat` (activity counting) are buckets alone, with no
-  totals, on purpose (see admin).
-- **No `HasMaxLength`**: SQLite doesn't enforce it. Cap at the input instead (below).
-- **Migrations are schema-only, except five deliberate data migrations** riding apply-on-startup:
-  `ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill),
-  `PrepareProdLaunch` (one-guild launch prep) and `SwapLaunchPairGenders` (details of the last three
-  in `plynling.md`). Rules learned from them:
-  a wipe **resets the reward and keeps the record** (`UPDATE … SET TotalXp = 0`, never deleting
-  rows that also carry facts like `ReactionsUsed`); a data migration's `Down` cannot restore
-  anything, so it is for one-off corrections only; never generate a SQL script from a migration
-  that computes "now" in C#.
+  per-day table keyed by `Day` (`int` `yyyymmdd` from `AppTime.DayKey`, so windows filter in SQL),
+  both written in the same call. **The buckets do not sum to the totals and must not be made to** —
+  older history lives only in the totals. Instances, removal rules and bucket-only tables:
+  `architecture.md`.
+- **No `HasMaxLength`** (SQLite ignores it): cap at the input (below).
+- **Migrations are schema-only** except five deliberate data migrations; read `architecture.md`
+  before writing one.
 
 ### Time and culture
 
-**Never use `DateTime.Now`.** Production runs in UTC; wall-clock handling goes through
-`Helpers/Core/AppTime` (`Europe/Paris`, DST-aware via `TryParseWallClock`). Store instants as UTC
-`DateTimeOffset`, show them as Discord `<t:unix:…>` timestamps. **Globalization must stay on**:
-`InvariantGlobalization` is `false` and the Dockerfile installs `libicu72`, for `Europe/Paris` and
-`fr-FR` formatting.
-**A `/` or `:` in a date format is the culture's separator, not a character**, and the bot sets no
-culture: a format without `Fr` or `InvariantCulture` quotes it (`{d:dd'/'MM}`), or it prints `09-10`
-on a machine whose separator is `-`.
+**Never `DateTime.Now`.** Prod runs in UTC; wall-clock goes through `Helpers/Core/AppTime`
+(`Europe/Paris`, DST-aware via `TryParseWallClock`). Store UTC `DateTimeOffset`, show Discord
+`<t:unix:…>`. **Globalization stays on** (`InvariantGlobalization` false, `libicu72` in the
+Dockerfile). **A `/` or `:` in a date format is the culture's separator**, and the bot sets no
+culture: without `Fr` or `InvariantCulture`, quote it (`{d:dd'/'MM}`).
 
 ### Interactions and custom-ids
 
-- **`[ComponentInteraction]` / `[ModalInteraction]` inside a `[Group]` module need
-  `ignoreGroupNames: true`**, or Discord.Net prefixes the group name and the handler never fires —
-  no error, no log.
-- **Custom-ids are a contract across files** (e.g. `PollModule` builds a `schedule:finalize:…`
-  modal for `ScheduleModule`'s handler; `/vote list` reuses `poll:republish`). Renaming one means
-  grepping the whole project.
-- **Every button row needs its own custom-id verb.** Discord rejects a message carrying the same
-  custom-id twice (`COMPONENT_CUSTOM_ID_DUPLICATED`, **disabled buttons included**) — this crashed
-  prod. Rows that encode the same state collide by construction, so give each row its own verb
-  (`…:win:`, `…:view:`, `…:page:`) and delegate to one shared `ShowAsync`.
-- **Modal DTOs and hand-built `ModalBuilder`s must stay in sync.** Several paths build modals by
-  hand to pre-fill them (`ScheduleModule.BuildEditModal`, `OnRetryAsync`,
-  `PollModule.OnCategoryPickedAsync`); a field added or renamed in only one place silently fails
-  to bind.
-- **Card builders are `static` and shared** by the module, the component handlers and the
-  background loops — change rendering in one place and every re-render follows.
-- **Every module that reads `Context.Guild` carries
-  `[CommandContextType(InteractionContextType.Guild)]`**: `config.yaml` ships
-  `register_globally: true`, and global commands are DM-enabled by default, where `Context.Guild`
-  is null. (`[EnabledInDm(false)]` is obsolete in Discord.Net 3.20
-  and fails the build under `-warnaserror`.)
+- **`[ComponentInteraction]` / `[ModalInteraction]` inside a `[Group]` need
+  `ignoreGroupNames: true`**, or the handler silently never fires.
+- **Custom-ids are a contract across files** (`PollModule` builds `schedule:finalize:…` for
+  `ScheduleModule`; `/vote list` reuses `poll:republish`): grep the project before renaming one.
+- **Every button row needs its own custom-id verb.** A message carrying the same custom-id twice
+  (**disabled buttons included**) is rejected (`COMPONENT_CUSTOM_ID_DUPLICATED` — crashed prod).
+  Give each row its own verb (`…:win:`, `…:view:`, `…:page:`) delegating to one shared `ShowAsync`.
+- **Modal DTOs and hand-built `ModalBuilder`s stay in sync** (`ScheduleModule.BuildEditModal`,
+  `OnRetryAsync`, `PollModule.OnCategoryPickedAsync`): a field changed in one place fails to bind.
+- **Card builders are `static` and shared** by module, handlers and loops.
+- **Every module reading `Context.Guild` carries `[CommandContextType(InteractionContextType.Guild)]`**:
+  prod registers globally and global commands are DM-enabled, where `Context.Guild` is null.
+  (`[EnabledInDm(false)]` is obsolete and fails `-warnaserror`.)
 
 ### Discord's hard caps
 
-Exceeding any of these throws at **send** time, often with nothing in the logs naming the length:
-25 options per select (`.Take(25)`), 5 buttons per row, 80-char button labels, 100-char select
-labels, 1000-char scheduled-event description, 2000-char message, embed title 256, field value
-1024, **6000 per message's embeds in total**, **40 components per Components V2 message counting
-the whole tree** (Discord.Net throws in `ComponentBuilderV2.Build()`). Keep builders `static` and
-Context-free so they can be measured, and **re-do the component sum before adding anything** to a
-V2 card. `/help` and `/plynling help` are close to the 6000 cap — measure before adding.
+These throw at **send** time, often with no length in the log: 25 select options (`.Take(25)`),
+5 buttons per row, 80-char button labels, 100-char select labels, 1000-char scheduled-event
+description, 2000-char message, embed title 256, field value 1024, **6000 across a message's
+embeds**, **40 components per Components V2 message counting the whole tree** (throws in
+`ComponentBuilderV2.Build()`). Keep builders static and Context-free so they can be measured, and
+**re-sum components before adding to a V2 card**. `/help` and `/plynling help` are near 6000.
 
-**Cap user-supplied text at the option**, not at the point of use: `[MaxLength(n)]` on slash
-options (default 6000) and `maxLength:` on `[ModalTextInput]` (default 4000). Discord then refuses
-the input client-side and nothing over-long reaches the database, where it would break every later
-re-render. Numbers live in `Helpers/Core/InputCaps` (`Title` 150, `Prize` 200, `Description` 1000,
-`Question` 400); `Title` is used at several modal sites that must agree.
+**Cap user text at the option**: `[MaxLength(n)]` on slash options, `maxLength:` on
+`[ModalTextInput]`, so nothing over-long reaches the database and breaks re-renders. Numbers live
+in `Helpers/Core/InputCaps`; `Title` is shared by several modals that must agree.
 
 ### Components V2
 
-A message with `MessageFlags.ComponentsV2` may have **no content and no embeds**, must
-**re-assert the flag on every `UpdateAsync`**, and must send with **`AllowedMentions.None`**: a
-`TextDisplay` is real content, so `<@id>` in one genuinely pings (an embed got inert mentions for
-free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avatars go through
-`Helpers/Core/AvatarUi`.
+A `MessageFlags.ComponentsV2` message has **no content and no embeds**, **re-asserts the flag on
+every `UpdateAsync`**, and sends with **`AllowedMentions.None`** (a `TextDisplay` is real content:
+`<@id>` pings; `None` keeps the pill silent). Avatars go through `Helpers/Core/AvatarUi`.
 
 ### Mentions and hostile text
 
-- **Relayed text never becomes a mass-ping vector**: anything sent on someone's behalf passes
-  `new AllowedMentions(AllowedMentionTypes.Users)` and quotes through `MessageFormat.Quote`. The
-  absence notice forwarded to the owner uses `AllowedMentions.None`.
-- The few messages **meant** to ping narrow to users (giveaway winners) or to one id (the Plynling
-  visit's first card) — never roles or `@everyone`. `BotChat.PostWithTypingAsync` takes an optional
-  `AllowedMentions` for this.
-- **User-chosen names and texts are hostile input** (Plynling names, taught passions): render
-  through `Format.Sanitize` and send with mentions off.
+- **Relayed text never mass-pings**: sent on someone's behalf with
+  `new AllowedMentions(AllowedMentionTypes.Users)`, quoted through `MessageFormat.Quote`. The
+  absence notice to the owner uses `AllowedMentions.None`.
+- Messages **meant** to ping narrow to users (giveaway winners) or one id (the visit's first card),
+  never roles or `@everyone` (`BotChat.PostWithTypingAsync` takes an optional `AllowedMentions`).
+- **User-chosen names and texts are hostile** (Plynling names, taught passions): `Format.Sanitize`,
+  mentions off.
 
 ### Reliability
 
-- **Discord side effects must never break the flow.** Swallow and log (`SessionEventSync` degrades
-  silently without Manage Events; reminder DMs catch `CannotSendMessageToUser`).
-- **An interaction must be answered within 3 s, and the Pi's database can outrun that.** A handler
-  that reads or writes the database before it can show anything defers first (`DeferAsync`, then
-  follow-ups / `ModifyOriginalResponseAsync`). Otherwise the work is saved while the click looks
-  dead — the old « Accueillir » on a visit did exactly that.
-- **An in-memory claim taken before a save is released if the save throws**, or the person is
-  refused for something that never happened.
-- **An exception escaping a hosted loop stops the whole bot** (default `StopHost`). Every sweep
-  catches **per item**, not per pass, so one bad row doesn't stop the batch — and
-  `BackgroundServiceExceptionBehavior.Ignore` is *not* the fix (it leaves the loop silently dead).
-  Anything added to a sweep goes inside the existing per-item `try`. The real exposure is DB writes
-  (`SQLITE_BUSY` under write contention on the Pi).
-- **Never a database write per message.** High-frequency counts go through `ActivityCounter`, in
-  memory and flushed every 5 minutes by `ActivityFlushService` (see admin), the one batched
-  counter: add a counter to it rather than writing from the fan-out.
+- **Discord side effects never break the flow**: swallow and log (`SessionEventSync` without Manage
+  Events; reminder DMs catch `CannotSendMessageToUser`).
+- **Answer an interaction within 3 s**; the Pi's database can outrun that. A handler touching the
+  database before showing anything defers first (`DeferAsync`, then follow-ups /
+  `ModifyOriginalResponseAsync`), or the work saves while the click looks dead.
+- **An in-memory claim taken before a save is released if the save throws.**
+- **An exception escaping a hosted loop stops the whole bot.** Every sweep catches **per item**, not
+  per pass; anything added to a sweep goes inside the existing per-item `try`
+  (`BackgroundServiceExceptionBehavior.Ignore` is not the fix — the loop dies silently). The real
+  exposure is `SQLITE_BUSY` on the Pi.
+- **Never a database write per message.** High-frequency counts go through `ActivityCounter`
+  (flushed every 5 min by `ActivityFlushService`, see admin): add a counter there.
 
 ### Shared helpers — use them, don't re-inline
 
-- **`Helpers/Core/CooldownGate<TKey>`** ("claimed recently?") and **`Helpers/Core/BoundedSet<T>`** ("seen
-  before?"). They share the mechanism, **never the policy**: each service owns its own instances
-  and durations, and two trigger populations never share one gate. `CooldownGate` owns its lock;
-  `BoundedSet` owns **none**, because callers need its add to be atomic with their own state.
-- **`Helpers/Core/BotChat`** is the single send path for her chatter (typing pause, clamped inside
-  Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/Core/EmoteMarkup.Parse`** is the
-  single reaction parser.
-- **`Helpers/Core/Sticker`** is the only place sticker markers live: a line opts into a picture
-  follow-up by appending a constant (`+ Sticker.Bored`), and only pools sent through `BotChat`
-  may carry one. `BotChat.FollowUp` is `BotChat`'s one static seam, set in `Program.cs` — see
-  `docs/agents/personality/reactions.md`, *Sticker follow-ups*.
-- **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(pool)`, which
-  excludes the pool's `min(50, pool.Length / 2)` most recently said lines. Its memory is **global**,
-  not per channel — the same people read every channel and their DMs — and records when each line
-  was last said, so busy pools (emote reactions) never crowd out rare ones. Pick the template
-  *before* `string.Format`. A pool that goes through `string.Format` throws on a stray brace. Minecraft's
-  small pools use `Pick(pool, choices)`, which narrows the pick to the lines said least recently (see minecraft). **A pool spent once a day uses
-  `Helpers/Core/DailyRotation` instead** — a restart wipes the picker's history, which at one pick a
-  day means it never helps; the rotation is computed from the date, with nothing stored.
-- **A line that greets for a time of day goes in a `Helpers/Core/TimedPool`** (`DayPart.cs`):
-  « bonjour » / « bonne journée » in its `day` half, « bonsoir » / « bonne soirée » in `evening`
-  (Paris time, 3 h–18 h is day), everything else in `anyTime`; callers pick from `.Now` or
-  `.At(instant)`. A pool that only ever runs at one time (the morning hello, the 3 a.m. line) stays
-  a plain array. Checks section 45 holds every `TimedPool` on `BotResponses` to its halves.
-- **Custom emote markup lives in `Helpers/Core/Emotes` and nowhere else**, as `const string` pairs
-  (`XId` + `X`), so lines stay constant expressions. Never paste raw `<:name:id>` into a pool.
-- **`BotResponses.DisplayNameFor(IUser)`** is the only place the
-  `Nickname ?? GlobalName ?? Username` chain lives (it also applies family nicknames). Never
-  re-inline it.
+- **`CooldownGate<TKey>`** ("claimed recently?") and **`BoundedSet<T>`** ("seen before?") share the
+  mechanism, **never the policy**: each service owns its instances and durations; two trigger
+  populations never share one. `CooldownGate` owns its lock; `BoundedSet` owns none (callers need
+  the add atomic with their own state).
+- **`BotChat`** is the single send path for her chatter (typing pause inside the 3 s
+  `HandlerTimeout`, swallow-and-log); **`EmoteMarkup.Parse`** the single reaction parser.
+- **`Sticker`** holds the sticker markers: a line opts in with `+ Sticker.Bored`, only in pools sent
+  through `BotChat` (see `personality/reactions.md`, *Sticker follow-ups*).
+- **Pick response lines with `ResponsePicker.Pick(pool)`**, which skips the pool's
+  `min(50, length / 2)` most recent lines — memory is **global** across channels and DMs. Pick the
+  template *before* `string.Format` (a stray brace throws). A pool spent once a day uses
+  **`DailyRotation`** (date-computed; a restart wipes the picker).
+- **Time-of-day greetings go in a `TimedPool`** (`DayPart.cs`): « bonjour » in `day`, « bonsoir »
+  in `evening` (Paris, day is 3 h–18 h), the rest in `anyTime`; pick from `.Now` or `.At(instant)`.
+  A pool that only runs at one time stays a plain array. Checks section 45 polices the halves.
+- **Custom emote markup lives only in `Helpers/Core/Emotes`**, as `const string` pairs (`XId` +
+  `X`), so lines stay constant. Never raw `<:name:id>` in a pool.
+- **`BotResponses.DisplayNameFor(IUser)`** is the only home of `Nickname ?? GlobalName ?? Username`
+  (plus family nicknames).
 
 ### Authorization — three models, don't conflate them
 
-- `SessionPermissions.CanManage` — the organizer, or an Administrator / ManageGuild holder
-  (sessions, polls).
-- `SessionPermissions.IsStaff` — Administrator / ManageGuild **or** the owner, regardless of who
-  owns the thing (`/admin`, `/config`, staff Plynling actions).
-- Owner-only — `Context.User.Id == AvailabilityService.OwnerId`, checked inline (`/debug`).
-
-`/admin` and `/config` deliberately carry **no `[DefaultMemberPermissions]`**: a permission bit
-cannot express "ManageGuild, plus the owner". The `IsStaff` check in each handler is the only gate.
+- `SessionPermissions.CanManage` — the organizer, or Administrator / ManageGuild (sessions, polls).
+- `SessionPermissions.IsStaff` — Administrator / ManageGuild **or** the owner (`/admin`, `/config`,
+  staff Plynling actions). Those two carry **no `[DefaultMemberPermissions]`** (no bit can say
+  "plus the owner"): the handler's `IsStaff` check is the only gate.
+- Owner-only — `Context.User.Id == AvailabilityService.OwnerId`, inline (`/debug`).
 
 ### Where she speaks
 
-**Silence mode** (`/debug silence`, `SilenceService`, see admin) mutes everything she says on her
-own initiative. Anything new that posts unprompted checks `SilenceService.IsSilent` before
-sending; answers to commands and buttons, and the notices a command set up (reminders, recaps,
-draws), never do.
-
-A reply goes where she was used. Something she announces **on her own initiative that doesn't
-matter much** (Quokka's visits, and whatever joins them) goes to the bots channel, through
-`BotsChannel.ResolveAsync` — never hardcoded, never the main channel. Announcements that matter
-(deaths, the morning hello, session recaps) keep their own channels.
+Anything she posts **on her own initiative** checks `SilenceService.IsSilent` first (`/debug
+silence`, see admin); answers to commands and buttons, and notices a command set up (reminders,
+recaps, draws), don't. Low-stakes unprompted posts (Quokka's visits and the like) go to the bots
+channel via `BotsChannel.ResolveAsync` — never hardcoded, never the main channel. Ones that matter
+(deaths, morning hello, recaps) keep their own channels.
 
 ### Docs
 
-`/help` (`HelpModule`) and `README.md` are hand-maintained. A new user-facing command means
-updating both — except owner-only commands, deliberately absent from `/help`. Easter eggs
-(breakdown, quoicoubeh, the glitch) stay out of both.
+`/help` (`HelpModule`) and `README.md` are hand-maintained: a new user-facing command updates both
+— except owner-only commands. Easter eggs (breakdown, quoicoubeh, the glitch) stay out of both.
 
-**A notes file under `docs/` stays under about 40 KB, like the code**, so it can be read whole.
-Past that it becomes an index (what binds the whole topic, plus a table of where each section
-went) and topic files in a folder of the same name: `docs/agents/personality/`,
-`docs/agents/minecraft-orders/`, `docs/syncs-appearance/`. Read the index, then only the topic
-file you need.
+**A notes file under `docs/` stays under ~40 KB**; past that it becomes an index plus a folder of
+topic files of the same name — read the index, then only the topic you need.
 
-**Search skips generated and spent files** (`.ignore`, read by ripgrep only): the migration
-`*.Designer.cs` and the executed plans in `docs/superpowers/plans/`. Pass their path to search them.
+Search skips generated and spent files (`.ignore`, ripgrep only); pass their path to search them.
 
 ## Version and deployment
 
-`ProjectSYNCS/config.yaml` is the **single source of truth for the version** — the csproj
-regex-parses it into `<Version>` and `AppInfo.Version` shows it in the `/help` footer. Bump it there
-only.
+`ProjectSYNCS/config.yaml` is the **single source of the version** (the csproj parses it;
+`/help`'s footer shows it). **Every change to the bot bumps it** — Home Assistant only offers an
+update when it changes.
 
-**Every change to the bot bumps the version**, because Home Assistant only offers the add-on update
-when `version` changes: an unbumped push never reaches the Pi.
+- **Once per batch**: if `git diff` shows `config.yaml` already changed, don't bump again (the
+  owner commits by hand).
+- **Patch**: lines, facts, emotes, fixes, art, tweaks. **Minor** (patch reset): a new command,
+  subcommand, subsystem, user-visible behaviour, or any migration. **Major**: the owner's call only.
+- **No bump** for `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`, `tests/`, `.github/`.
+- Numbers don't roll over (`5.11.26` is fine). Say the new number in your summary.
+- **A bump adds an entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
+  one short English bullet per user-visible change; extend the entry if already bumped). It must
+  stay beside `config.yaml` (Home Assistant shows it). No easter-egg triggers or member names — the
+  repo is public. Changelog-only edits need no bump.
 
-- **Once per batch, not per edit.** If `config.yaml` already differs from `HEAD`, the batch is
-  bumped — don't bump again. The owner commits by hand, so check `git diff` rather than assuming.
-- **Patch** (`5.18.11` → `5.18.12`): lines, fun facts, emotes, fixes, art, tweaks to existing
-  behaviour.
-- **Minor** (`5.18.12` → `5.19.0`, patch reset): a new command, subcommand, subsystem or
-  user-visible behaviour, or anything that adds a migration.
-- **Major**: the owner's call only; never bump it unasked.
-- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`, `tests/`, `.github/`.
-- Numbers don't roll over: `5.11.26` is fine. When you bump, say so in the summary, with the
-  new number.
-- **A bump adds its entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
-  one short bullet per user-visible change, **in English** like the rest of the file); if the batch
-  is already bumped, extend that entry.
-  Home Assistant shows this file in the add-on's Changelog tab, so it must stay next to
-  `config.yaml`. Keep easter-egg triggers and member names out of it — the repo is public.
-  Editing the changelog alone needs no bump.
-
-The bot ships as a Home Assistant add-on whose image CI builds and the Pi pulls; **only `/data` is
-persisted**, so the database and every state file live there. The packaging, the image pipeline
-and the list of state files are in `docs/agents/deployment.md` — read it before touching any of
-them.
-
-The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
-tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.
+Only `/data` persists on the Pi (database and state files); packaging and the image pipeline:
+`deployment.md`. The remote is **public**: real tokens go in user secrets or add-on options, never
+a tracked file.
 
 ## Hardcoded ids
 
-Some literal snowflakes (the owner, channels, emotes, per-member maps, the home guild) are tied to
-one server. The full list, and which ones `/config` can extend or replace, is in
-`docs/agents/architecture.md`; a new one gets a line there. `OwnerId` is deliberately **not**
-configurable — it gates `/debug` and the DM relay, so making it editable would let any ManageGuild
-holder hand themselves those powers.
+Some literal snowflakes are tied to one server; the list, and which `/config` can extend or
+replace, is in `architecture.md` (a new one gets a line there). `OwnerId` is deliberately **not**
+configurable — it gates `/debug` and the DM relay.
