@@ -1327,6 +1327,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<string>("AccessoryKey")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("AccessoryStyle")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("AdoptedAt")
                         .HasColumnType("TEXT");
 

@@ -354,6 +354,18 @@ every Ready and on `JoinedGuild`.
   no stage segment. Every mushroom baby is hand-drawn (`<species>_baby` in `species.py`) — a derived
   shrink kept the adult's full-size cap.
 - `PlynlingArt.Key` is exhaustive and **throws** on an unkeyed species (never default to one).
+- **The worn accessory is drawn on the picture** (8.5.0): `SpriteOf` adds
+  `_with_<accessory>[_<style>]` after the face and its `_dirty`, from the Plynling's `Outfit` — or the
+  try-on's, which `CardHead` passes. Every card face but angry (a visit face: angry stays plain), every
+  shape, every accessory in every style is pre-rendered (`tools/plynling-art/accessories.py`, ~7 500
+  files, new names so no version bump). An accessory key the catalogue doesn't know falls back to the
+  plain picture, a style that isn't one of its to the default (`AccessoryStyles.Resolve`). An adult in a
+  hat is a taller picture (40 px canvas, the Plynling at 80 %). **Checks section 62 reads
+  `assets/plynlings/`**: every URL the bot can build must exist and the bot's styles must equal the
+  drawn ones — a new accessory or style needs its drawing and a re-export before it ships. **Bumping
+  `Version` now renames ~7 900 files (~54 MB more in the public repo's history)**: to redraw one
+  accessory, prefer giving it new filenames over bumping the shared version. Visits and
+  event cards keep the plain picture (owner's call: piece B of the cosmetics rework was dropped).
 
 ## Families — dormant
 

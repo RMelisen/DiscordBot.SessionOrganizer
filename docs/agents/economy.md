@@ -339,8 +339,8 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is four keys on it.** `CosmeticCatalog` holds the 70
-(`cos.<slot>.<name>`, stored, **append-only**) with slot data (a thème's accent and banner, a titre's
+**Cosmetics are items; what a Plynling wears is four keys on it.** `CosmeticCatalog` holds the 67
+(`cos.<slot>.<name>`, stored, **append-only** — two retired in 8.5.0, see below) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
 no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey` are read and written only through
@@ -350,7 +350,20 @@ no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey` are read and
   *living* Plynling in the same unit of work.
 - **Cosmetics cannot be sold** (`GiveOutcome.NotSellable`) — a buy-back price invites loops.
 - On the card a thème costs one component (its banner); titre and accessoire ride in the heading
-  text.
+  text — and the accessoire is also **drawn on the Plynling's picture** (8.5.0, `PlynlingArt.SpriteOf`,
+  see `plynling.md` *Art*).
+- **Accessory styles** (`AccessoryStyles`): some accessories have one or two choices — a colour (nœud,
+  fleur, écharpe, casquette, ballon, moufles), a place at the neck (écharpe, collier, médaillon) — whose
+  first option is the default. The picked options are one string on the Plynling, `AccessoryStyle`
+  (« bleue_haut », null = default), written only by the Garde-robe's style selects
+  (`CosmeticService.StyleAsync`, free) and **cleared whenever the accessory changes**
+  (`CosmeticSlots.Set`, so a take-off by `InventoryService.TakeAsync` clears it too). `Outfit` carries
+  it, and a try-on of another accessory shows that one's default. Option keys are stored:
+  append-only, never renamed, never containing « _ »; a new option needs its drawing first (checks
+  section 62 compares the two).
+- **Retired accessories**: the sac à dos and the casque audio left the catalogue in 8.5.0; the data
+  migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. Their keys
+  stay retired — never reuse them.
 
 **The shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` = the basics, then
 `RotatingPerSlot` (2) per slot drawn with `new Random(week * 10 + slot)` (seeded: same for everyone,
@@ -382,7 +395,9 @@ redraws in place.
 - **Custom-ids use the `cosm:` prefix**, one verb per control: `cosm:tab:{tab}`, `cosm:slot:{slot}`,
   `cosm:pick:{tab}:{week}` (the one select; the wardrobe's « Aucun » is `none:{slot}`),
   `cosm:buy`/`cosm:buyw:{week}:{key}`, `cosm:make`/`cosm:makew:{key}`, `cosm:wear:{tab}:{key}`,
-  `cosm:back:{tab}`. The view (tab, slot, picked key) lives only in the ids, so a restart loses nothing.
+  `cosm:back:{tab}`, `cosm:style:{choice}:{key}` (the worn accessory's colour or place, on the Accessoire
+  slot; refused if that accessory is no longer worn). The view (tab, slot, picked key) lives only in the
+  ids, so a restart loses nothing.
   The old screens' `cos:` ids answer nothing, on purpose: a new prefix keeps every wildcard clear of them.
 - Without a living Plynling the screen still opens: shop and recipes work, the head is a plain title,
   « …et porter » and « Porter » are hidden, and the wardrobe lists what is owned.

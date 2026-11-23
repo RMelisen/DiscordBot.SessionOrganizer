@@ -54,7 +54,7 @@ public static class ItemEmojis
         ["col.silex"] = 2, ["col.agate"] = 2, ["col.feuille_chene"] = 2, ["col.mouche"] = 2,
         ["col.meteorite"] = 2,
         ["cos.accessory.collier_coquillages"] = 2, ["cos.accessory.moufles"] = 2, ["cos.accessory.casquette"] = 2,
-        ["cos.accessory.lunettes"] = 2, ["cos.accessory.casque_audio"] = 2, ["cos.accessory.haut_de_forme"] = 2,
+        ["cos.accessory.lunettes"] = 2, ["cos.accessory.haut_de_forme"] = 2,
         ["cos.grave.aura_doree"] = 2, ["cos.grave.clair_de_lune"] = 2, ["cos.grave.lanternes"] = 2,
         ["cos.grave.galets"] = 2, ["cos.theme.plage"] = 2, ["cos.theme.aurore_boreale"] = 2,
         ["cos.theme.caverne_tresors"] = 2, ["cos.theme.foret"] = 2, ["cos.theme.royal"] = 2, ["cos.grave.feuilles"] = 2,

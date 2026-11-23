@@ -62,7 +62,7 @@ public static class CosmeticScreenChecks
     {
         Name = new string('W', 32), Gender = PlynlingGender.Female, OwnerId = ulong.MaxValue,
         ThemeKey = "cos.theme.aurore_boreale", TitleKey = "cos.title.chercheur_tresors",
-        AccessoryKey = "cos.accessory.collier_coquillages", GraveKey = "cos.grave.couronne_fleurs",
+        AccessoryKey = "cos.accessory.echarpe", GraveKey = "cos.grave.couronne_fleurs",   // the écharpe: two style selects, the widest
     };
 
     private static void Caps()

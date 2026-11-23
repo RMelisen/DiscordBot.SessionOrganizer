@@ -109,10 +109,10 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         Outfit? outfit = null)
     {
         var info = PlynlingCatalog.Info(plynling.Species);
-        var picture = plynling.DiedAt is null
-            ? PlynlingArt.SpriteOf(plynling, now)
-            : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now)));
         var worn = outfit ?? Outfit.Of(plynling);
+        var picture = plynling.DiedAt is null
+            ? PlynlingArt.SpriteOf(plynling, now, outfit: worn)       // the accessory drawn on it, tried on or worn
+            : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now)));
 
         var container = new ContainerBuilder()
             .WithAccentColor(new Color(worn.Theme?.Accent ?? info.Accent));

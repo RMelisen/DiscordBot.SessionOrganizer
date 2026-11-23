@@ -149,6 +149,10 @@ public class Plynling
     public string? AccessoryKey { get; set; }
     public string? GraveKey { get; set; }
 
+    // The worn accessory's style (AccessoryStyles: « bleue_haut »), null for its default. Reset
+    // whenever the accessory changes (CosmeticSlots.Set); picked, free, in the Garde-robe.
+    public string? AccessoryStyle { get; set; }
+
     // Moments a Settle produced (fell sick, recovered) that the journal still has to record.
     // Settle is pure, so whoever saves the row writes them (PlynlingService.FlushMomentsAsync).
     // Never stored.

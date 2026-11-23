@@ -5594,5 +5594,8 @@ ForagePlaceChecks.Run(Fail);
 // 61. Crafting: « any commons » ingredients, the recipe catalog and its bands: CraftingChecks.cs.
 await CraftingChecks.Run(Fail);
 
+// 62. Accessories on the sprite: every picture exists, styles match the art, the picker: AccessoryArtChecks.cs.
+AccessoryArtChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

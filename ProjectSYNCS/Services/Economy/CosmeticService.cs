@@ -109,6 +109,23 @@ public class CosmeticService
         return (CosmeticOutcome.Done, plynling);
     }
 
+    /// <summary>
+    /// Sets one choice (colour, position) of the accessory the person's living Plynling wears — free,
+    /// like wearing. Refused (<see cref="CosmeticOutcome.UnknownItem"/>) when that accessory is no
+    /// longer the worn one (a screen left open across a change) or the option isn't one of its.
+    /// </summary>
+    public async Task<(CosmeticOutcome Outcome, Plynling? Plynling)> StyleAsync(ulong guildId, ulong userId, string accessoryKey, int choice, string option)
+    {
+        var plynling = await _db_context.Plynlings.FirstOrDefaultAsync(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null);
+        if (plynling is null) return (CosmeticOutcome.NoPlynling, null);
+        var choices = AccessoryStyles.Choices(accessoryKey);
+        if (plynling.AccessoryKey != accessoryKey || choice < 0 || choice >= choices.Count || choices[choice].Options.All(o => o.Key != option))
+            return (CosmeticOutcome.UnknownItem, plynling);
+        plynling.AccessoryStyle = AccessoryStyles.With(accessoryKey, plynling.AccessoryStyle, choice, option);
+        await _db_context.SaveChangesAsync();
+        return (CosmeticOutcome.Done, plynling);
+    }
+
     // Everything the person holds, by key (rows at 0 included: the screen reads counts), and their
     // balance — what the cosmetics screen needs besides the Plynling.
     public async Task<(Dictionary<string, int> Held, long Balance)> HeldAsync(ulong guildId, ulong userId)

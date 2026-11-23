@@ -57,12 +57,28 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   gallery and Discord stretches each to half the message width, which can't be shrunk from the
   bot — so the sprite is shrunk inside its picture. Change `VISIT_CANVAS` and re-export to make
   them smaller or larger. Added without a version bump, like the angry faces.
+- `accessories.py` — the 17 cosmetic accessories, drawn on the Plynling's own picture. Each has a
+  family that says where it sits — a hat on the cap (couronne, haut-de-forme, casquette), on the cap
+  (nœud, fleur), on the eyes, at the neck (écharpe, collier, médaillon), on the hands, or held in the
+  left hand (the heart, the sweat and the « z » are on the right) — and is placed from the drawing
+  itself on every frame (the cap's real top, the first stem row under it, the arms), so one drawing
+  fits every species and stage and follows the breath and the hop. Some come in **styles** the player
+  picks: colours (nœud, fleur, écharpe, casquette, ballon, moufles) and a place at the neck (haut,
+  bas); the first of each is the default, and the names must match `AccessoryStyles` in the bot. An
+  adult's cap reaches the top of its picture, so an adult in a hat is drawn on a 40 px canvas
+  (`HAT_CANVAS`, the Plynling at 80 %); `HAT_SETTLE` sinks the hat a row into some caps. The accessory
+  stays clean on a muddy Plynling and takes the ice tint on a frozen one. Every placement and colour
+  was approved by the owner species by species — redraw through the preview sheets
+  (`python accessories.py <outdir>`) and show them before exporting.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
 - `export.py` — renders all 319 files into `assets/plynlings/` (256×256, and 320×320 for the 56 `_visit` ones): the 224 living sprites as
   looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
-  one longer frame, so a file holds fewer than 16 frames while still lasting 2 s.
+  one longer frame, so a file holds fewer than 16 frames while still lasting 2 s. Then every card
+  face (not angry) of every shape in every accessory look,
+  `plynling_<species>[_baby]_<face>[_dirty]_with_<accessory>[_<style>]_v4.webp` (7 560 files; the
+  ones in a hat 320×320 on an adult). Each loop is measured once and dressed in every look.
 
 Requires Python 3 and Pillow. Run from this folder: `python export.py`.
 

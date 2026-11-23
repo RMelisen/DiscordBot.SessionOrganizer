@@ -29,7 +29,8 @@ public sealed record CosmeticScreenData(
 //
 // One verb per control, so no id repeats on a message: cosm:tab:{tab}, cosm:slot:{slot},
 // cosm:pick:{tab}:{week} (the one select; « Aucun » is none:{slot}), cosm:buy:{week}:{key},
-// cosm:buyw:{week}:{key}, cosm:make:{key}, cosm:makew:{key}, cosm:wear:{tab}:{key}, cosm:back:{tab}.
+// cosm:buyw:{week}:{key}, cosm:make:{key}, cosm:makew:{key}, cosm:wear:{tab}:{key}, cosm:back:{tab},
+// cosm:style:{choice}:{key} (the worn accessory's colour or position).
 // The prefix is new (the old screens used cos:), so no handler here answers an old screen's select.
 public static class CosmeticCards
 {
@@ -140,6 +141,22 @@ public static class CosmeticCards
         foreach (var c in owned)
             menu.AddOption(Shown(c, p), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key);
         container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+
+        // The worn accessory's styles: one select per choice (« Couleur », « Position »), free, worn at once.
+        if (slot == CosmeticSlot.Accessory && worn is not null && AccessoryStyles.Resolve(worn.Key, p.AccessoryStyle) is { } style)
+        {
+            var current = style.Split('_');
+            var choices = AccessoryStyles.Choices(worn.Key);
+            for (var i = 0; i < choices.Count; i++)
+            {
+                var styles = new SelectMenuBuilder()
+                    .WithCustomId($"cosm:style:{i}:{worn.Key}")
+                    .WithPlaceholder($"{choices[i].Label}…");
+                foreach (var o in choices[i].Options)
+                    styles.AddOption($"{choices[i].Label} : {o.Name}", o.Key, isDefault: o.Key == current[i]);
+                container.AddComponent(new ActionRowBuilder().WithSelectMenu(styles));
+            }
+        }
     }
 
     // ---- the shop ------------------------------------------------------------------------------

@@ -41,18 +41,37 @@ public static class PlynlingArt
 
     // The adult filename deliberately carries no stage segment: it is the file every species
     // already had, so adding the baby invalidated nothing Discord had cached. The dirty version
-    // adds « _dirty » after the face — new filenames, so no version bump.
-    public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false) =>
+    // adds « _dirty » after the face, a worn accessory « _with_<name>[_<style>] » after that
+    // (tools/plynling-art/accessories.py) — new filenames, so no version bump. An accessory key the
+    // catalogue doesn't know (retired, mistyped) shows the plain picture; angry is a visit face and
+    // has no accessory pictures; an unknown style shows the default one (AccessoryStyles.Resolve).
+    public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false,
+        string? accessory = null, string? style = null) =>
         $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}" +
-        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}_v{Version}.webp";
+        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}{AccessorySegment(mood, accessory, style)}_v{Version}.webp";
+
+    private const string AccessoryPrefix = "cos.accessory.";
+
+    private static string AccessorySegment(PlynlingMood mood, string? accessory, string? style)
+    {
+        if (mood == PlynlingMood.Angry || CosmeticCatalog.ByKey(accessory) is not { Slot: CosmeticSlot.Accessory } worn
+            || !worn.Key.StartsWith(AccessoryPrefix, StringComparison.Ordinal))
+            return "";
+        var resolved = AccessoryStyles.Resolve(worn.Key, style);
+        return $"_with_{worn.Key[AccessoryPrefix.Length..]}{(resolved is null ? "" : "_" + resolved)}";
+    }
 
     /// <summary>
     /// The one way to picture a living Plynling on its own: its species, its stage, its mood (or
-    /// the one given) and whether it is « sale ». Never frozen and dirty — the ice covers it.
+    /// the one given), whether it is « sale », and the accessory it wears in its style — or, for a
+    /// try-on, the one <paramref name="outfit"/> puts on. Never frozen and dirty — the ice covers it.
     /// </summary>
-    public static string SpriteOf(Plynling p, DateTimeOffset now, PlynlingMood? mood = null) =>
-        Sprite(p.Species, PlynlingLife.Stage(p, now), mood ?? PlynlingLife.Mood(p, now),
-            p.FrozenAt is null && PlynlingLife.IsDirty(p, now));
+    public static string SpriteOf(Plynling p, DateTimeOffset now, PlynlingMood? mood = null, Outfit? outfit = null)
+    {
+        var worn = outfit ?? Outfit.Of(p);
+        return Sprite(p.Species, PlynlingLife.Stage(p, now), mood ?? PlynlingLife.Mood(p, now),
+            p.FrozenAt is null && PlynlingLife.IsDirty(p, now), worn.Accessory?.Key, worn.AccessoryStyle);
+    }
 
     /// <summary>
     /// The picture a visit story shows (happy, content, sad or angry): the same animation on a larger

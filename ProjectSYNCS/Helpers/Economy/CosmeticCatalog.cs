@@ -47,7 +47,10 @@ public static class CosmeticSlots
         {
             case CosmeticSlot.Theme: p.ThemeKey = key; break;
             case CosmeticSlot.Title: p.TitleKey = key; break;
-            case CosmeticSlot.Accessory: p.AccessoryKey = key; break;
+            case CosmeticSlot.Accessory:
+                if (p.AccessoryKey != key) p.AccessoryStyle = null;     // a style belongs to one accessory
+                p.AccessoryKey = key;
+                break;
             default: p.GraveKey = key; break;
         }
     }
@@ -269,8 +272,6 @@ public static class CosmeticCatalog
         Accessory("casquette", "🧢", "une casquette", Rot, C);
         Accessory("ballon", "🎈", "un ballon", Rot, C);
         Accessory("lunettes", "🕶️", "des lunettes de soleil", Rot, U);
-        Accessory("sac_a_dos", "🎒", "un petit sac à dos", Rot, U);
-        Accessory("casque_audio", "🎧", "un casque audio", Rot, U);
         Accessory("haut_de_forme", "🎩", "un haut-de-forme", Rot, R);
         Accessory("baguette", "🪄", "une baguette magique", Rot, R);
         Accessory("couronne", "👑", "une petite couronne", Rot, L);

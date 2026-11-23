@@ -147,6 +147,23 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         await RedrawAsync(new CosmeticView(tab, Picked: key), notice);
     }
 
+    // The worn accessory's colour or position (cosm:style:{choice}:{key}): free, worn at once.
+    [ComponentInteraction("cosm:style:*:*", ignoreGroupNames: true)]
+    public async Task OnStyleAsync(string choiceStr, string key, string[] selected)
+    {
+        if (!int.TryParse(choiceStr, out var choice)) return;
+        await DeferAsync();
+        var option = selected.FirstOrDefault() ?? "";
+        var (outcome, plynling) = await _cosmetics.StyleAsync(Context.Guild.Id, Context.User.Id, key, choice, option);
+        var cosmetic = CosmeticCatalog.ByKey(key);
+        var notice = outcome == CosmeticOutcome.Done && cosmetic is not null
+            ? $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(plynling!.Name)} change de style : {cosmetic.Emoji} {CosmeticCatalog.ShortName(cosmetic)}, " +
+              $"{AccessoryStyles.Choices(key)[choice].Options.First(o => o.Key == option).Name.ToLowerInvariant()}."
+            : outcome == CosmeticOutcome.UnknownItem ? "❌ Ce n'est plus ce qu'il porte : choisis à nouveau."
+            : CosmeticCards.Notice(outcome, cosmetic);
+        await RedrawAsync(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), notice);
+    }
+
     private static string WornNotice(string name, CosmeticInfo c) =>
         $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(name)} porte maintenant {c.Emoji} {CosmeticCatalog.ShortName(c)} !";
 

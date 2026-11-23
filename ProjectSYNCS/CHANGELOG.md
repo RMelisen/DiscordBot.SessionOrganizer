@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.5.0 — 2026-11-23
+
+- Accessories are now drawn on the Plynling's own picture — on its card, in the cosmetics try-on, in
+  games, the journal and announcements — in every mood, for every species and baby.
+- Some accessories come in colours (nœud, fleur, écharpe, casquette, ballon, moufles) or can sit higher
+  or lower at the neck (écharpe, collier, médaillon): pick it for free in the Garde-robe, under the
+  worn accessory.
+- An adult wearing a hat is shown a little smaller, so the hat fits above its cap.
+- The sac à dos and the casque audio are retired: every copy was refunded 1 200 cailloux and taken off.
+  This week's accessory selection in the shop is drawn again from the smaller list.
+
 ## 8.4.0 — 2026-11-23
 
 - `/plynling forage` takes an optional place in the village — la Sommeille, la Lisière, les Mouilles, le

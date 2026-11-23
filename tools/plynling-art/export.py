@@ -8,6 +8,11 @@ The living Plynlings are animated WebP: the idle loop from motion.py, lossless s
 ground shadow and the Mycena's halo keep their partial transparency. Frame 0 is the still
 sprite, so a client that shows only the first frame shows the picture it always did.
 Memorials and foods do not move and stay PNG.
+
+Every card face (not angry, a visit face) is also exported with each accessory look a Plynling can
+wear (accessories.py): « _with_<accessory>[_<style>] » after the face and its « _dirty ». New
+filenames, so they add to the folder without touching a single existing file. Must match
+PlynlingArt.Sprite and AccessoryStyles in the bot (checks section 62 reads this folder).
 """
 import os
 
@@ -16,6 +21,7 @@ from PIL import Image
 from common import SPECIES
 from memorials import memorial
 from motion import FRAMES, FRAME_MS
+from accessories import looks, loop, wear
 from sprites import build
 
 ART_VERSION = 4
@@ -43,8 +49,11 @@ VISIT_STATES = ["happy", "content", "sad", "angry"]
 
 def big(im):
     # Nearest-neighbour: Discord smooths a small image when it enlarges it, which blurs
-    # pixel art, so the files are exported large with hard edges.
-    return im.resize((SIZE, SIZE), Image.NEAREST)
+    # pixel art, so the files are exported large with hard edges. A picture up to 32 wide fills
+    # SIZE (the 16 px foods too); a wider one — an adult in a hat, on its 40 px canvas — keeps the
+    # sprite's scale (32 -> SIZE), so its pixels are the same size as on every other picture.
+    k = SIZE // min(im.width, 32)
+    return im.resize((im.width * k, im.height * k), Image.NEAREST)
 
 
 def save(im, name):
@@ -104,7 +113,28 @@ def main():
     for food in FOODS:
         save(Image.open(os.path.join(HERE, "source", f"food_{food}.png")).convert("RGBA"), f"food_{food}")
         count += 1
+    count += export_accessories()
     print(f"{count} files written to {OUT}")
+
+
+def export_accessories():
+    """Every card face of every shape, in every accessory look: the loop is measured once per
+    face, then dressed in each look."""
+    count = 0
+    every = looks()
+    for sp in SPECIES:
+        for stage in (["adult", "baby"] if sp in STAGED else ["adult"]):
+            for state in STATES:
+                if state == "angry":
+                    continue
+                for dirty in ([False, True] if state in DIRTY_STATES else [False]):
+                    frames = loop(state, sp, FRAMES, stage, dirty)
+                    name = f"plynling_{sp}{'_baby' if stage == 'baby' else ''}_{state}{'_dirty' if dirty else ''}_with_"
+                    for acc, style in every:
+                        save_loop([wear(im, acc, body, state, style or None) for im, body in frames],
+                                  name + acc + (f"_{style}" if style else ""))
+                        count += 1
+    return count
 
 
 if __name__ == "__main__":
