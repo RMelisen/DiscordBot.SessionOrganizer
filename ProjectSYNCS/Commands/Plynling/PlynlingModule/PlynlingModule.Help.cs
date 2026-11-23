@@ -65,9 +65,9 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +
                 "toutes ont les mêmes chances. Garçon ou fille ? Surprise.\n" +
                 "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.\n" +
-                "**`/plynling list`** — Tous les Plynlings vivants du serveur, du plus vieux au plus jeune.\n" +
-                "**`/plynling journal [user]`** — Son journal : ses badges et ses souvenirs. Il gagne des **badges** " +
-                "en vieillissant, en jouant, en rendant visite et en étant choyé — chacun rapporte quelques cailloux.\n" +
+                "**`/plynling list`** — Les Plynlings vivants du serveur, du plus vieux au plus jeune.\n" +
+                "**`/plynling journal [user]`** — Ses souvenirs et ses **badges** (gagnés en vivant, jouant, visitant ; " +
+                "chacun rapporte quelques cailloux).\n" +
                 "Il grandit : **bébé** sa première semaine, **ado** jusqu'à 14 jours, **adulte**, " +
                 "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.")
             .AddField("S'en occuper",
@@ -77,7 +77,6 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "Nourrir celui d'un autre coûte le double. Si tu as ce plat dans ton **garde-manger**, il est servi de là " +
                 "(2 pour celui d'un autre) au lieu de tes cailloux.\n" +
                 "**Caresser** (bouton de sa carte) — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.\n" +
-                "Pour s'occuper de celui de quelqu'un : `/plynling view user:`, puis sa carte.\n" +
                 "Il **dort de 1 h à 5 h** : on peut le nourrir, pas le caresser, et il ne meurt jamais dans son sommeil.\n" +
                 "Son **humeur** compte : heureux, un repas le nourrit 15 % de plus et il te rapporte parfois un caillou ou un objet ; " +
                 "triste, 25 % de moins. À 0 %, il **boude** et refuse de manger tant qu'on n'a pas joué avec lui ou qu'on " +
@@ -106,17 +105,18 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "Parler, réagir et le vocal rapportent aussi quelques cailloux (45 au plus par jour).\n" +
                 "**`/balance`** — Ton solde, visible par toi seul.")
             .AddField("Inventaire & collection",
-                "**`/plynling forage`** — Il part fouiller les environs (toutes les 4 h) et revient avec un objet — souvent un champignon — ou de quoi manger.\n" +
-                "On trouve aussi des objets dans son cadeau du jour, en gagnant un jeu et pendant les bonnes visites. " +
-                "Certains ne se trouvent qu'en une saison.\n" +
+                "**`/plynling forage [place]`** — Il part fouiller (toutes les 4 h) et revient avec un objet ou de quoi manger. " +
+                "Chaque lieu a ses trouvailles : la Sommeille (cailloux), la Lisière (champignons), les Mouilles (insectes), " +
+                "le Communal (nature), la place du Puits (trésors). Sans lieu, au hasard. En texte : `;forage riviere`.\n" +
+                "Aussi : cadeau du jour, jeux gagnés, bonnes visites ; certains objets sont de saison.\n" +
                 "**`/inventory collection [user]`** — Le carnet, collection par collection : ce que tu as trouvé et ce qui manque. 5 collections de 8 objets (dont les insectes) et une grande de 30 champignons ; chacune complétée rapporte des cailloux.\n" +
                 "**`/inventory view`** — Ton garde-manger et tes objets. **`/inventory shop`** — Nourriture, savon " +
                 "et médicaments (−10 % dès 5).\n" +
                 "**`/inventory give`** · **`/inventory trade`** · **`/inventory sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
             .AddField("Cosmétiques",
                 "**`/inventory cosmetics`** — La **garde-robe** (thème, titre, accessoire, cadre de tombe), la " +
-                "**boutique** (sélection renouvelée chaque lundi) et la **fabrication**. Choisis un article pour " +
-                "l'**essayer** sur ton Plynling avant de payer.\n" +
+                "**boutique** (sélection renouvelée chaque lundi) et la **fabrication** (des ouvrages faits de tes doubles, " +
+                "des chefs-d'œuvre à chasser). Choisis un article pour l'**essayer** sur ton Plynling avant de payer.\n" +
                 "**`/plynling wardrobe`** — Le même écran, ouvert sur la garde-robe.\n" +
                 "Tes cosmétiques restent à toi et servent à tous tes Plynlings. On peut les offrir ou les échanger, pas les vendre.")
             .AddField("Partir en vacances",

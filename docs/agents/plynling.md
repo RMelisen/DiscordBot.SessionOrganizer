@@ -19,8 +19,11 @@ custom-id. Keep the handler `protected` there and bind it in `PlynlingLongModule
 base constructor, so a new dependency goes in three places. Texts keep saying `/plynling`; the
 shortcut is mentioned once in each help.
 
-**Typed shortcuts** — `;pl` (your card), `;pl @x`, `;pl visit @x`, `;forage`, `;work` and `;daily`
-(all three also under `;pl`), sent as a plain message. Grammar in `Helpers/Plynling/PlynlingShortcut` (pure: only an
+**Typed shortcuts** — `;pl` (your card), `;pl @x`, `;pl visit @x`, `;forage [place]`, `;work` and `;daily`
+(all three also under `;pl`), sent as a plain message. Whatever follows `;forage` is a place, matched by
+`ForagePlaces.Match` (accents, case and a leading article ignored; aliases such as `riviere`, `marais`);
+one that matches nothing sets `Shortcut.BadPlace` and is answered with `PlynlingShortcut.Where`, never run
+(no forage, no wait started). See `economy.md`, *Forage places*. Grammar in `Helpers/Plynling/PlynlingShortcut` (pure: only an
 exact first word counts, so `;-;` or `;plop` stay chatter); `PlynlingShortcutService` runs them,
 first in `BotService`'s message fan-out, and **a handled message goes no further** — no XP, no
 passive cailloux, no chatter, like the slash command it stands for.

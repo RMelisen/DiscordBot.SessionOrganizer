@@ -20,7 +20,10 @@ public sealed record GiftResult(long Cailloux, ItemFind? Find)
 }
 
 // /plynling forage: what it brought back, or why it could not go (ReadyAt with TooSoon).
-public sealed record ForageResult(CareOutcome Outcome, Plynling? Plynling, ItemFind? Find = null, DateTimeOffset? ReadyAt = null);
+// Place: where it went (named even when the forage was not aimed). NowReady: recipes this find made
+// ready to craft (Recipes.NowReady); null until computed, empty when none.
+public sealed record ForageResult(CareOutcome Outcome, Plynling? Plynling, ItemFind? Find = null, DateTimeOffset? ReadyAt = null,
+    ForagePlace? Place = null, IReadOnlyList<CosmeticInfo>? NowReady = null);
 
 public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 

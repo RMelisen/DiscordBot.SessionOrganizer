@@ -210,12 +210,18 @@ public static class PlynlingText
     public static string VisitFind(string name, ulong ownerId, ItemInfo item) =>
         $"**{name}** rapporte {ItemLabel(item)} pour <@{ownerId}> !";
 
-    public static string Foraged(string name, PlynlingGender g, ItemInfo item) => item.Kind == ItemKind.Food
-        ? $"**{name}** est {g.Agree("revenu", "revenue")} de sa balade avec de quoi manger : {ItemLabel(item)}, rangé dans ton garde-manger !"
-        : $"**{name}** est {g.Agree("revenu", "revenue")} de sa balade avec {ItemLabel(item)} !";
-
     public static string ForageTooSoon(PlynlingGender g, DateTimeOffset ready) =>
         $"{g.Agree("Il", "Elle")} se remet de sa dernière balade. Prochaine sortie <t:{ready.ToUnixTimeSeconds()}:R>.";
+
+    // Under a forage whose find completed a recipe's items (Recipes.NowReady): the first one by
+    // name, the others counted. Empty when none.
+    public static string NowReady(PlynlingGender g, IReadOnlyList<CosmeticInfo>? ready)
+    {
+        if (ready is not { Count: > 0 }) return "";
+        var more = ready.Count > 1 ? $" (et {ready.Count - 1} {(ready.Count > 2 ? "autres" : "autre")})" : "";
+        return $"\n✨ {g.Agree("Il", "Elle")} a tout pour fabriquer *{CosmeticCatalog.Label(ready[0])}*{more} !" +
+               "\n-# `/inventory cosmetics` → Fabrication";
+    }
 
     // The find's line, then one line per collection it completed.
     public static string FindLines(string line, ItemFind find, ulong ownerId) =>

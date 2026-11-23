@@ -39,13 +39,13 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
-| `/inventory view · collection · shop · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
+| `/inventory view · collection · shop · cosmetics · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance · /pay` | Earn cailloux; see your balance (and switch on a DM for when `/work` is ready); give cailloux to someone (10 % tax) | everyone |
 | `/daily` | A daily reward that grows with each day in a row (up to 100 cailloux, sometimes an item); a missed day starts over | everyone |
 | `/bribe favourite · shame` | Pay her off: 24 h as her favourite, or one `/shame` hit erased (100 cailloux, doubling with each bribe in the same week) | everyone |
 | `/shoutout bid · status` | Bid for a dedication in tomorrow's morning hello (bids close at 20:00; an outbid bid is refunded) | everyone |
 | `/jar give · status` | Pour cailloux into the server's jar; each goal reached unlocks a reward for everyone | everyone |
-| `;pl · ;pl @someone · ;pl visit @someone · ;forage · ;work · ;daily` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage, a shift, the daily reward. `;pl forage`, `;pl work` and `;pl daily` work too | everyone |
+| `;pl · ;pl @someone · ;pl visit @someone · ;forage [place] · ;work · ;daily` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage (`;forage riviere`), a shift, the daily reward. `;pl forage`, `;pl work` and `;pl daily` work too | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
 | `/admin xp add · remove` | Manual XP adjustment | staff |
@@ -550,8 +550,11 @@ looks after her.
   *L'Indigne* on `/shame`, and you wait 30 minutes before adopting again.
 - **`/plynling list`** shows every living Plynling on the server, oldest first.
 - **Items and collections:** every member has an inventory, kept whatever happens to their
-  Plynling. `/plynling forage` sends it out once every 4 hours to bring back a collectible —
-  or, one time in five, a food for the pantry. Items also turn up in half of the happy gifts,
+  Plynling. `/plynling forage [place]` sends it out once every 4 hours to bring back a collectible —
+  or, one time in five, a food for the pantry. A place of the village steers the find (about three
+  in four from there): la Sommeille (pebbles, shells), la Lisière (mushrooms), les Mouilles
+  (insects), le Communal (nature) or la place du Puits (trinkets); with none it is today's
+  random find, and the reply says where it went. `;forage riviere` works too. Items also turn up in half of the happy gifts,
   in one won game in five and, for each owner, in 15 % of the good visits. The 70
   collectibles form five sets of eight (Cailloux, Nature, Trésors, Saisons — found only in its
   season — and Insectes) and one big set of 30 **Champignons**, pictured in pixel art and found
@@ -577,12 +580,15 @@ looks after her.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
-- **Cosmetics:** 60 things a Plynling can wear, one per slot — a **thème** that recolours its
+- **Cosmetics:** 70 things a Plynling can wear, one per slot — a **thème** that recolours its
   card and adds a banner, a **titre** under its name (in its gender), an **accessoire**
   (« porte 🧣 une écharpe ») and a **cadre** for its grave. `/inventory cosmetics` is one screen
   with three tabs: the **wardrobe**, the **shop** (a few basics always on sale, two items per slot
-  that change every Monday, and seasonal ones, 300 to 5 000 cailloux) and **crafting** (eight
-  special ones made from collectibles, with exactly what is missing listed). Picking anything
+  that change every Monday, and seasonal ones, 300 to 5 000 cailloux) and **crafting**: eight
+  *Ouvrages* made from duplicates of one place's common finds (a week or so of foraging), and ten
+  *Chefs-d'œuvre* that are real hunts (a few weeks of foraging in the right place). Each recipe
+  lists what is missing and where each ingredient is found, and a forage that completes one says
+  so. Some ingredients are « any common mushrooms » or the like. Picking anything
   **tries it on** your Plynling's real card before you pay, and « Acheter et porter » /
   « Fabriquer et porter » put it on at once. `/plynling wardrobe` opens the same screen on the
   wardrobe. Cosmetics belong to you, not the Plynling: they

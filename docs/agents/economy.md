@@ -238,6 +238,28 @@ foraging: `DrawForage` picks from it 60% of the time, every other source 10%
 items is laid out one embed field per rarity (`ItemCatalog.Sections`) — 30 lines of emoji markup
 overflow a 1024 field.
 
+## Forage places
+
+`/plynling forage place:` and `;forage <place>` steer a forage (`Helpers/Economy/ForagePlaces`, checks
+section 60). Five places of `docs/village-lore.md` § 5: la Sommeille, la Lisière, les Mouilles, le
+Communal, la place du Puits. Keys are code-only, **never stored** (no migration); the typed aliases are a
+contract with players — add, don't rename, and no alias may reach two places.
+
+- **A place belongs to the item.** A set has default places (`SetPlaces`), an item may override them
+  (`ItemPlaces`; Saisons has no default, each item says where it grows). **A new collection only lists
+  its places**; the checks fail on a collectible with none, and on a place with no all-year commun in
+  some season (an aimed forage must always be able to find something).
+- **No place → exactly today's draw.** `ForagePlaces.Draw(rng, now, null)` calls `DrawForage` with the
+  same random numbers (checked seed by seed), then names one of the item's places for the story (any
+  place for food). So the 60 % mushroom share of a placeless forage, and the Champignons economy, stand.
+- **A place → a tilt.** Same food chance; then `Tilt` (¾) of the collectibles come from the place's
+  findable items, through the shared rarity roll `ItemCatalog.DrawAmong` (fallback to communs), the
+  rest from `DrawCollectible`. The odds live in `DrawAmong` only.
+- The reply is one pool per place (`BotResponses.PlynlingForaged`, `{0}` name, `{1}` the find after a
+  colon: it must read for food too). The gift, games, visits and packs stay unaimed.
+- Where things are found shows on each book page (one line under the progress bar) and on every
+  recipe ingredient (`ForagePlaces.Whereabouts`: rarity, place, season).
+
 ## Tiers and turn-ins
 
 **A set's first completion is its discovery; every later one is a turn-in.** « Déposer » on a
@@ -317,7 +339,7 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is four keys on it.** `CosmeticCatalog` holds the 60
+**Cosmetics are items; what a Plynling wears is four keys on it.** `CosmeticCatalog` holds the 70
 (`cos.<slot>.<name>`, stored, **append-only**) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
@@ -364,3 +386,24 @@ redraws in place.
   The old screens' `cos:` ids answer nothing, on purpose: a new prefix keeps every wildcard clear of them.
 - Without a living Plynling the screen still opens: shop and recipes work, the head is a plain title,
   « …et porter » and « Porter » are hidden, and the wardrobe lists what is owned.
+
+### Crafting — Ouvrages and Chefs-d'œuvre
+
+18 recipes, each made **once per person** (`AlreadyOwned`). `CosmeticInfo.Trophy` splits them, and the
+Fabrication tab lists them in that order:
+
+- **Ouvrages** (8, 2 per slot, ~100 cailloux): commons (at most one peu commun) found at **one place**,
+  every place served, for the duplicates. **Band: 10–25 aimed forages.**
+- **Chefs-d'œuvre** (10, 200–300 cailloux): aimed hunts. **Band: 60–150 aimed forages.**
+- **The bands are enforced** (checks section 61, `CraftingChecks.ExpectedForages`: 300 seeded runs from
+  nothing, aiming each time at the place covering the most missing units, in the ingredients' season or
+  mid-April). A recipe outside its band fails the checks: retune it, never widen the band to fit.
+- **« Any commons of a set »** is an ingredient (`Recipes.AnyCommon(set)`, key `any:<set>`, never stored):
+  any of the set's communs, counted together. La Lisière's Ouvrage must use it (12 common mushrooms
+  dilute any named one); le Communal's two do too. **A craft takes from the largest stack, one unit at a
+  time** (ties: catalog order), so the single copies a turn-in needs go last. All ingredient logic lives
+  in `Recipes` (`Have`, `Take`, `Lacking`, `ItemsReady`, `Where`): the craft, the tab and the checks
+  share it.
+- **« Il a tout pour fabriquer… »** — a forage whose find completes a recipe's items (not owned, not
+  ready before) adds a line to the reply (`Recipes.NowReady`, `PlynlingText.NowReady`). Forage only;
+  cailloux never announce one.

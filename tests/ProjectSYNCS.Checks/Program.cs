@@ -5588,5 +5588,11 @@ OldEventChecks.Run(Fail);
 // 59. The cosmetics screen: every tab and item view inside the caps, the try-on: CosmeticScreenChecks.cs.
 CosmeticScreenChecks.Run(Fail);
 
+// 60. Forage places, the aimed draw and the typed names: ForagePlaceChecks.cs.
+ForagePlaceChecks.Run(Fail);
+
+// 61. Crafting: « any commons » ingredients, the recipe catalog and its bands: CraftingChecks.cs.
+await CraftingChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

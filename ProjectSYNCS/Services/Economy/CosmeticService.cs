@@ -60,13 +60,19 @@ public class CosmeticService
         if (CosmeticCatalog.ByKey(key) is not { Source: CosmeticSource.Crafted } cosmetic) return new(CosmeticOutcome.UnknownItem, 0);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
         if (await InventoryService.CountAsync(_db_context, guildId, userId, key) > 0) return new(CosmeticOutcome.AlreadyOwned, wallet.Balance);
-        foreach (var (itemKey, count) in cosmetic.Recipe)
-            if (await InventoryService.CountAsync(_db_context, guildId, userId, itemKey) < count)
-                return new(CosmeticOutcome.MissingIngredients, wallet.Balance);
+        // Every item an ingredient may be (a named one, or a set's communs), counted once.
+        var held = new Dictionary<string, int>();
+        foreach (var item in cosmetic.Recipe.SelectMany(r => Recipes.Items(r.ItemKey)).Select(i => i.Key).Distinct())
+            held[item] = await InventoryService.CountAsync(_db_context, guildId, userId, item);
+        if (!Recipes.ItemsReady(cosmetic, held)) return new(CosmeticOutcome.MissingIngredients, wallet.Balance);
         if (wallet.Balance < cosmetic.Price) return new(CosmeticOutcome.TooPoor, wallet.Balance);
 
-        foreach (var (itemKey, count) in cosmetic.Recipe)
-            await InventoryService.TakeAsync(_db_context, guildId, userId, itemKey, count);
+        foreach (var (ingredient, count) in cosmetic.Recipe)
+            foreach (var (itemKey, n) in Recipes.Take(ingredient, count, held))
+            {
+                await InventoryService.TakeAsync(_db_context, guildId, userId, itemKey, n);
+                held[itemKey] -= n;   // a later ingredient sees what this one took
+            }
         wallet.Balance -= cosmetic.Price;
         await InventoryService.AddAsync(_db_context, guildId, userId, key, 1, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendCraft, cosmetic.Price, now);

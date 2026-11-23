@@ -202,10 +202,12 @@ public partial class PlynlingService
     // /plynling forage: the owner's living Plynling goes out and always brings something back —
     // a collectible, or a food for the pantry. Once every ItemCatalog.ForageCooldown per person
     // (on the wallet row, so a new Plynling does not reset it); never asleep, frozen or sulking.
-    public Task<ForageResult> ForageAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng) =>
-        UnitAsync(() => ForageOnceAsync(guildId, ownerId, now, rng));
+    // With a place the find leans toward it (ForagePlaces.Draw); without, it is today's draw and a
+    // place is named for the story.
+    public Task<ForageResult> ForageAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng, ForagePlace? place = null) =>
+        UnitAsync(() => ForageOnceAsync(guildId, ownerId, now, rng, place));
 
-    private async Task<ForageResult> ForageOnceAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng)
+    private async Task<ForageResult> ForageOnceAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng, ForagePlace? place)
     {
         var p = await GetCurrentAsync(guildId, ownerId, now);
         if (p is null) return new ForageResult(CareOutcome.NoPlynling, null);
@@ -219,10 +221,15 @@ public partial class PlynlingService
 
         wallet.LastForageAt = now;
         PlynlingLife.Dirty(p, now, PlynlingLife.ForageDirt);          // an outing in the undergrowth
-        var find = await InventoryService.GrantAsync(_db_context, guildId, ownerId, ItemCatalog.DrawForage(rng, now), now);
+        var (item, at) = ForagePlaces.Draw(rng, now, place);
+        // What the owner held before this find, to tell them when it completes a recipe.
+        var before = (await _db_context.InventoryItems
+                .Where(i => i.GuildId == guildId && i.UserId == ownerId && i.Quantity > 0).ToListAsync())
+            .ToDictionary(i => i.Key, i => i.Quantity);
+        var find = await InventoryService.GrantAsync(_db_context, guildId, ownerId, item, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActForage, 1, now);
         await _db_context.SaveChangesAsync();
-        return new ForageResult(CareOutcome.Done, p, find);
+        return new ForageResult(CareOutcome.Done, p, find, Place: at, NowReady: Recipes.NowReady(before, item.Key));
     }
 
     // /plynling journal: its badges and its moments, newest first (ordered in memory — SQLite

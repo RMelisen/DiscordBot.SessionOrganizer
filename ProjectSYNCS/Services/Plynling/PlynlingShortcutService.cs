@@ -95,8 +95,14 @@ public sealed class PlynlingShortcutService
             }
             case ShortcutKind.Forage:
             {
-                var result = await plynlings.ForageAsync(guild.Id, authorId, now, Random.Shared);
-                await AnswerAsync(message, PlynlingModule.ForageReply(result, authorId));
+                // An unknown place forages nothing and starts no wait: it only lists the places.
+                if (shortcut.BadPlace)
+                {
+                    await RefuseAsync(message, PlynlingShortcut.Where);
+                    return;
+                }
+                var result = await plynlings.ForageAsync(guild.Id, authorId, now, Random.Shared, ForagePlaces.ByKey(shortcut.Place));
+                await AnswerAsync(message, PlynlingModule.ForageReply(result, authorId, _picker));
                 return;
             }
             case ShortcutKind.View:

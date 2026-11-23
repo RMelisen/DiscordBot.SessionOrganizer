@@ -177,13 +177,20 @@ public static class ItemCatalog
         DrawFrom(rng, now, mushroom: rng.NextDouble() < MushroomShareElsewhere);
 
     // First which half — the Champignons or everything else — then the rarity, then the item.
-    private static ItemInfo DrawFrom(Random rng, DateTimeOffset now, bool mushroom)
+    private static ItemInfo DrawFrom(Random rng, DateTimeOffset now, bool mushroom) =>
+        DrawAmong(rng, Collectibles.Where(i => (i.Set == MushroomSet) == mushroom && Findable(i, now)).ToList());
+
+    /// <summary>
+    /// The one rarity roll (commun 60 %, peu commun 28 %, rare 10 %, légendaire 2 %), then an item
+    /// of that rarity among <paramref name="findable"/> — falling back to its communs when the rarity
+    /// has none. Shared by every draw, aimed forages included (ForagePlaces), so the odds live here only.
+    /// </summary>
+    public static ItemInfo DrawAmong(Random rng, IReadOnlyList<ItemInfo> findable)
     {
         var roll = rng.NextDouble();
         var rarity = roll < 0.60 ? ItemRarity.Common : roll < 0.88 ? ItemRarity.Uncommon : roll < 0.98 ? ItemRarity.Rare : ItemRarity.Legendary;
-        var half = Collectibles.Where(i => (i.Set == MushroomSet) == mushroom && Findable(i, now)).ToList();
-        var pool = half.Where(i => i.Rarity == rarity).ToList();
-        if (pool.Count == 0) pool = half.Where(i => i.Rarity == ItemRarity.Common).ToList();
+        var pool = findable.Where(i => i.Rarity == rarity).ToList();
+        if (pool.Count == 0) pool = findable.Where(i => i.Rarity == ItemRarity.Common).ToList();
         return pool[rng.Next(pool.Count)];
     }
 
@@ -213,6 +220,12 @@ public static class ItemCatalog
     public static ItemInfo DrawForage(Random rng, DateTimeOffset now)
     {
         if (rng.NextDouble() >= ForageFoodChance) return DrawFrom(rng, now, mushroom: rng.NextDouble() < ForageMushroomShare);
+        return DrawFood(rng);
+    }
+
+    /// <summary>A forage's food: Champignon 60 %, Shiitake 25 %, Morille 10 %, Truffe 5 %.</summary>
+    public static ItemInfo DrawFood(Random rng)
+    {
         var roll = rng.NextDouble();
         var food = roll < 0.60 ? PlynlingFood.Mushroom : roll < 0.85 ? PlynlingFood.Shiitake : roll < 0.95 ? PlynlingFood.Morel : PlynlingFood.Truffle;
         return ByKey(FoodKey(food))!;

@@ -190,11 +190,14 @@ public static class CosmeticCards
 
     private static void CraftBody(ContainerBuilder container, CosmeticInfo? picked, CosmeticScreenData data)
     {
-        var recipes = CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted).ToList();
+        // « Ouvrages » (duplicates) first, then « Chefs-d'œuvre » (aimed hunts); the select follows the same order.
+        var recipes = CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted).OrderBy(c => c.Trophy).ToList();
+        string Group(bool trophy) => string.Join("\n", recipes.Where(c => c.Trophy == trophy)
+            .Select(c => $"{c.Emoji} {CosmeticCatalog.Label(c)} · {RecipeStatus(c, data)}"));
         container.AddComponent(new TextDisplayBuilder(
             "Transforme tes objets de collection en cosmétiques. Les objets utilisés disparaissent, " +
-            "mais restent découverts dans ton carnet.\n" +
-            string.Join("\n", recipes.Select(c => $"{c.Emoji} {CosmeticCatalog.Label(c)} · {RecipeStatus(c, data)}"))));
+            "mais restent découverts dans ton carnet. Envoie ton Plynling fouiller au bon endroit : `/plynling forage place:`.\n" +
+            $"**Ouvrages**\n{Group(false)}\n**Chefs-d'œuvre**\n{Group(true)}"));
 
         var menu = new SelectMenuBuilder()
             .WithCustomId($"cosm:pick:{CosmeticTab.Craft}:0")
@@ -209,9 +212,11 @@ public static class CosmeticCards
         var missing = Missing(picked, data);
         var lines = picked.Recipe.Select(r =>
         {
-            var item = ItemCatalog.ByKey(r.ItemKey)!;
-            var have = data.Held.GetValueOrDefault(r.ItemKey);
-            return $"{(have >= r.Count ? "✅" : "❌")} {item.Emoji} {ItemCatalog.ClearName(item)} {Math.Min(have, r.Count)}/{r.Count}";
+            var have = Recipes.Have(r.ItemKey, data.Held);
+            var where = Recipes.Where(r.ItemKey);
+            var name = Recipes.Name(r.ItemKey, r.Count);   // « champignons communs » starts a line here: capitalise it
+            return $"{(have >= r.Count ? "✅" : "❌")} {Recipes.Emoji(r.ItemKey)} {char.ToUpperInvariant(name[0])}{name[1..]} {Math.Min(have, r.Count)}/{r.Count}" +
+                   (where.Length > 0 ? $" — {where}" : "");
         }).Append($"{(data.Balance >= picked.Price ? "✅" : "❌")} 🪨 {PebbleEconomy.Cailloux(picked.Price)}");
         container.AddComponent(new TextDisplayBuilder(
             $"### {picked.Emoji} {CosmeticCatalog.Label(picked)}\n{CosmeticCatalog.SlotLabel(picked.Slot)}\n" +
@@ -233,11 +238,7 @@ public static class CosmeticCards
     /// <summary>What a recipe still lacks, named: « 2 × Améthyste », then the cailloux.</summary>
     public static List<string> Missing(CosmeticInfo recipe, CosmeticScreenData data)
     {
-        var missing = recipe.Recipe
-            .Select(r => (Item: ItemCatalog.ByKey(r.ItemKey)!, Lack: r.Count - data.Held.GetValueOrDefault(r.ItemKey)))
-            .Where(x => x.Lack > 0)
-            .Select(x => $"{x.Lack} × {ItemCatalog.ClearName(x.Item)}")
-            .ToList();
+        var missing = Recipes.Lacking(recipe, data.Held);
         if (data.Balance < recipe.Price) missing.Add(PebbleEconomy.Cailloux(recipe.Price - data.Balance));
         return missing;
     }

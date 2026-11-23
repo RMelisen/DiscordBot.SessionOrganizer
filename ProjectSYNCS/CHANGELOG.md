@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.4.0 — 2026-11-23
+
+- `/plynling forage` takes an optional place in the village — la Sommeille, la Lisière, les Mouilles, le
+  Communal, la place du Puits — and most finds then come from there. Without one, the find is the same as
+  before and the reply says where the Plynling went. Each place has its own lines.
+- The typed shortcut takes a place too (`;forage riviere`, `;pl forage marais`); an unknown place lists them.
+- Crafting has two tiers: eight new *Ouvrages* made from common duplicates of one place, and ten
+  *Chefs-d'œuvre* (the eight existing recipes, retuned so each is reachable, plus two new ones).
+- Some recipes take « any common mushrooms » (or nature finds); crafting uses your biggest piles first.
+- Every recipe ingredient says where it is found (place, rarity, season), and so does each collection page.
+- A forage that gives you the last ingredient of a recipe says so.
+
 ## 8.3.0 — 2026-11-23
 
 - Cosmetics now live on one screen with three tabs — Garde-robe, Boutique, Fabrication — opened by

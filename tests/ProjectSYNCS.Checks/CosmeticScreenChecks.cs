@@ -22,6 +22,40 @@ public static class CosmeticScreenChecks
         Caps();
         TryOnWritesNothing();
         MissingNamesItems();
+        WhereToFind();
+    }
+
+    // The Fabrication tab: two groups in order, a ✅ on ready recipes, and each ingredient says
+    // where it is found (rarity, place, season).
+    private static void WhereToFind()
+    {
+        var coquillage = ItemCatalog.ByKey("col.coquillage")!;
+        var where = ForagePlaces.Whereabouts(coquillage);
+        Expect(where.Contains("rare") && where.Contains("à la Sommeille") && where.Contains("été"), "Whereabouts(Coquillage): " + where);
+        Expect(!ForagePlaces.Whereabouts(ItemCatalog.ByKey("col.galet")!).Contains(','.ToString() + ' ' + "l'"), "Whereabouts(Galet) names a season");
+        Expect(Recipes.Where(Recipes.AnyCommon("champignons")) == "à la Lisière", "Where(any mushroom): " + Recipes.Where(Recipes.AnyCommon("champignons")));
+
+        var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
+        var ready = CosmeticCatalog.All.First(c => c.Source == CosmeticSource.Crafted && !c.Trophy);
+        var held = ready.Recipe.SelectMany(r => Recipes.Items(r.ItemKey)).ToDictionary(i => i.Key, _ => 99);
+        var data = new CosmeticScreenData(null, held, 999_999);
+        var list = string.Join("\n", Texts(CosmeticCards.Build(new CosmeticView(CosmeticTab.Craft), data, now, null).Components));
+        var o = list.IndexOf("Ouvrages", StringComparison.Ordinal);
+        var t = list.IndexOf("Chefs-d'œuvre", StringComparison.Ordinal);
+        Expect(o >= 0 && t > o, "Fabrication: no « Ouvrages » then « Chefs-d'œuvre » groups");
+        Expect(list.Split('\n').Any(l => l.Contains(CosmeticCatalog.Label(ready)) && l.Contains("✅")), "Fabrication: a ready recipe has no ✅");
+
+        var collier = CosmeticCatalog.ByKey("cos.accessory.collier_coquillages")!;
+        var view = string.Join("\n", Texts(CosmeticCards.Build(new CosmeticView(CosmeticTab.Craft, Picked: collier.Key),
+            new CosmeticScreenData(null, new Dictionary<string, int>(), 0), now, null).Components));
+        Expect(view.Split('\n').Any(l => l.Contains("Coquillage") && l.Contains("0/") && l.Contains("à la Sommeille")),
+            "recipe view: the Coquillage line does not say where to find it");
+
+        var sousBois = CosmeticCatalog.ByKey("cos.theme.sous_bois")!;
+        var anyView = string.Join("\n", Texts(CosmeticCards.Build(new CosmeticView(CosmeticTab.Craft, Picked: sousBois.Key),
+            new CosmeticScreenData(null, new Dictionary<string, int>(), 0), now, null).Components));
+        Expect(anyView.Split('\n').Any(l => l.Contains("Champignons communs 0/") && l.Contains("à la Lisière")),
+            "recipe view: the any-common line is not « Champignons communs 0/… — à la Lisière »");
     }
 
     private static Plynling Fullest() => new()

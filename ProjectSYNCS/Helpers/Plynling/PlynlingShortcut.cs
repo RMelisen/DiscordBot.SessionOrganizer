@@ -14,7 +14,9 @@ public enum ShortcutKind
 }
 
 /// <param name="UserId">The mentioned person (view, visit), or null for the author / none given.</param>
-public readonly record struct Shortcut(ShortcutKind Kind, ulong? UserId = null);
+/// <param name="Place">A forage's place (a ForagePlaces key), or null for none named.</param>
+/// <param name="BadPlace">A forage naming a place that matches none: answered with <see cref="PlynlingShortcut.Where"/>, never run.</param>
+public readonly record struct Shortcut(ShortcutKind Kind, ulong? UserId = null, string? Place = null, bool BadPlace = false);
 
 /// <summary>
 /// The typed shortcuts for the game's routine commands: <c>;pl</c>, <c>;pl @x</c>,
@@ -29,9 +31,15 @@ public static class PlynlingShortcut
 {
     // Shown for Unknown and under PlynlingShortcutService's refusals; kept short, it is a reminder.
     public const string Usage =
-        "En texte : `;pl` (ta carte), `;pl @quelqu'un`, `;pl visit @quelqu'un`, `;forage`, `;work` et `;daily`. Le reste passe par `/pl`.";
+        "En texte : `;pl` (ta carte), `;pl @quelqu'un`, `;pl visit @quelqu'un`, `;forage [lieu]`, `;work` et `;daily`. Le reste passe par `/pl`.";
 
     public const string VisitWho = "Chez qui ? `;pl visit @quelqu'un`";
+
+    // The answer to a forage naming no known place: every place with a word that reaches it. A
+    // property: it reads ForagePlaces.All, a static field in another file (CLAUDE.md).
+    public static string Where =>
+        "Où ça ? " + string.Join(" · ", ForagePlaces.All.Select(p => $"{p.Emoji} `;forage {p.Aliases[0]}`")) +
+        "\n-# Sans lieu, `;forage` l'envoie au hasard.";
 
     public static Shortcut? Parse(string? content)
     {
@@ -43,11 +51,20 @@ public static class PlynlingShortcut
         return head switch
         {
             ";work" => rest.IsEmpty ? new Shortcut(ShortcutKind.Work) : new Shortcut(ShortcutKind.Unknown),
-            ";forage" => rest.IsEmpty ? new Shortcut(ShortcutKind.Forage) : new Shortcut(ShortcutKind.Unknown),
+            ";forage" => Forage(rest),
             ";daily" => rest.IsEmpty ? new Shortcut(ShortcutKind.Daily) : new Shortcut(ShortcutKind.Unknown),
             ";pl" => ParsePl(rest),
             _ => null,
         };
+    }
+
+    // A forage, with whatever follows read as a place (« ;forage la place du puits »).
+    private static Shortcut Forage(ReadOnlySpan<string> words)
+    {
+        if (words.IsEmpty) return new Shortcut(ShortcutKind.Forage);
+        return ForagePlaces.Match(string.Join(' ', words.ToArray())) is { } place
+            ? new Shortcut(ShortcutKind.Forage, Place: place.Key)
+            : new Shortcut(ShortcutKind.Forage, BadPlace: true);
     }
 
     private static Shortcut ParsePl(ReadOnlySpan<string> words)
@@ -63,7 +80,7 @@ public static class PlynlingShortcut
             "view" or "v" when args.IsEmpty => new Shortcut(ShortcutKind.View),
             "view" or "v" when args.Length == 1 && MentionUtils.TryParseUser(args[0], out var id) => new Shortcut(ShortcutKind.View, id),
             "work" when args.IsEmpty => new Shortcut(ShortcutKind.Work),
-            "forage" when args.IsEmpty => new Shortcut(ShortcutKind.Forage),
+            "forage" => Forage(args),
             "daily" when args.IsEmpty => new Shortcut(ShortcutKind.Daily),
             // A visit without anyone is still a visit: it is answered with who to name.
             "visit" when args.IsEmpty => new Shortcut(ShortcutKind.Visit),

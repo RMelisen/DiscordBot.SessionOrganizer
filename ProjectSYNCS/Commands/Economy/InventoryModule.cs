@@ -274,6 +274,23 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             .Build();
     }
 
+    // Where a set's items are found (ForagePlaces): the place holding most of them, then the others —
+    // places only, never item names, since the book hides what was never found (« ??? »).
+    // « -# 🌾 Se trouve surtout au Communal, aussi à la Sommeille et à la Lisière ».
+    private static string WhereLine(IReadOnlyList<ItemInfo> items)
+    {
+        var places = items.SelectMany(ForagePlaces.Of).GroupBy(p => p).OrderByDescending(g => g.Count()).Select(g => g.Key).ToList();
+        if (places.Count == 0) return "";
+        var others = places.Skip(1).Select(ForagePlaces.At).ToList();
+        var also = others.Count switch
+        {
+            0 => "",
+            1 => $", aussi {others[0]}",
+            _ => $", aussi {string.Join(", ", others.SkipLast(1))} et {others[^1]}",
+        };
+        return $"-# {places[0].Emoji} Se trouve {(others.Count > 0 ? "surtout " : "")}{ForagePlaces.At(places[0])}{also} — `/plynling forage place:`";
+    }
+
     private static Embed BuildSetPage(ulong userId, CollectionSet set, IReadOnlyDictionary<string, int> quantities,
         int completions, CollectionFilter filter)
     {
@@ -287,7 +304,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             .WithTitle(set.Name)
             .WithColor(Color.Purple)
             .WithDescription($"<@{userId}> · **{have}/{items.Count}** trouvés · {status}\n" +
-                             $"`{LevelCardUi.ProgressBar(have, items.Count)}`{standing}");
+                             $"`{LevelCardUi.ProgressBar(have, items.Count)}`{standing}\n{WhereLine(items)}");
 
         bool Shown(ItemInfo i) => filter switch
         {

@@ -382,11 +382,18 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
     }
 
     [SlashCommand("forage", "Envoyer ton Plynling fouiller les environs — un objet ou de quoi manger, toutes les 4 h")]
-    public async Task ForageAsync()
+    public async Task ForageAsync(
+        [Summary("place", "Où l'envoyer fouiller (au hasard si vide)")]
+        [Choice("La Sommeille — rivière, cailloux", "sommeille")]
+        [Choice("La Lisière — champignons", "lisiere")]
+        [Choice("Les Mouilles — marais, insectes", "mouilles")]
+        [Choice("Le Communal — nature", "communal")]
+        [Choice("La place du Puits — trésors", "puits")]
+        string? place = null)
     {
         var now = DateTimeOffset.UtcNow;
-        var result = await _plynlings.ForageAsync(Context.Guild.Id, Context.User.Id, now, Random.Shared);
-        var (text, refused) = ForageReply(result, Context.User.Id);
+        var result = await _plynlings.ForageAsync(Context.Guild.Id, Context.User.Id, now, Random.Shared, ForagePlaces.ByKey(place));
+        var (text, refused) = ForageReply(result, Context.User.Id, _picker);
         if (refused)
             await RespondAsync(text, ephemeral: true);
         else
@@ -395,16 +402,19 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
 
     // What /plynling forage answers, shared with the ;forage shortcut. A refusal is shown privately —
     // or as a passing reply, from the shortcut.
-    public static (string Text, bool Refused) ForageReply(ForageResult result, ulong userId)
+    public static (string Text, bool Refused) ForageReply(ForageResult result, ulong userId, ResponsePicker picker)
     {
         var gender = result.Plynling?.Gender ?? PlynlingGender.Male;
         if (result.Outcome == CareOutcome.TooSoon)
             return (PlynlingText.ForageTooSoon(gender, result.ReadyAt!.Value), true);
-        if (result.Outcome != CareOutcome.Done || result.Find is null || result.Plynling is null)
+        if (result.Outcome != CareOutcome.Done || result.Find is null || result.Plynling is null || result.Place is null)
             return (PlynlingCareService.Refusal(result.Outcome, gender), true);
         // A plain message, not a card: the find is the news, and the Plynling's state has not changed.
-        return (PlynlingText.FindLines(
-            PlynlingText.Foraged(PlynlingCardUi.SafeName(result.Plynling.Name), gender, result.Find.Item), result.Find, userId), false);
+        var item = result.Find.Item;
+        var line = string.Format(picker.Pick(BotResponses.PlynlingForaged[result.Place.Key].For(gender)),
+            PlynlingCardUi.SafeName(result.Plynling.Name), PlynlingText.ItemLabel(item));
+        if (item.Kind == ItemKind.Food) line += "\n-# Rangé dans ton garde-manger.";
+        return (PlynlingText.FindLines(line, result.Find, userId) + PlynlingText.NowReady(gender, result.NowReady), false);
     }
 
     [SlashCommand("graveyard", "Le cimetière des Plynlings (ou seulement ceux de quelqu'un)")]
