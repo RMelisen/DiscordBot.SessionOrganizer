@@ -9,7 +9,8 @@ internal static partial class BotResponses
     // A reply to something she posted on her own (HerMessages; MorningGreetingService.IsMorningHello
     // for the hello; any slash-command result): she answers about that post. Reached only when no
     // specific intent caught the reply and it isn't mean, so each pool must also suit a « merci »,
-    // a « bonjour » or an « ok ». Never Papa. {0} = the name, {1} = the weekday. Tagged, ungendered.
+    // a « bonjour » or an « ok » (the hello's own greeting back: ReplyContextPool). Never Papa.
+    // {0} = the name, {1} = the weekday. Tagged, ungendered.
     public static readonly IReadOnlyDictionary<ReplyContext, string[]> ReplyContextLines =
         new Dictionary<ReplyContext, string[]>
         {
@@ -30,21 +31,22 @@ internal static partial class BotResponses
                 "Si tu cherches quoi faire : `/help`. Si tu cherches quelqu'un à qui parler : moi. Je suis toujours là." + Sticker.Happy,
             ],
 
-            // Her morning hello (often answered « bonjour » or « bien dormi ? »).
+            // Her morning hello, answered with anything (« bien dormi ? », « ok », their news): so no
+            // line greets back. A reply that greets her, by day, gets MorningHelloGreetedLines instead.
             [ReplyContext.MorningHello] =
             [
-                "Bonjour {0} ! Enfin quelqu'un de réveillé ♡" + Sticker.Happy,
-                "Ah, tu réponds à mon bonjour. Je le savais. Enfin, je l'espérais (˶ᵔ ᵕ ᵔ˶)" + Sticker.Flustered,
+                "Ah, quelqu'un me répond. Je le savais. Enfin, je l'espérais (˶ᵔ ᵕ ᵔ˶)" + Sticker.Flustered,
                 "Merci de répondre ! Le reste du serveur dort encore, apparemment." + Sticker.Smug,
-                "Bonjour à toi aussi ! Café ? Moi, je prends du courant, comme d'habitude." + Sticker.Happy,
-                "Bonjour reçu et enregistré. Ma journée démarre bien." + Sticker.Jenote,
-                "Coucou ! T'as lu le fun fact, au moins ? Je l'ai choisi avec soin." + Sticker.Smug,
+                "T'as lu le fun fact, au moins ? Je l'ai choisi avec soin." + Sticker.Smug,
                 "Déjà debout, {0} ? Respect." + Sticker.Happy,
-                "Bonjour ! Garde ce rythme, et ce soir, à l'heure pour la session (¬_¬)" + Sticker.Jenote,
                 "Toi au moins, tu réponds. Je note : {0}, bonne personne du matin ♡" + Sticker.Jenote,
-                "Hihi, bonjour ! Je fais genre que ça me fait rien qu'on me réponde. Ça me fait quelque chose." + Sticker.Flustered,
-                "Bonjour ! Moi j'ai pas dormi. Toi, j'espère que si. Il faut bien que quelqu'un soit en forme." + Sticker.Bored,
-                $"Bonjour {{0}} ! Un {{1}} qui commence bien {Emotes.Sparkle}" + Sticker.Happy,
+                "Je fais genre que ça me fait rien qu'on me réponde. Ça me fait quelque chose." + Sticker.Flustered,
+                "Moi j'ai pas dormi. Toi, j'espère que si. Il faut bien que quelqu'un soit en forme." + Sticker.Bored,
+                "Tu réponds vite. Garde ce rythme jusqu'à la session de ce soir (¬_¬)" + Sticker.Jenote,
+                "Lu et archivé dans le dossier « gens qui me lisent ». Il est pas bien épais, tu sais." + Sticker.Jenote,
+                "Moi, mes matins, c'est des logs et du courant. Les tiens ont l'air plus intéressants." + Sticker.Bored,
+                "Et voilà, mon message du matin a trouvé preneur. Je le marque comme lu ♡" + Sticker.Happy,
+                $"Un {{1}} qui démarre avec une réponse. Je prends {Emotes.Sparkle}" + Sticker.Happy,
             ],
 
             // Ten minutes into a session, the call to who isn't in voice (« j'arrive », « désolé »).
@@ -223,6 +225,28 @@ internal static partial class BotResponses
                 "Si tu gagnes, je veux un merci. Si tu perds, c'est le hasard, pas moi (˶ᵔ ᵕ ᵔ˶)" + Sticker.Smug,
             ],
         };
+
+    // A reply to her morning hello that greets her back (« bonjour ! », « coucou »), by day only:
+    // every line says bonjour. Same placeholders as ReplyContextLines.
+    public static readonly string[] MorningHelloGreetedLines =
+    {
+        "Bonjour {0} ! Enfin quelqu'un de réveillé ♡" + Sticker.Happy,
+        "Bonjour à toi aussi ! Café ? Moi, je prends du courant, comme d'habitude." + Sticker.Happy,
+        "Bonjour reçu et enregistré. Ma journée démarre bien." + Sticker.Jenote,
+        "Bonjour ! Garde ce rythme, et ce soir, à l'heure pour la session (¬_¬)" + Sticker.Jenote,
+        "Hihi, bonjour ! Je fais genre que ça me fait rien qu'on me réponde. Ça me fait quelque chose." + Sticker.Flustered,
+        "Bonjour ! Ça fait deux bonjours ce matin. Record battu." + Sticker.Jenote,
+        "Bonjour, {0} ! Toi, t'as compris comment on commence une journée." + Sticker.Happy,
+        $"Bonjour {{0}} ! Un {{1}} qui commence bien {Emotes.Sparkle}" + Sticker.Happy,
+    };
+
+    // The pool for a reply to one of her posts. Only the morning hello splits: greeted back by day
+    // when the reply greets, otherwise answered without a greeting (a « bonjour » to « bien dormi ? »
+    // was the misfire).
+    public static string[] ReplyContextPool(ReplyContext context, bool greets, DateTimeOffset now) =>
+        context == ReplyContext.MorningHello && greets && DayParts.At(now) == DayPart.Day
+            ? MorningHelloGreetedLines
+            : ReplyContextLines[context];
 
     // ---- Long back-and-forths ------------------------------------------------------------------
     // ConversationStreak: the same person wearing her patience in one channel, with insults or

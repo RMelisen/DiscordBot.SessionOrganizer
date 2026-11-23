@@ -67,7 +67,7 @@ var taggedPools = new[]
     "EditTurnedMeanLines", "EditCoveredUpLines", "OwnerEditLines", "OwnerEditMeanLines", "MilestoneLines",
     "MilestoneBotLines", "MilestoneSelfLines", "RequestActionLines", "OwnerRequestActionLines", "TeamsNoVoiceLines",
     "RelayLines", "RelayGreetingLines", "RelayRefusedLines", "DefendedLines", "OwnerDefendedLines", "OwnerWorksOnHerLines",
-    "TalkedAboutShipLines", "TalkedAboutDigLines", "ChouchouGreetings", "ChouchouReplies",
+    "TalkedAboutShipLines", "TalkedAboutDigLines", "ChouchouGreetings", "ChouchouReplies", "MorningHelloGreetedLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -5052,6 +5052,44 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         foreach (var l in ((string[])Field(field)).Select(l => l.ToLowerInvariant()))
             if (l.Contains("enfin") || l.Contains("t'étais où") || l.Contains("en retard"))
                 Fail($"{field}: blames their timing: {l}");
+}
+
+// 58. Replies to her morning hello (ReplyContextPool): greeted back only when the reply greets, by
+// day; anything else answered without a greeting. In the wild she said « bonjour » to every reply.
+{
+    var pool = br.GetMethod("ReplyContextPool")!;
+    string[] PoolFor(ReplyContext c, bool greets, int h) =>
+        (string[])pool.Invoke(null, [c, greets, AppTime.AtWallClock(new DateTime(2026, 11, 18, h, 0, 0))])!;
+    var contextLines = (IReadOnlyDictionary<ReplyContext, string[]>)Field("ReplyContextLines");
+    var helloPlain = contextLines[ReplyContext.MorningHello];
+    var greeted = (string[])Field("MorningHelloGreetedLines");
+    if (PoolFor(ReplyContext.MorningHello, true, 9) != greeted) Fail("hello reply: a greeting by day isn't greeted back");
+    if (PoolFor(ReplyContext.MorningHello, false, 9) != helloPlain) Fail("hello reply: a non-greeting is greeted back");
+    if (PoolFor(ReplyContext.MorningHello, true, 21) != helloPlain) Fail("hello reply: greeted back with bonjour in the evening");
+    if (PoolFor(ReplyContext.Welcome, true, 9) != contextLines[ReplyContext.Welcome]) Fail("hello reply: another context split");
+
+    // What decides it: the reply's own greeting, as the reply path reads it.
+    bool Greets(string text)
+    {
+        var mood = analyzeClaim.Invoke(null, [text])!;
+        return (bool)mood.GetType().GetProperty("IsGreeting")!.GetValue(mood)!;
+    }
+    foreach (var (text, expected) in new[]
+    {
+        ("bonjour !", true), ("coucou syncs", true), ("bien dormi ?", false), ("ok", false),
+        ("t'es matinale aujourd'hui", false), ("moi j'ai mal dormi", false),
+    })
+        if (Greets(text) != expected) Fail($"hello reply: « {text} » greets = {!expected}");
+
+    var helloWord = new System.Text.RegularExpressions.Regex(@"\b(mon|mes|deux|dire|dis|dit) bonjours?\b");
+    foreach (var l in helloPlain)
+    {
+        var s = Sticker.Strip(string.Format(l, "Nom", "lundi")).ToLowerInvariant();
+        if (Greets(s) || helloWord.Replace(s, "").Contains("bonjour") || s.Contains("bonsoir"))
+            Fail($"ReplyContextLines[MorningHello]: greets back: {s}");
+    }
+    foreach (var l in greeted)
+        if (!l.ToLowerInvariant().Contains("bonjour")) Fail($"MorningHelloGreetedLines: no bonjour: {l}");
 }
 
 // 48. Edits of a message she answered (EditReading): a typo, a case change or a link preview is

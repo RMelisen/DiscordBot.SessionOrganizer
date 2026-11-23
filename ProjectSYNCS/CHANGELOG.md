@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.1 — 2026-11-23
+
+- Answering SYNCS's morning hello no longer always gets « bonjour » back: she greets you back only when you greeted her (by day), and answers anything else without a hello.
+
 ## 8.2.0 — 2026-11-19
 
 - Plynling visits are played instead of told: a scene set in the village (20 of them), where the visitor's owner picks what their Plynling does and the host's owner picks how theirs reacts — that pick is accepting the visit. The whole visit is one message, from the first choice to the ending.

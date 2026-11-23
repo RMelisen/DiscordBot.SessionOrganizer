@@ -28,6 +28,11 @@ A reply to one of her own posts is answered about that post (`ReplyContextLines`
 `ReplyContext`). Reached only for a non-mean reply that no specific intent caught, and never for
 Papa, so each pool must also suit a « merci », a « bonjour » or an « ok ».
 
+- **The morning hello splits** (`BotResponses.ReplyContextPool`): a reply that greets her, by day
+  (`DayParts`), gets `MorningHelloGreetedLines`, which all say bonjour; anything else (« bien
+  dormi ? », « ok », their news, a « bonsoir ») gets `ReplyContextLines[MorningHello]`, where no line
+  greets back. A « bonjour » to every reply was the misfire; checks section 58 holds both halves.
+
 - **`HerMessages`** (singleton) remembers what she posted on her own, by message id, bounded at 500
   and lost on restart by design. Each sender calls `Remember` right after its send: the welcome and
   rush line (`Welcome`), the late call (`SessionCall`), the recap (`SessionRecap`), the weekend poll

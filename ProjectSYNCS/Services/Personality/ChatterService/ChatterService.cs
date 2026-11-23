@@ -648,7 +648,8 @@ internal sealed partial class ChatterService
         {
             // An answer to one of her own posts (the late call, a welcome, the morning
             // hello…) is answered about that post. Papa keeps his pools.
-            (pick, what) = (IntentPick.Of(BotResponses.ReplyContextLines[context], AnswerKinds.Context(context)),
+            (pick, what) = (IntentPick.Of(BotResponses.ReplyContextPool(context, greeting, DateTimeOffset.UtcNow),
+                    AnswerKinds.Context(context)),
                 $"reply to her {context}");
         }
         else if (nice)
