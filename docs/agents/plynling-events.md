@@ -66,8 +66,9 @@ every one was permanent, an adulte passed the 95 % challenge ceiling within abou
 resolved before the change have `GrewForGood` null, and their story keeps the old permanent « +1 »
 line — never backfill it. Growth earned before then is kept. The ado history (`AdoHistory`) still
 counts every `GrowStat` as what the choice leaned toward, whether it stuck or not. `PlynlingStat` is
-append-only — the RPG appends Force, Agilité, Endurance. `PassionStat` is exhaustive and throws on a
-passion it does not map.
+append-only: the five mind stats, then the RPG's five body stats (Force, Agilité, Endurance,
+Intelligence, Vitesse — `docs/agents/plynling-rpg.md`), which take the species lean and level points and
+are tested on their own odds curve. `PassionStat` is exhaustive and throws on a passion it does not map.
 
 ## Personality title — `Helpers/Plynling/PlynlingPersonality`
 

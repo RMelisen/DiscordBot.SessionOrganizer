@@ -61,6 +61,7 @@ public static class AdminCards
         (EconomyLog.ActMeal, "Repas"), (EconomyLog.ActPet, "Caresses"), (EconomyLog.ActGame, "Parties"),
         (EconomyLog.ActVisit, "Visites"), (EconomyLog.ActForage, "Balades"), (EconomyLog.ActTrade, "Échanges"),
         (EconomyLog.ActGive, "Objets offerts"), (EconomyLog.ActBath, "Bains"), (EconomyLog.ActMedicine, "Soins"),
+        (EconomyLog.ActTrain, "Entraînements"),
     };
 
     private static readonly (string Metric, string Label)[] FindingLabels =

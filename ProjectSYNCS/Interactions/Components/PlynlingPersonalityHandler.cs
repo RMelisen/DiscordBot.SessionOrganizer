@@ -1,12 +1,14 @@
 using Discord;
 using Discord.Interactions;
+using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Interactions.Components;
 
 // « 📜 Personnalité » on the Plynling card: its traits and stats, answered privately to whoever
-// pressed. Its own module rather than PlynlingComponentHandler, which is already long; never on
+// pressed — with the RPG's point buttons when its owner pressed and points wait, so a dismissed drill
+// answer never strands them. Its own module rather than PlynlingComponentHandler, which is already long; never on
 // PlynlingModule (registered twice, /plynling and /pl).
 public class PlynlingPersonalityHandler : InteractionModuleBase<SocketInteractionContext>
 {
@@ -24,14 +26,16 @@ public class PlynlingPersonalityHandler : InteractionModuleBase<SocketInteractio
         }
         // Two reads before anything can be shown: defer first (the Pi can outrun Discord's 3 s).
         await DeferAsync(ephemeral: true);
-        var plynling = await _plynlings.GetByIdAsync(id, DateTimeOffset.UtcNow);
+        var now = DateTimeOffset.UtcNow;
+        var plynling = await _plynlings.GetByIdAsync(id, now);
         if (plynling is null)
         {
             await FollowupAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
         var traits = await _plynlings.GetTraitsAsync(plynling);
-        await FollowupAsync(embed: PlynlingPersonality.DetailEmbed(plynling, traits, await _plynlings.GetStoryRecordAsync(plynling)), ephemeral: true,
+        await FollowupAsync(embed: PlynlingPersonality.DetailEmbed(plynling, traits, now, await _plynlings.GetStoryRecordAsync(plynling)),
+            components: PlynlingTrainCards.OwnerPointButtons(plynling, Context.User.Id, now), ephemeral: true,
             allowedMentions: AllowedMentions.None);
     }
 }

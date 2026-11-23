@@ -97,6 +97,18 @@ public static class PlynlingModifiers
             TimeSpan.FromDays(5), false, S(PlynlingStat.Courage, 2)),
         new ModifierInfo("guilty", "La conscience lourde", "La conscience lourde", "🪨", "Un petit papier plié, au fond d'une manche, pèse plus lourd qu'une pierre.",
             TimeSpan.FromDays(3), true, NoStats, StressDecay: 0.7),
+        // The RPG's body stats (docs/agents/plynling-rpg.md): the same few days' +1 as the five above, for a
+        // story or an expedition that grows one.
+        new ModifierInfo("practice_force", "En force", "En force", "🪵", "Porte le sac de grain jusqu'au moulin sans le poser une seule fois.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Force, 1)),
+        new ModifierInfo("practice_agility", "Le pied léger", "Le pied léger", "🦗", "Traverse la Sommeille de pierre en pierre sans se mouiller.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Agility, 1)),
+        new ModifierInfo("practice_endurance", "Le souffle long", "Le souffle long", "🥾", "Fait deux fois le tour du village, et en ferait bien un troisième.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Endurance, 1)),
+        new ModifierInfo("practice_intelligence", "L'esprit vif", "L'esprit vif", "🧩", "Trouve la réponse de la devinette avant la fin de la question.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Intelligence, 1)),
+        new ModifierInfo("practice_speed", "Vif comme l'éclair", "Vive comme l'éclair", "🐇", "Le jour du marché, arrive sur la place du Puits avant tout le monde.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Speed, 1)),
     };
 
     private static readonly Dictionary<string, ModifierInfo> ByKeyMap = All.ToDictionary(m => m.Key);
@@ -111,6 +123,11 @@ public static class PlynlingModifiers
         PlynlingStat.Learning => "practice_learning",
         PlynlingStat.Intrigue => "practice_intrigue",
         PlynlingStat.Courage => "practice_courage",
+        PlynlingStat.Force => "practice_force",
+        PlynlingStat.Agility => "practice_agility",
+        PlynlingStat.Endurance => "practice_endurance",
+        PlynlingStat.Intelligence => "practice_intelligence",
+        PlynlingStat.Speed => "practice_speed",
         _ => throw new ArgumentOutOfRangeException(nameof(stat), stat, null),
     }];
 

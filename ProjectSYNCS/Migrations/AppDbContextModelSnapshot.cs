@@ -1348,6 +1348,15 @@ namespace ProjectSYNCS.Migrations
                     b.Property<DateTimeOffset?>("DiedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("Drills")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Energy")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTimeOffset>("EnergyAsOf")
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("FedByOthers")
                         .HasColumnType("INTEGER");
 
@@ -1366,16 +1375,31 @@ namespace ProjectSYNCS.Migrations
                     b.Property<string>("GraveKey")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("GrowthAgility")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("GrowthCourage")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("GrowthDiplomacy")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("GrowthEndurance")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GrowthForce")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GrowthIntelligence")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("GrowthIntrigue")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("GrowthLearning")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GrowthSpeed")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("GrowthStewardship")
@@ -1439,7 +1463,25 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("PlaysWon")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("PointsAgility")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PointsEndurance")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PointsForce")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PointsIntelligence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PointsSpeed")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Recovery")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("RpgXp")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("SickNotified")

@@ -227,7 +227,7 @@ public static class StoryEngineChecks
 
         // A first line longer than the field still shows (cut), not only a count.
         var longMemory = new StoryRecord([], [], [new string('x', 1500), "b"]);
-        var embed = PlynlingPersonality.DetailEmbed(brindille, [], longMemory);
+        var embed = PlynlingPersonality.DetailEmbed(brindille, [], Now, longMemory);
         var field = embed.Fields.Single(f => f.Name == "Histoire").Value;
         Expect(field.Length <= 1024 && field.Contains("xxxx") && field.Contains("… et 1 de plus"), "field: an over-long first line is cut, not dropped: " + field.Length);
     }
@@ -284,11 +284,15 @@ public static class StoryEngineChecks
             StoryCatalog.Memories.Keys.Select(k => new PlynlingMemory { MemoryKey = k }));
         // Everything at its largest: every trait, every modifier, maximum stress.
         var fullest = new Plynling { Name = name, Stress = PlynlingStress.Max };
+        // Three-digit growth on every stat and the most points a body stat can hold (99): every
+        // breakdown part present and every total at its widest.
+        foreach (var stat in PlynlingStats.All) PlynlingStats.AddGrowth(fullest, stat, 999);
+        foreach (var stat in PlynlingStats.Body) for (var i = 0; i < PlynlingRpg.MaxLevel - 1; i++) PlynlingStats.AddPoint(fullest, stat);
         PlynlingModifiers.Write(fullest, PlynlingModifiers.All.Select(m => (m.Key, Now.AddDays(30))));
         // The most traits a Plynling can hold: one from childhood, three of personality, two coping — the longest of each.
         IEnumerable<TraitInfo> Longest(TraitKind kind, int n) => PlynlingTraits.All.Where(t => t.Kind == kind).OrderByDescending(t => t.Description.Length).Take(n);
         var held = Longest(TraitKind.Childhood, 1).Concat(Longest(TraitKind.Personality, 3)).Concat(Longest(TraitKind.Coping, PlynlingTraits.MaxCoping)).ToList();
-        var embed = PlynlingPersonality.DetailEmbed(fullest, held, record);
+        var embed = PlynlingPersonality.DetailEmbed(fullest, held, Now, record);
         Expect(PlynlingModifiers.Active(fullest).Count == PlynlingModifiers.All.Count, "personality embed: every modifier is held");
         Expect(new[] { "Statistiques", "État", "Histoire" }.All(n => embed.Fields.Any(f => f.Name == n)), "personality embed: every field is present");
         Expect(embed.Fields.All(f => f.Value.Length <= 1024) && embed.Length <= 6000, "personality embed with every trait, modifier, title, keepsake and memory: " + embed.Length);

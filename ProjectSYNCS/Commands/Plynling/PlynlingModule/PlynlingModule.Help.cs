@@ -35,6 +35,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             .AddField("Personnalité",
                 "En grandissant, il gagne **4 traits** : un trait d'enfance bébé, deux de plus ado, un dernier adulte. " +
                 "Ils façonnent ses **stats** (Diplomatie, Intendance, Sagesse, Ruse, Courage) et un petit titre. " +
+                "Son corps a les siennes — Force, Agilité, Endurance, Intelligence, Vitesse — que l'entraînement fait grandir. " +
                 "**Personnalité** (bouton de sa carte) détaille tout, pour n'importe quel Plynling.")
             .AddField("Événements",
                 "À peu près une fois par jour, il lui arrive quelque chose : **✨ Événement** apparaît sur sa carte " +
@@ -46,6 +47,11 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "son propriétaire reçoit alors la question sur sa propre carte.\n" +
                 "Sans réponse en 24 h, il décide **tout seul**, selon son caractère — sans jamais y perdre quoi que ce soit.\n" +
                 "Chaque histoire est racontée dans le salon du jeu, page par page.")
+            .AddField("Entraînement",
+                "Dès qu'il est ado, **`/plynling train`** l'entraîne : Force, Agilité, Endurance, Intelligence ou Vitesse. " +
+                "Chaque séance coûte de l'**énergie** ⚡ (pleine en 24 h ; plus il est endurant de naissance, plus il en a) " +
+                "et rapporte de l'**XP**. À chaque **niveau** (jusqu'à 100), tu places un point dans la stat de ton choix, pour de bon (boutons sous l'entraînement, ou dans **Personnalité**). " +
+                "Parfois, rarement, la stat travaillée monte aussi toute seule. Seul un nouveau niveau est annoncé dans le salon.")
             .AddField("Stress et humeurs",
                 "Forcer un choix contre son caractère le **stresse** (le coût est affiché). Caresses, jeux, visites et bains " +
                 "l'apaisent, et chaque matin aussi. À chaque palier (100, 200, 300), son bonheur file plus vite, puis ses stats " +

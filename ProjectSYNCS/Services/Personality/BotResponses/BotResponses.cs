@@ -307,7 +307,7 @@ namespace ProjectSYNCS.Services;
 //       McSeekMetLines… · McSeekMissLines… (Owner/Tata only) ... walking up to them after arriving
 //       McResourceNames .......... what she gathers, as a partitive (« du bois »): data, not a pool
 //
-//   [Plynlings, Plynlings.Play, Plynlings.Death, Plynlings.Mascot] Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
+//   [Plynlings, Plynlings.Play, Plynlings.Death, Plynlings.Mascot, Plynlings.Rpg] Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     Care, shown on the card
 //       PlynlingAdoptLines ..... a new Plynling
 //       PlynlingFeedLines · PlynlingPetLines · PlynlingBathLines · PlynlingMedicineLines

@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.7.0 — 2026-11-23
+
+- Plynlings have five body stats from the ado stage on: Force, Agilité, Endurance, Intelligence and Vitesse.
+- New `/plynling train`: a quick drill that spends Énergie (refills over 24 h) for XP, and rarely a permanent +1.
+- Plynlings level up to 100; each level gives a point their owner places in a body stat. A new level is announced in the channel.
+- The Plynling card shows its level and Énergie, and « Personnalité » breaks down the body stats and offers the owner the buttons to place points.
+
 ## 8.6.0 — 2026-11-23
 
 - A fifth cosmetic slot, the **aura**: an animated effect drawn around the Plynling on its picture, worn

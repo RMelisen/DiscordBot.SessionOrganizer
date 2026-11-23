@@ -48,6 +48,13 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             bathSoap: await plynlings.GetBathSoapAsync(plynling, now),
             title: await plynlings.GetLatestTitleAsync(plynling));
 
+    // The status, then the RPG's level and Énergie on the same text (never a component of its own: the
+    // card is counted against Components V2's 40).
+    private static string StatusText(Plynling plynling, DateTimeOffset now, IReadOnlyList<TraitInfo>? traits) =>
+        PlynlingRpg.CardLine(plynling, traits ?? Array.Empty<TraitInfo>(), now) is { } rpg
+            ? PlynlingCardUi.Status(plynling, now) + "\n" + rpg
+            : PlynlingCardUi.Status(plynling, now);
+
     public const int ListPageSize = 10;
 
     public static int ListPages(int count) => Math.Max(1, (count + ListPageSize - 1) / ListPageSize);
@@ -147,7 +154,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         var container = CardHead(plynling, now, partnerName, title);
         container
             .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Status(plynling, now)));
+            .AddComponent(new TextDisplayBuilder(StatusText(plynling, now, traits)));
         // Its personality under the status: the title, the trait emojis, then its stress level and its
         // modifiers' icons (PlynlingPersonality) — one component, as before.
         var personality = PlynlingPersonality.CardLine(traits ?? Array.Empty<TraitInfo>(), plynling.Gender);

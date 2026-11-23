@@ -36,12 +36,16 @@ public static class PlynlingTraits
     private const int ChildhoodSalt = 101;
     private const int PersonalitySalt = 110;    // + the slot: 110, 111, 112
 
-    private static Dictionary<PlynlingStat, int> S(int dip = 0, int inte = 0, int sag = 0, int rus = 0, int cou = 0)
+    // The five mind stats (CK3's values), then the RPG's body stats (ours: ±1, a few traits only).
+    private static Dictionary<PlynlingStat, int> S(int dip = 0, int inte = 0, int sag = 0, int rus = 0, int cou = 0,
+        int frc = 0, int agi = 0, int end = 0, int intl = 0, int spd = 0)
     {
         var d = new Dictionary<PlynlingStat, int>();
         void Put(PlynlingStat s, int v) { if (v != 0) d[s] = v; }
         Put(PlynlingStat.Diplomacy, dip); Put(PlynlingStat.Stewardship, inte); Put(PlynlingStat.Learning, sag);
         Put(PlynlingStat.Intrigue, rus); Put(PlynlingStat.Courage, cou);
+        Put(PlynlingStat.Force, frc); Put(PlynlingStat.Agility, agi); Put(PlynlingStat.Endurance, end);
+        Put(PlynlingStat.Intelligence, intl); Put(PlynlingStat.Speed, spd);
         return d;
     }
 
@@ -77,19 +81,19 @@ public static class PlynlingTraits
         C("charming", "Adorable", "Adorable", "🥺", "Obtient une deuxième part de tarte rien qu'en regardant la première.",
             S(dip: 1, rus: 1), A(gre: 25, soc: 25, com: 15, rat: 15, ven: 15, hon: -15)),
         C("curious", "Curieux", "Curieuse", "🔍", "Soulève chaque pierre du chemin pour voir qui habite dessous.",
-            S(dip: 1, sag: 1), A(bol: 25, com: 25, ene: 15, hon: 15, soc: 15, ven: -15)),
+            S(dip: 1, sag: 1, agi: 1), A(bol: 25, com: 25, ene: 15, hon: 15, soc: 15, ven: -15)),
         C("pensive", "Rêveur", "Rêveuse", "☁️", "Regarde passer les nuages et connaît le nom de la plupart.",
-            S(inte: 1, sag: 1), A(rat: 25, ene: 15, hon: 15, gre: -15, bol: -15, soc: -25)),
+            S(inte: 1, sag: 1, intl: 1), A(rat: 25, ene: 15, hon: 15, gre: -15, bol: -15, soc: -25)),
         C("rowdy", "Turbulent", "Turbulente", "🌪️", "Arrive en courant, repart en courant, et renverse le pot de miel entre les deux.",
-            S(rus: 1, cou: 1), A(bol: 25, ene: 25, soc: 15, ven: 15, com: -15, hon: -15, rat: -15)),
+            S(rus: 1, cou: 1, frc: 1), A(bol: 25, ene: 25, soc: 15, ven: 15, com: -15, hon: -15, rat: -15)),
 
         // ---- personality: two at ado, the fourth trait at adulte
         P("bravery", "brave", "Courageux", "Courageuse", "🦁", "Va voir ce qui fait du bruit dans le noir, et revient le raconter.",
-            S(cou: 3), A(bol: 200, ene: 20, soc: 20, rat: -20)),
+            S(cou: 3, frc: 1), A(bol: 200, ene: 20, soc: 20, rat: -20)),
         P("bravery", "craven", "Peureux", "Peureuse", "🫣", "Connaît toutes les cachettes du village. Par précaution.",
-            S(rus: 2, cou: -3), A(rat: 10, ene: -20, soc: -20, bol: -200)),
+            S(rus: 2, cou: -3, frc: -1, spd: 1), A(rat: 10, ene: -20, soc: -20, bol: -200)),
         P("temper", "calm", "Calme", "Calme", "🍃", "Même le héron du vieux pont trouve ce calme un peu exagéré.",
-            S(dip: 1, rus: 1), A(rat: 75, ene: -10, ven: -10, bol: -20), loss: 1.1),
+            S(dip: 1, rus: 1, end: 1), A(rat: 75, ene: -10, ven: -10, bol: -20), loss: 1.1),
         P("temper", "wrathful", "Colérique", "Colérique", "💢", "Tape du pied, souffle très fort, puis réclame un câlin.",
             S(dip: -1, rus: -1, cou: 3), A(bol: 35, ven: 20, ene: 10, com: -20, rat: -35)),
         P("romance", "chaste", "Pudique", "Pudique", "🙈", "Rougit quand on lui tient la patte, même pour traverser.",
@@ -101,9 +105,9 @@ public static class PlynlingTraits
         P("ambition", "ambitious", "Ambitieux", "Ambitieuse", "🏆", "Veut le plus gros gland, la plus haute branche et le titre qui va avec.",
             S(1, 1, 1, 1, 1), A(ene: 75, gre: 75, bol: 50, soc: 20, zea: 10, hon: -20)),
         P("work", "diligent", "Travailleur", "Travailleuse", "🧺", "Range ses cailloux par taille, puis par couleur, puis recommence.",
-            S(dip: 2, inte: 3, sag: 3), A(ene: 75, bol: 35, rat: 20, ven: 10), loss: 0.5),
+            S(dip: 2, inte: 3, sag: 3, end: 1), A(ene: 75, bol: 35, rat: 20, ven: 10), loss: 0.5),
         P("work", "lazy", "Paresseux", "Paresseuse", "🛌", "Considère la sieste comme un métier à plein temps.",
-            S(-1, -1, -1, -1, -1), A(gre: 10, com: -10, soc: -10, ven: -10, bol: -20, ene: -50)),
+            S(-1, -1, -1, -1, -1, spd: -1), A(gre: 10, com: -10, soc: -10, ven: -10, bol: -20, ene: -50)),
         P("constancy", "stubborn", "Têtu", "Têtue", "🪨", "Quand c'est non, même la tortue du café n'insiste plus.",
             S(inte: 3), A(hon: 35, ven: 35, rat: -10)),
         P("constancy", "fickle", "Lunatique", "Lunatique", "🌗", "Adore les myrtilles. Déteste les myrtilles. Ça dépend de l'heure.",
@@ -133,13 +137,13 @@ public static class PlynlingTraits
         P("justice", "arbitrary", "Capricieux", "Capricieuse", "🎲", "Change les règles du jeu à chaque tour, et gagne souvent.",
             S(inte: -2, sag: -1, rus: 3), A(bol: 10, com: -10, zea: -10, rat: -20, hon: -200), gain: 0.5),
         P("patience", "patient", "Patient", "Patiente", "⏳", "Attend que l'escargot finisse sa phrase.",
-            S(sag: 2), A(rat: 35, ven: 10, ene: -10, bol: -20)),
+            S(sag: 2, intl: 1), A(rat: 35, ven: 10, ene: -10, bol: -20)),
         P("patience", "impatient", "Impatient", "Impatiente", "⏰", "Ouvre le four toutes les deux minutes pour voir si c'est prêt.",
-            S(sag: -2), A(bol: 20, ene: 10, ven: -10, rat: -35)),
+            S(sag: -2, spd: 1), A(bol: 20, ene: 10, ven: -10, rat: -35)),
         P("appetite", "temperate", "Frugal", "Frugale", "🥣", "Une baie le matin, une baie le soir. Et ça suffit, à ce qu'on dit.",
-            S(inte: 2), A(ene: 10, ven: -10, gre: -35)),
+            S(inte: 2, agi: 1), A(ene: 10, ven: -10, gre: -35)),
         P("appetite", "gluttonous", "Gourmand", "Gourmande", "🍯", "A goûté chaque pot de miel du village. Deux fois.",
-            S(inte: -2), A(gre: 35, ene: -10), loss: 1.1),
+            S(inte: -2, end: 1, agi: -1), A(gre: 35, ene: -10), loss: 1.1),
         P("trust", "trusting", "Confiant", "Confiante", "🤝", "Prête son écharpe au premier venu. L'écharpe n'est jamais revenue.",
             S(dip: 2, rus: -2), A(hon: 35, soc: 35, com: 20, rat: -20, ven: -20)),
         P("trust", "paranoid", "Méfiant", "Méfiante", "👀", "Renifle chaque cadeau avant de dire merci.",
@@ -156,7 +160,7 @@ public static class PlynlingTraits
         P("compassion", "sadistic", "Moqueur", "Moqueuse", "😏", "A un surnom pour tout le monde, et aucun n'est flatteur.",
             S(rus: 2, cou: 2), A(bol: 20, soc: 20, com: -100)),
         P("eccentric", "eccentric", "Excentrique", "Excentrique", "🎩", "Porte une feuille de chou en guise d'écharpe. Par conviction.",
-            S(dip: -2, sag: 2), A(bol: 75, hon: -20, soc: -20, rat: -200), gain: 1.5, loss: 1.5),
+            S(dip: -2, sag: 2, intl: 1), A(bol: 75, hon: -20, soc: -20, rat: -200), gain: 1.5, loss: 1.5),
 
         // ---- coping: from mental breaks only, never drawn here
         K("comfort_eater", "Mange ses émotions", "Mange ses émotions", "🍪", "Quand ça ne va pas, la réponse est dans la boîte à biscuits.",
@@ -178,7 +182,7 @@ public static class PlynlingTraits
         K("journaller", "Écrit son journal", "Écrit son journal", "📔", "Note tout dans un petit carnet, même la météo de ses humeurs.",
             S(sag: 1), A(rat: 10), loss: 1.5),
         K("athletic", "Sportif", "Sportive", "🏃", "Fait trois fois le tour du village en courant quand quelque chose ne va pas.",
-            S(cou: 1), A(ene: 25, bol: 5)),
+            S(cou: 1, end: 1), A(ene: 25, bol: 5)),
     };
 
     private static readonly Dictionary<string, TraitInfo> ByKeyMap = All.ToDictionary(t => t.Key);
