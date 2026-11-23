@@ -76,7 +76,8 @@ rows: never rename or remove one. Memory, epithet and keepsake keys are global a
 
 - **First scene** = the arc's opener. `trigger: draw` is a `Pulse`; every other trigger is `Triggered`:
   `adoption` on `OnAction.Adopted`, `stage teen|adult` on `BecameTeen|BecameAdult`, `sick` on `FellSick`,
-  `recovered` on `Recovered`, `visit` on `AfterVisit` (the visitor is `{B}`), bare `death` on `Bereaved` (any
+  `recovered` on `Recovered`, `visit` on `AfterVisit` (queued for both the visitor and the host, `{B}` being the other one, so a visit
+  arc never says who went to whose home; each rolls 33 % a day), bare `death` on `Bereaved` (any
   mourner; the one who died is `{B}`), and `break 1|2|3` on no on-action, with `BreakLevel` n (the break
   `QueueBreaksAsync` picks when stress climbs past a level). `visit` and `death` need `other: anyone` and
   take no `other_if:`: the other Plynling comes with the trigger and the engine never filters it, so a bond
@@ -227,6 +228,19 @@ flags exactly and count every other condition as possible.
   (by a click or alone). They differ only for a locked story option: shown, not visible. A click on a stale card for an
   option no longer visible answers « Ce choix n'est plus possible. » and applies nothing. Never use `Shown` to decide what an option
   may do, nor `Visible` to decide what to print.
+- **The pictures on the public story** (`PlynlingEventCards.BuildStory`): both Plynlings calm on every page but the
+  last, the outcome, which shows the faces it left them (`PlynlingEventFaces`). {A}: happy when only good came of it
+  (stress relief, a pleasant modifier, a need lifted, cailloux, an item, a mark, affinity gained, a closer bond, a
+  couple), sad when only bad (a failed roll, stress gained, an unpleasant modifier, affinity lost, a cooler bond, a couple
+  too late, a keepsake that hurts) — angry instead when the bond is hostile, which it knows only if the event moved it —
+  calm when mixed or neither; a lesson alone is neither. {B}: the bond and affinity moved, a heartbreak. Only what
+  applied counts (alone, a negative modifier did not). **A face tag** opening an option outcome's first line overrides
+  it: `[happy]`, `[content]`, `[sad]`, `[angry]` for {A}, `[A:… B:…]` for each (`StoryOutcome.Face`); before any
+  `[if …]` on that line, never in a scene's prose or an ending, and a `B:` face needs an `other:`. Use one where the
+  effects would read wrong (a tearful happy ending, a proud failure), not everywhere. The checks print the split.
+- **The stage shown** is the one each Plynling had when the event resolved: the instance stores both ages
+  (`SelfAgeSeconds`, `TargetAgeSeconds`, from 8.3.0); older rows estimate it (`PlynlingLife.AgeAt`, which can come
+  out younger if a freeze came and went since). The private choice card shows the Plynling as it is now.
 - The card heading shows `Name, la Title` (the latest epithet, article lower-cased); « Personnalité » has an
   « Histoire » field (titles, keepsakes, memories prefixed by their holder). An ending's title, keepsake or swap shows
   as a last line of the outcome, only when it applied.
@@ -300,6 +314,7 @@ result; a memory only when a later event will plausibly read it. Built on a vill
 | L'arrivée | `Stories/Milestone/arrival.story` | long milestone, triggered by adoption; replaces the C# adoption moment; names the childhood trait with `{T}`; awaiting the owner's review |
 | Wave 1, bébé and ado (30 arcs) | `Stories/Village/*.story` | short drawn events; shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-1-shortlist.md`; bébé and ado retired their old pulses in 7.74.2 (`plynling-events.md`); dev-guild playthrough not done |
 | Wave 2, adulte and ancien (54 arcs) | `Stories/Village/*.story` | short drawn events: 30 `stage: adult, elder` (an ancien also draws the adulte events, owner's rule), 10 adulte only, 10 ancien only, 4 seasonal (`requires: [season …]`); shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-2-shortlist.md`; old adulte/ancien pulses still drawn; dev-guild playthrough not done |
+| After-visit (18 arcs) | `Stories/{Love,Rivalry,Friendship,Personal,Village}/*.story` | short `trigger: visit` arcs with `cooldown: 7d`, beside `forgot`: one per bond through `requires: [relation …]` (lovers, enemies, rivals, friends, bestfriends, acquaintances) and 12 for any bond; sheet `docs/plynling-visit-followups-sheet.md`, approved 2026-11-23; dev-guild playthrough not done |
 | The old C# events (50 keys, 28 arcs) | `Stories/{Friendship,Love,Rivalry,Milestone,Personal,Hardship}/*.story` | moved in 8.0.0, same texts, options and effects, each scene with its `was:`: the asks and their handover answers (campfire, secret, befriend, pact, declare, letters, rival, mend), the moments (teen, adult, forgot, sick, recovered, bereaved), the bébé dream and the ado apprenticeship (echoes in adulte), and the 12 breaks (`Hardship/break_*`); dev-guild playthrough not done |
 
 ## Visit files
@@ -345,6 +360,7 @@ The intro: paragraphs, no tags, no fields.
 - **Keys**: a scene or choice key rides in the custom-ids of open visit messages (two hours) and in
   `ResponsePicker`'s history, and is stored nowhere. Renaming one closes the visits open on it as expired, so treat
   keys as forever anyway.
-- **Writing**: Claude writes a sheet in French (`docs/plynling-visit-scenes-sheet.md` for the launch's 20 + 1), the
+- **Writing**: Claude writes a sheet in French (`docs/plynling-visit-scenes-sheet.md` for the launch's 20 + 1,
+  `docs/plynling-visit-scenes-sheet-2.md` and `-3.md` for the next waves of 8), the
   owner reviews it, and the files are copied from the approved sheet word for word; any wording change goes back to
   the owner.

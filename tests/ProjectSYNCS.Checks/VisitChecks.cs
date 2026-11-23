@@ -167,10 +167,10 @@ public static class VisitChecks
     {
         var load = VisitLibrary.Load(ShippedFolder, requireCoverage: true);
         Expect(load.Errors.Count == 0, "the shipped scenes load clean: " + string.Join("; ", load.Errors.Take(10)));
-        Expect(load.Scenes.Count(s => !s.Confession) == 20 && load.Scenes.Count(s => s.Confession) == 1,
-            $"20 scenes and one confession ship, found {load.Scenes.Count}");
+        Expect(load.Scenes.Count(s => !s.Confession) == 36 && load.Scenes.Count(s => s.Confession) == 1,
+            $"36 scenes and one confession ship, found {load.Scenes.Count}");
         if (load.Errors.Count > 0) return;
-        Expect(VisitCatalog.Scenes.Count == 20 && VisitCatalog.Confession.Key == "confess" && VisitCatalog.ByKey("ricochets") is not null,
+        Expect(VisitCatalog.Scenes.Count == 36 && VisitCatalog.Confession.Key == "confess" && VisitCatalog.ByKey("ricochets") is not null,
             "the catalog serves the shipped folder");
         Cards(load.Scenes, "shipped");
     }

@@ -83,9 +83,13 @@ visits only (`PlynlingLife.Mood` never returns it). Both sprites go through `Ply
 (`_visit` files, a larger transparent canvas — `VISIT_CANVAS` in `tools/plynling-art/export.py`, 80 % —
 because a gallery of two spans the width), and stay clean.
 
-**Scenes are files**: `ProjectSYNCS/Stories/Visits/<key>.visit`, 20 scenes plus `confess` at launch, the
-format and the load rules in `plynling-storylines.md` (*Visit files*). Each scene names its bonds (a
-first meeting is acquaintances), its hours (Paris; `20-1` runs across midnight) and its stages.
+**Scenes are files**: `ProjectSYNCS/Stories/Visits/<key>.visit`, 36 scenes plus `confess` (20 at launch,
+8 for lovers and enemies in 8.2.8, 8 for the weak spots and everyday visits in 8.2.9), the format and the load rules in `plynling-storylines.md` (*Visit
+files*). Each scene names its bonds (a first meeting is acquaintances), its hours (Paris; `20-1` runs across
+midnight) and its stages. **A scene shared by several bonds is written neutral** (no fondness or grudge
+assumed; between enemies a good ending is a moment's truce); **a scene for one bond may lean into it** — the
+second wave's lovers-only scenes are openly tender, its enemies-only ones openly squabbling. Lovers exist at
+every stage (`CanConfess` only needs best friends), so an all-stage lovers scene stays innocent.
 **Every bond × stage pair needs a scene at every hour** (`VisitValidator.Coverage`, at startup and in the
 checks), or a visit could find nothing to draw. Templates: `{A}` is always the visitor, `{B}` the host,
 `{ils}` / `{Ils}` the pair (« elles » only for two girls), `{a:m|f}` / `{b:m|f}` / `{p:m|f}` agreements —

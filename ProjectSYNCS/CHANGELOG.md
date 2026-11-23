@@ -13,9 +13,6 @@ the git history; versions that were skipped or only existed on a side branch are
 - An adult wearing a hat is shown a little smaller, so the hat fits above its cap.
 - The sac à dos and the casque audio are retired: every copy was refunded 1 200 cailloux and taken off.
   This week's accessory selection in the shop is drawn again from the smaller list.
-
-## 8.4.0 — 2026-11-23
-
 - `/plynling forage` takes an optional place in the village — la Sommeille, la Lisière, les Mouilles, le
   Communal, la place du Puits — and most finds then come from there. Without one, the find is the same as
   before and the reply says where the Plynling went. Each place has its own lines.
@@ -25,9 +22,6 @@ the git history; versions that were skipped or only existed on a side branch are
 - Some recipes take « any common mushrooms » (or nature finds); crafting uses your biggest piles first.
 - Every recipe ingredient says where it is found (place, rarity, season), and so does each collection page.
 - A forage that gives you the last ingredient of a recipe says so.
-
-## 8.3.0 — 2026-11-23
-
 - Cosmetics now live on one screen with three tabs — Garde-robe, Boutique, Fabrication — opened by
   `/inventory cosmetics` (on the shop) or `/plynling wardrobe` (on the wardrobe). `/inventory craft` is gone:
   crafting is the third tab.
@@ -37,6 +31,27 @@ the git history; versions that were skipped or only existed on a side branch are
   gets a « Porter » button.
 - A recipe now names exactly what is missing (« Il te manque : 2 × Améthyste, 1 × Opale »).
 - The cosmetics screen also opens without a Plynling: the shop and crafting work, there's just nothing to try on.
+
+## 8.3.0 — 2026-11-23
+
+- Plynling event stories now end on faces that match the outcome: happy, sad or angry, instead of always calm.
+- Event stories show each Plynling at the age it was when the event happened, even when paged back much later.
+- The Plynling personality card's « État » list shows what each modifier does next to when it expires.
+
+## 8.2.10 — 2026-11-23
+
+- Eighteen new Plynling events that can follow a visit: one for each kind of bond (couples, enemies, rivals, friends, best friends, acquaintances) and twelve that fit any pair.
+- Each of these waits a week before it can come back for the same Plynling.
+
+## 8.2.9 — 2026-11-23
+
+- Eight more Plynling visit scenes: one only rivals can draw, a dawn scene, a night walk to a secret spot, a scene of their own for teens and one for adults, and three everyday village scenes.
+- Visits at night and at dawn, and visits between rivals, repeat less often.
+
+## 8.2.8 — 2026-11-23
+
+- Eight new Plynling visit scenes, written for one bond each: four only couples can draw (tender, from a dark walk home to babies being written into the register) and four only enemies can draw (squabbles that end in a moment's truce).
+- Couples and enemies now have a scene of their own at night, and elder and baby couples one each.
 
 ## 8.2.7 — 2026-11-23
 

@@ -1,0 +1,44 @@
+# visit: council_vote
+title: Le vote de la porte
+place: 🗳️ À la Maison commune, un soir de conseil
+bonds: enemies
+hours: 17-23
+stages: teen adult elder
+
+Le conseil doit choisir la couleur de la nouvelle porte de la Maison commune, et il y a égalité : Dame Ermengarde a voté comme le Noyer, Renaud contre, par principe. Maître Frêne se tourne vers le public, c'est-à-dire vers {A} et {B}. « Il convient de départager. Examinons vos voix. »
+
+* contra | Voter contre l'autre, par principe  [lean vengefulness +2]
+  ? good
+  {A} attend que {B} ouvre la bouche, puis vote le contraire, par principe. Renaud se lève et applaudit : il a enfin trouvé un{a:|e} élève.
+  ? bad
+  {A} vote contre l'autre, par principe, et se retrouve à défendre le rose. Personne ne voulait de rose. {A} non plus, mais il est trop tard pour reculer.
+
+* noyer | Voter comme le Noyer  [lean sociability +1] [lean boldness -1]
+  ? good
+  {A} vote comme le Noyer, et Dame Ermengarde se retourne pour lui adresser un clin d'œil de vieille complice. Le Noyer, lui, fait servir le cidre avant la fin de la séance.
+  ? bad
+  {A} vote comme le Noyer, mais le Noyer, entre-temps, a changé d'avis, et Dame Ermengarde avec lui. {A} reste seul{a:|e} à défendre une couleur que plus personne ne veut.
+
+* third | Proposer une troisième couleur  [lean rationality +1] [lean boldness +1]
+  ? good
+  {A} propose une troisième couleur : celle du bois, sans peinture. Il y a un silence, puis des hochements de tête tout autour de la table. Maître Frêne note qu'une séance pourrait finir à l'heure, et le souligne deux fois.
+  ? bad
+  {A} propose une troisième couleur. Renaud en propose une quatrième, par principe. À minuit, on en est à onze, et le cidre d'après est froid.
+
+> switch | Changer de camp au dernier moment  [lean honor -1] [lean boldness +1]
+  ? good
+  {B} change de camp au dernier moment, rien que pour voir la tête de {A}. La tête de {A} vaut le détour. Toute la salle rit, et, un instant, {A} aussi.
+  ? bad
+  {B} change de camp, puis rechange, puis rechange encore. Maître Frêne, qui note tout, n'a plus de place sur sa feuille.
+
+> speech | Se lever pour un discours  [lean sociability +1] [lean energy +1]
+  ? good
+  {B} se lève et fait un discours sur l'importance des portes, et c'est, contre toute attente, très beau. Dame Ermengarde essuie une larme. Elle ne sait plus pour quoi elle vote.
+  ? bad
+  {B} se lève et fait un discours. Il est si long que le cidre d'après devient le cidre de pendant.
+
+> abstain | S'abstenir, très dignement  [lean honor +1] [lean energy -1]
+  ? good
+  {B} s'abstient, très dignement, les mains croisées. Maître Frêne, ému, cite le geste jusqu'à la fin de la séance : « Personne n'a tort, et personne n'a tout à fait raison. Voilà la paix. »
+  ? bad
+  {B} s'abstient, très dignement, et le conseil, dérouté, décide de s'abstenir aussi. La porte restera sans couleur. Le débat reprendra au printemps.

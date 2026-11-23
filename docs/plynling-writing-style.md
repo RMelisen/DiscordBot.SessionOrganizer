@@ -78,6 +78,8 @@ chosen reaction's, then what the visit changed.
   reworded away (« toi et moi », « ensemble »). Every line must read right for all four gender pairs.
 - Face tags `[happy]`, `[content]`, `[sad]`, `[angry]` (that half's Plynling) or `[A:… B:…]` may open a
   half, where the emotion visibly turns, not everywhere.
+- Story outcomes take the same face tags, on their first line ({A}'s face, or `[A:… B:…]`), only where the
+  outcome's effects would give the wrong face (`docs/agents/plynling-storylines.md`, *What the player sees*).
 - **The confession** (`confess.visit`): its options are ways of confessing, its halves `yes` / `no`. A
   `no` is gentle and leaves the two friends.
 

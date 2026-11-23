@@ -46,4 +46,10 @@ public class PlynlingEventInstance
     // the ending it reached. Stored so the story is told from this row alone, after any restart.
     public string? Flags { get; set; }
     public string? EndingKey { get; set; }
+
+    // Both Plynlings' ages (lived seconds) when it resolved, so its story shows them at the stage they
+    // were then, however long after it is paged. Null on rows resolved before 8.3.0 (and for the target
+    // when there is none): the story estimates (PlynlingLife.AgeAt).
+    public long? SelfAgeSeconds { get; set; }
+    public long? TargetAgeSeconds { get; set; }
 }

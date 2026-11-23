@@ -1,0 +1,43 @@
+# visit: dark_path
+title: La lanterne éteinte
+place: 🏮 Sur le chemin du Communal, la nuit
+bonds: lovers
+hours: 21-6
+
+{A} et {B} rentrent tard par le chemin du Communal, une lanterne entre eux deux. À mi-chemin, la flamme fait « pff » et s'éteint. Il fait noir comme dans une poche. Tout au bout du chemin, derrière une fenêtre, il y a une petite lueur verte : la cabane de l'Étrangère.
+
+* knock | Aller frapper chez l'Étrangère  [lean sociability +2]
+  ? good
+  {A} frappe chez l'Étrangère, qui sort et rabat sa capuche, rien que pour eux. Elle marche devant jusqu'au bout du chemin, sans un mot, et luit juste assez.
+  ? bad
+  {A} frappe chez l'Étrangère, qui ouvre, voit qui se tient là, et rougit si fort, en vert, qu'on y voit comme en plein jour. Puis elle referme, très gênée, et il refait nuit.
+
+* hand | Prendre la main et avancer à tâtons  [lean boldness +1] [lean compassion +1]
+  ? good
+  {A} prend la main de {B} et avance à tâtons. On marche lentement, on se cogne un peu, et on ne se lâche pas. Le chemin n'a jamais été aussi court.
+  ? bad
+  {A} prend la main de {B} et avance à tâtons, avec beaucoup d'assurance, droit dans la haie. La haie est piquante, et ne s'excuse pas.
+
+* relight | Rallumer la lanterne avec les moyens du bord  [lean rationality +2]
+  ? good
+  {A} frotte deux silex, souffle, patiente. La flamme revient, toute petite, et on la protège à quatre mains jusqu'au bout du chemin, comme un oisillon tombé du nid.
+  ? bad
+  {A} frotte deux silex, souffle, frotte encore. Au bout d'un moment, l'aube se lève, et règle la question.
+
+> stars | Montrer les étoiles  [lean zeal +1] [lean energy -1]
+  ? good
+  {B} lève le nez : on voit toutes les étoiles, même les petites qui ne servent à rien. {B} les montre une par une, et donne à la plus petite le nom de {A}.
+  ? bad
+  {B} lève le nez pour montrer les étoiles, et ne regarde plus du tout où vont ses pieds. Il y a une flaque au milieu du chemin. Il y en a toujours une.
+
+> brave | Faire semblant de ne pas avoir peur du noir  [lean boldness +1] [lean honor -1]
+  ? good
+  {B} jure n'avoir pas peur du noir, pas du tout, et le répète à chaque pas. Puis {B} serre le bras de {A}, juste pour rassurer {A}, bien sûr.
+  ? bad
+  {B} jure n'avoir pas peur du noir, et une feuille tombe. {B} fait un bond jusqu'au milieu du Communal. La chèvre commune, réveillée, n'est pas contente.
+
+> hum | Fredonner pour se donner du courage  [lean sociability +1] [lean compassion +1]
+  ? good
+  {B} fredonne tout bas, et {A} reprend l'air. Le chemin du Communal a entendu beaucoup de chansons, mais pas celle-là : elle n'existe que ce soir.
+  ? bad
+  {B} fredonne pour se donner du courage, et une voix, quelque part dans le noir, reprend l'air. C'est le Fou, qui rentre de la Lisière. On a eu très peur, et maintenant on chante à trois.

@@ -92,7 +92,7 @@ public static class PlynlingPersonality
         var state = new List<string>();
         if (p.Stress > 0) state.Add($"😣 **Stress {p.Stress}**/{PlynlingStress.Max} · niveau {PlynlingStress.Level(p.Stress)}");
         foreach (var (info, ends) in PlynlingModifiers.Active(p))
-            state.Add($"{info.Emoji} **{info.Name(p.Gender)}** — {info.Description} *(jusqu'à <t:{ends.ToUnixTimeSeconds()}:R>)*");
+            state.Add($"{info.Emoji} **{info.Name(p.Gender)}** — {info.Description} *({Bonus(info)}expire <t:{ends.ToUnixTimeSeconds()}:R>)*");
         if (state.Count > 0) embed.AddField("État", FieldText(state));
         // What its stories left: titles, keepsakes, memories — cut like « État » is.
         if (story is { IsEmpty: false }) embed.AddField("Histoire", FieldText(story.Lines()));
@@ -155,6 +155,24 @@ public static class PlynlingPersonality
     }
 
     private static string Signed(int v) => v > 0 ? $"+{v}" : $"−{-v}";
+
+    // What a modifier does, before its expiry: « 📖 +1 · perte de bonheur −20 % — ». Empty when it does nothing.
+    private static string Bonus(ModifierInfo m)
+    {
+        var parts = PlynlingStats.All.Where(m.Stats.ContainsKey).Select(s => $"{PlynlingStats.Emoji(s)} {Signed(m.Stats[s])}").ToList();
+        void Factor(string label, double f)
+        {
+            var pct = (int)Math.Round((f - 1) * 100);
+            if (pct != 0) parts.Add($"{label} {Signed(pct)} %");
+        }
+        Factor("perte de faim", m.Hunger);
+        Factor("perte de bonheur", m.Happiness);
+        Factor("perte d'hygiène", m.Hygiene);
+        Factor("repas", m.Meal);
+        Factor("cadeaux", m.Gift);
+        Factor("baisse du stress", m.StressDecay);
+        return parts.Count == 0 ? "" : string.Join(" · ", parts) + " — ";
+    }
 
     private static string Effects(TraitInfo t) => t.Stats.Count == 0
         ? ""

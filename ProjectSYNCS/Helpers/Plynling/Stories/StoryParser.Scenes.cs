@@ -107,7 +107,7 @@ public static partial class StoryParser
         // The scene's own prose runs until the first option.
         var firstOption = rest.FindIndex(l => l.Text.StartsWith('*'));
         var proseLines = firstOption < 0 ? rest : rest.Take(firstOption).ToList();
-        var (prose, effects, next, ends) = ParseBlock(proseLines, file, errors, allowNext: true);
+        var (prose, effects, next, ends, _) = ParseBlock(proseLines, file, errors, allowNext: true);
         StoryOutcome? narration = null;
         var options = new List<StoryOption>();
         if (firstOption < 0)
@@ -231,10 +231,10 @@ public static partial class StoryParser
 
         StoryOutcome? Outcome(List<Src> lines, Src fallback)
         {
-            var (prose, effects, next, ends) = ParseBlock(lines, file, errors, allowNext: true);
+            var (prose, effects, next, ends, face) = ParseBlock(lines, file, errors, allowNext: true, allowFace: true);
             var start = lines.FirstOrDefault(l => l.Text.Length > 0) ?? fallback;
             if (next is null && !ends && !retired) Error(start, $"option '{key}': this outcome has no [-> …] or [end]");
-            return new StoryOutcome(prose, effects, next, ends, At(start));
+            return new StoryOutcome(prose, effects, next, ends, At(start), face);
         }
 
         StoryOutcome? plain = null, onSuccess = null, onFailure = null;
@@ -270,14 +270,16 @@ public static partial class StoryParser
             title = NonEmpty(body[i], "title", fm.Groups[2].Value.Trim(), (l, m) => errors.Add(new(new(file, l.No), m)));
         }
         if (title is null) errors.Add(new(new(file, head.No), $"ending '{key}' has no 'title:'"));
-        var (prose, marks, _, _) = ParseBlock(body.Skip(i).ToList(), file, errors, allowNext: false);
+        var (prose, marks, _, _, _) = ParseBlock(body.Skip(i).ToList(), file, errors, allowNext: false);
         return new StoryEnding(key, title ?? "", prose, marks, new(file, head.No));
     }
 
-    // Prose then tag-only lines: paragraphs (a blank line closes one), effects, and the [-> …].
-    private static (List<StoryParagraph> Prose, List<StoryEffect> Effects, string? Next, bool End) ParseBlock(List<Src> lines, string file,
-        List<StoryError> errors, bool allowNext)
+    // Prose then tag-only lines: paragraphs (a blank line closes one), effects, and the [-> …]. allowFace:
+    // an option's outcome, whose first prose line may open on a face tag ([sad], [A:sad B:happy]).
+    private static (List<StoryParagraph> Prose, List<StoryEffect> Effects, string? Next, bool End, FaceTag? Face) ParseBlock(List<Src> lines,
+        string file, List<StoryError> errors, bool allowNext, bool allowFace = false)
     {
+        FaceTag? face = null;
         var paragraphs = new List<StoryParagraph>();
         var current = new List<StoryLine>();
         var effects = new List<StoryEffect>();
@@ -329,11 +331,29 @@ public static partial class StoryParser
             }
             if (p.Trailing.Count > 0) { Error("tags at the end of a prose line; put conditions first ([if …]) and effects on their own line"); continue; }
             var when = new List<StoryCondition>();
-            foreach (var tag in p.Leading)
+            var first = paragraphs.Count == 0 && current.Count == 0;
+            for (var t = 0; t < p.Leading.Count; t++)
+            {
+                var tag = p.Leading[t];
+                if (FaceOf(tag) is { } f)
+                {
+                    if (!allowFace) Error($"[{tag}]: a face tag only opens an option's outcome");
+                    else if (!first || t > 0) Error($"[{tag}]: a face tag goes first on the outcome's first line");
+                    else face = f;
+                    continue;
+                }
                 if (Conditional(tag, at, errors) is { } c) when.Add(c);
+            }
             current.Add(new StoryLine(p.Text, when, at));
         }
         Close();
-        return (paragraphs, effects, next, end);
+        return (paragraphs, effects, next, end, face);
+    }
+
+    // [happy], [content], [sad], [angry] ({A}'s face), or [A:… B:…] naming each — the visit's face tags.
+    private static FaceTag? FaceOf(string tag)
+    {
+        var (text, face) = PlynlingVisitStory.Untag($"[{tag}]");
+        return face is not null && text.Length == 0 ? face : null;
     }
 }

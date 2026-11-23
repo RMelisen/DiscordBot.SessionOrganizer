@@ -1,0 +1,43 @@
+# visit: glow_spot
+title: Le coin de l'Étrangère
+place: ✨ À la Lisière, au cœur de la nuit
+bonds: acquaintances friends bestfriends rivals
+hours: 22-5
+
+L'Étrangère passe devant eux sans s'arrêter, puis se retourne. « Je connais un coin. Je ne le montre qu'à qui sait se taire. Tout le chemin. » Elle remonte sa capuche et part vers la Lisière. {A} et {B} la suivent. Elle n'a pas dit ce qu'il y avait au bout.
+
+* silent | Se taire, vraiment, tout le chemin  [lean honor +1] [lean sociability -1]
+  ? good
+  {A} se tait tout le chemin, vraiment, même quand une ronce attrape un pied. Au bout, sous les fougères, il y a un cercle de petits champignons qui luisent, bleus et verts, comme un village vu de très haut. L'Étrangère sourit pour la première fois de la soirée.
+  ? bad
+  {A} se tait si bien, tout le chemin, qu'au bout, quand l'Étrangère demande « alors ? », {A} n'ose plus parler du tout. On rentre sans un mot, très impressionné{p:s|es}.
+
+* steps | Marcher exactement dans ses pas  [lean compassion +1] [lean zeal +1]
+  ? good
+  {A} pose les pieds exactement dans les pas de l'Étrangère, sans un bruit, comme une ombre. Elle s'en aperçoit, et raccourcit ses pas. Au bout du chemin, elle tient une fougère levée, pour qu'on passe sans se mouiller.
+  ? bad
+  {A} marche exactement dans les pas de l'Étrangère, et l'Étrangère s'arrête net. {A}, non. Tout le monde finit dans la mousse, et elle rit, sans un bruit, ce qui compte.
+
+* ask | Lui demander d'où elle vient, tout bas  [lean boldness +1] [lean sociability +1]
+  ? good
+  {A} demande, tout bas, d'où elle vient. L'Étrangère ne répond pas : elle demande où {A} va. {A} y réfléchit tout le reste du chemin. Personne n'avait posé une si belle question à {A} depuis longtemps.
+  ? bad
+  {A} demande, tout bas, d'où elle vient. L'Étrangère s'arrête, pose un doigt sur ses lèvres, et le chemin dure ensuite deux fois plus longtemps, par principe.
+
+> cape | Tenir le bout de sa cape pour ne pas se perdre  [lean compassion +1] [lean boldness -1]
+  ? good
+  {B} attrape le bout de la cape de l'Étrangère, pour ne pas se perdre. Elle ne dit rien, mais elle ralentit. À la fin, elle laisse sa capuche baissée, et luit tout doucement, rien que pour éclairer {B}.
+  ? bad
+  {B} attrape le bout de la cape pour ne pas se perdre, et la capuche glisse. D'un coup, toute la Lisière s'éclaire en vert. L'Étrangère la remet très vite, très gênée. On a vu tout le chemin, une seconde.
+
+> touch | Toucher ce qui luit sous les fougères  [lean boldness +1] [lean energy +1]
+  ? good
+  Au bout du chemin, sous les fougères, quelque chose luit. {B} tend un doigt et effleure un tout petit champignon bleu, qui luit un peu plus fort, comme pour dire bonjour. L'Étrangère dit qu'il ne fait ça qu'avec ceux qu'il aime bien.
+  ? bad
+  Au bout du chemin, {B} tend la main vers ce qui luit sous les fougères, et tout s'éteint d'un coup, vexé. L'Étrangère soupire. « Ils sont timides. Comme moi. »
+
+> whisper | Chuchoter un mot, quand même  [lean sociability +2]
+  ? good
+  {B} chuchote, quand même, une toute petite chose : « merci ». L'Étrangère entend, et décide que ça ne compte pas comme parler. Ça compte comme autre chose.
+  ? bad
+  {B} chuchote un seul mot, et la Lisière est si calme que le mot fait le tour des fougères avant de revenir. L'Étrangère compte jusqu'à dix, sans rien dire, puis repart.

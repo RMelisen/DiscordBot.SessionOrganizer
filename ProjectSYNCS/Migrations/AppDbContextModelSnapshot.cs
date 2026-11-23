@@ -1573,7 +1573,13 @@ namespace ProjectSYNCS.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
+                    b.Property<long?>("SelfAgeSeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("StressDelta")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("TargetAgeSeconds")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("TargetPlynlingId")

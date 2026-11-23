@@ -74,14 +74,16 @@ public static class PlynlingEventCards
     }
 
     // One page of the public story: both Plynlings side by side for a social event, else its
-    // picture; the page; « 2/4 »; ◀ ▶, « ⏭ Fin » before the last page, « ↺ Début » on it.
+    // picture — calm, and on the last page (the outcome) with the faces it left them; the page;
+    // « 2/4 »; ◀ ▶, « ⏭ Fin » before the last page, « ↺ Début » on it.
     public static MessageComponent BuildStory(EventStory story, int page)
     {
         page = Math.Clamp(page, 0, story.Pages.Count - 1);
+        var last = page == story.Pages.Count - 1 && story.Pages.Count > 1;
         var gallery = new MediaGalleryBuilder()
-            .AddItem(PlynlingArt.VisitSprite(story.Self.Species, story.Self.Stage, PlynlingMood.Content), story.Self.Name, false);
+            .AddItem(PlynlingArt.VisitSprite(story.Self.Species, story.Self.Stage, last ? story.SelfFace : PlynlingMood.Content), story.Self.Name, false);
         if (story.Target is { } target)
-            gallery.AddItem(PlynlingArt.VisitSprite(target.Species, target.Stage, PlynlingMood.Content), target.Name, false);
+            gallery.AddItem(PlynlingArt.VisitSprite(target.Species, target.Stage, last ? story.TargetFace : PlynlingMood.Content), target.Name, false);
         var container = new ContainerBuilder()
             .WithAccentColor(new Color(story.Accent))
             .AddComponent(new TextDisplayBuilder($"## {story.Heading}"))

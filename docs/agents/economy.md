@@ -373,7 +373,7 @@ refuses any other week, so a shop left open over the weekend can't buy what rota
 
 **One screen, three tabs** (`CosmeticCards`, static and measured by the checks, section 59): Garde-robe,
 Boutique, Fabrication, in one ephemeral Components V2 message. `/inventory cosmetics` opens it on the
-shop, `/plynling wardrobe` on the wardrobe (`/inventory craft` was folded into it in 8.3.0). Every
+shop, `/plynling wardrobe` on the wardrobe (`/inventory craft` was folded into it in 8.5.0). Every
 click defers, then `CosmeticComponentHandler` re-reads everything (`CosmeticCards.LoadAsync`) and
 redraws in place.
 

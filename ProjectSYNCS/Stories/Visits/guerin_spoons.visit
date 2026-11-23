@@ -1,0 +1,43 @@
+# visit: guerin_spoons
+title: Les cuillères de Guérin
+place: 🥄 À l'établi de Guérin
+bonds: enemies
+hours: 8-20
+
+Guérin, le mari de l'Ortie, taille des cuillères à têtes de villageois, et il vient d'en finir deux : une avec la tête de {A}, une avec la tête de {B}. Elles sont posées côte à côte sur l'établi. Elles sont très ressemblantes. Trop, pense chacun, en regardant celle de l'autre.
+
+* mine | Acheter sa propre cuillère, pour la cacher  [lean greed +1] [lean boldness -1]
+  ? good
+  {A} achète sa propre cuillère, pour la cacher au fond d'un tiroir. Mais à la maison, de près, {A} lui trouve un certain charme. Elle sert à la soupe, maintenant.
+  ? bad
+  {A} achète sa propre cuillère pour la cacher, et Guérin, ravi d'avoir vendu, en taille aussitôt une autre, pareille. « Elle part bien, celle-là. »
+
+* theirs | Acheter celle de l'autre, pour la montrer  [lean vengefulness +1] [lean greed +1]
+  ? good
+  {A} achète la cuillère de {B}, pour la montrer partout. Mais à force de la montrer, {A} finit par la trouver assez réussie, et le dit, sans faire exprès.
+  ? bad
+  {A} achète la cuillère de {B}, pour la montrer partout, et la tend d'abord à la Courge, qui s'écrie : « Oh, mais c'est toi, mon chou ! » Elle parle de {A}.
+
+* retouch | Demander à Guérin de retoucher le sourire  [lean rationality +1] [lean boldness +1]
+  ? good
+  {A} demande à Guérin de retoucher un peu le sourire. Guérin retouche, souffle les copeaux, et le sourire est parfait. Il retouche aussi l'autre cuillère, gratuitement, et la rend plus aimable.
+  ? bad
+  {A} demande à Guérin de retoucher le sourire. Guérin retouche, puis retouche encore, et la cuillère sourit maintenant jusqu'aux oreilles, et un peu au-delà.
+
+> admit | Avouer que la sienne est ressemblante  [lean honor +2]
+  ? good
+  {B} prend sa cuillère, la regarde longtemps, et avoue qu'elle est très ressemblante. C'est si honnête que Guérin en pose son couteau, et que même {A}, un instant, ne trouve rien à redire.
+  ? bad
+  {B} avoue que sa cuillère est ressemblante, puis se regarde dans le creux pour vérifier. Dans le creux d'une cuillère, on est à l'envers. Ça n'aide pas.
+
+> swap | Échanger les étiquettes en douce  [lean honor -2]
+  ? good
+  {B} échange les étiquettes en douce. Guérin s'en aperçoit, rit dans sa barbe de copeaux, et laisse faire. Personne ne voit la différence, et pour la première fois, on a envie de rire de la même chose.
+  ? bad
+  {B} échange les étiquettes en douce, sous les yeux de l'Ortie, qui sort sur le seuil, remet les étiquettes en place sans un mot, et reste là, les bras croisés, jusqu'à ce qu'on s'en aille.
+
+> praise | Complimenter Guérin sur son travail  [lean compassion +1] [lean sociability +1]
+  ? good
+  {B} complimente Guérin, sincèrement. Guérin, qui n'en entend jamais, sort toutes ses cuillères, une par une : le Noyer, le Chardon, la Courge. On rit de chacune, ensemble, sans s'en apercevoir.
+  ? bad
+  {B} complimente Guérin, et Guérin, touché, offre une cuillère en cadeau. C'est celle de {A}.

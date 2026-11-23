@@ -1,0 +1,43 @@
+# visit: taste_jury
+title: Le jury du goûter
+place: 🥧 Sur la place du Puits
+bonds: rivals
+hours: 10-19
+
+Pain-Blond et la Courge ont encore parié sur qui nourrit le mieux le village, et il leur faut un jury. La Courge attrape {B} par le bras : « Toi, tu goûtes ma tarte. » Pain-Blond, tout rouge, tend sa brioche à {A}. Chacun devra défendre ce qu'il a goûté. Évidemment.
+
+* praise | Vanter la brioche avec emphase  [lean sociability +1] [lean boldness +1]
+  ? good
+  {A} vante la brioche avec tant d'emphase que des passants s'arrêtent pour en demander. Pain-Blond, qui n'a jamais eu d'avocat, cache sa joie dans son tablier.
+  ? bad
+  {A} vante la brioche si fort que Pain-Blond, gêné, finit par dire lui-même que la tarte est meilleure. Il ne sait pas mentir, même pour lui.
+
+* honest | Juger franchement, miette par miette  [lean honor +1] [lean rationality +1]
+  ? good
+  {A} juge franchement, miette par miette : la croûte, la mie, le parfum. C'est si précis que la Courge elle-même se tait pour écouter. Ça n'arrive pas souvent.
+  ? bad
+  {A} juge si consciencieusement, miette par miette, qu'à la fin il ne reste plus de brioche à juger. {A} demande une deuxième part, pour vérifier.
+
+* both | Goûter la tarte aussi, en douce  [lean greed +1] [lean honor -1]
+  ? good
+  {A} goûte la tarte aussi, en douce, pour comparer, puis déclare, la bouche pleine, qu'il faudra une troisième épreuve. Tout le monde est d'accord : il y aura un goûter demain aussi.
+  ? bad
+  {A} goûte la tarte en douce, et la Courge s'en aperçoit, évidemment : ses vrilles voient tout. « Alors, mon chou ? » Il faut répondre, la bouche pleine de tarte.
+
+> top | Surenchérir pour la tarte  [lean vengefulness +1] [lean sociability +1]
+  ? good
+  {B} surenchérit pour la tarte, un mot plus haut à chaque fois, jusqu'à « la meilleure tarte du monde connu ». Personne à Humeval ne connaît le monde. Tout le monde applaudit quand même.
+  ? bad
+  {B} surenchérit pour la tarte, si haut que la Courge, prise au jeu, promet d'en faire une pour tout le village ce soir. Elle n'a plus de pommes. Elle regarde vers le clos du Tilleul.
+
+> fair | Reconnaître que la brioche est bonne aussi  [lean honor +1] [lean compassion +1]
+  ? good
+  {B} reconnaît, de bonne grâce, que la brioche est bonne aussi. Pain-Blond en reste muet, la Courge aussi, et pour une fois, le concours finit sur une égalité que tout le monde trouve juste.
+  ? bad
+  {B} reconnaît que la brioche est bonne aussi, et la Courge, trahie, reprend sa tarte avec dignité. Elle la mange elle-même, assise sur le muret, en regardant tout le monde.
+
+> mix | Poser la tarte sur la brioche  [lean boldness +1] [lean rationality -1]
+  ? good
+  {B} pose une part de tarte sur une tranche de brioche, et mord dedans. Silence sur la place. Pain-Blond et la Courge goûtent à leur tour, se regardent, et décident de ne plus jamais en parler, parce que c'est trop bon.
+  ? bad
+  {B} pose la tarte sur la brioche, et le tout glisse par terre, côté confiture. Le Noyer, qui passait, ramasse, souffle dessus, et mange. « Le Noyer ne gâche rien. »

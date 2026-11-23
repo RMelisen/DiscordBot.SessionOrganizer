@@ -1,0 +1,43 @@
+# visit: tavern_music
+title: Le musicien du soir
+place: 🎻 À l'auberge du Pont-Vieux, un soir sans musicien
+bonds: acquaintances friends bestfriends lovers rivals
+hours: 17-23
+
+Le musicien du soir n'est pas venu, et l'aînée de la Courge court entre les tables, affolée : une auberge sans musique, c'est une soupe sans sel. Elle s'arrête devant {A} et {B}, et leur colle dans les mains un pipeau et un tambourin. « Vous deux. Juste une chanson. S'il vous plaît. »
+
+* play | Jouer du pipeau de son mieux, même mal  [lean boldness +1] [lean sociability +1]
+  ? good
+  {A} joue de son mieux, et c'est faux, mais faux avec tant de cœur que l'auberge entière se met à taper du pied. Même le Chardon, au comptoir, bat la mesure, en le niant.
+  ? bad
+  {A} joue de son mieux, et le pipeau rend un son si aigu que toutes les poules du hameau répondent depuis leur perchoir. Elles connaissent la chanson mieux que {A}.
+
+* learn | Demander qu'on montre les notes d'abord  [lean rationality +1] [lean boldness -1]
+  ? good
+  {A} demande qu'on montre les notes d'abord. L'aînée de la Courge en montre trois. Avec trois notes, {A} fait une chanson entière, et l'auberge la redemande deux fois.
+  ? bad
+  {A} demande qu'on montre les notes d'abord, et toute l'auberge veut aider : chacun montre une note différente. À la fin de la soirée, on a beaucoup appris, et rien joué.
+
+* dance | Poser le pipeau et danser à la place  [lean energy +2]
+  ? good
+  {A} pose le pipeau et se met à danser, faute de mieux. Une table suit, puis une autre, et bientôt l'auberge danse sans musique, en se marchant sur les pieds, sans que personne remarque qu'il manque quelque chose.
+  ? bad
+  {A} danse à la place, et entraîne dans la danse un plateau de chopes, qui ne savait pas danser. La Courge note le plateau sur l'ardoise de {A}.
+
+> beat | Battre la mesure au tambourin, très fort  [lean energy +1] [lean boldness +1]
+  ? good
+  {B} bat la mesure au tambourin, très fort, et le tambourin couvre tout ce qui est faux. Le Noyer déclare que c'est la meilleure musique qu'il ait entendue depuis la foire.
+  ? bad
+  {B} bat la mesure au tambourin, très fort, mais pas tout à fait la même. On joue deux chansons à la fois. L'auberge, polie, danse sur les deux.
+
+> soft | Accompagner tout doucement  [lean compassion +1] [lean sociability -1]
+  ? good
+  {B} accompagne tout doucement, juste un frisson de tambourin sous le reste. C'est presque rien, et c'est ce qui tient tout. La Courge, derrière son comptoir, pose sa louche pour écouter.
+  ? bad
+  {B} accompagne si doucement que personne n'entend le tambourin, pas même {B}. À la fin, quelqu'un demande pourquoi {B} agitait les mains.
+
+> collect | Faire passer le tambourin pour une quête  [lean greed +1] [lean rationality +1]
+  ? good
+  {B} fait le tour des tables avec le tambourin retourné, et revient avec des noix, un bout de fromage, deux cailloux et un bouton. La Courge déclare que c'est le plus beau cachet jamais payé à l'auberge.
+  ? bad
+  {B} fait passer le tambourin pour une quête, et le Noyer, généreux, y verse tant de noix que le tambourin, plein, ne fait plus que « ploc ». Le reste de la soirée, on joue du ploc.

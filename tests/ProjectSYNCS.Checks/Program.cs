@@ -5597,5 +5597,8 @@ await CraftingChecks.Run(Fail);
 // 62. Accessories on the sprite: every picture exists, styles match the art, the picker: AccessoryArtChecks.cs.
 AccessoryArtChecks.Run(Fail);
 
+// 63. The pictures on an event's story (faces, face tags, the stage then): EventFaceChecks.cs.
+EventFaceChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

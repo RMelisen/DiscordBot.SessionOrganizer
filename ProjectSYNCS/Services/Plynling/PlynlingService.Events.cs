@@ -431,6 +431,8 @@ public partial class PlynlingService
         }
         inst.StressDelta = p.Stress - stressBefore;
         inst.ResolvedAt = now;
+        inst.SelfAgeSeconds = (long)PlynlingLife.Age(p, now).TotalSeconds;
+        inst.TargetAgeSeconds = target is null ? null : (long)PlynlingLife.Age(target, now).TotalSeconds;
         inst.OptionKey = option.Key;
         inst.DecidedAlone = decidedAlone;
         await AddMomentAsync(p, JournalKind.EventStory, def.Key, now);
@@ -487,7 +489,9 @@ public partial class PlynlingService
             : ReplyState.Lost;
         // What its story prose reads: the run's stored flags, the rest as the Plynling stands now.
         var ctx = await GetEventContextAsync(self, now, target, inst);
-        return PlynlingEventStory.Build(inst, EventCast.Of(self, now), target is null ? null : EventCast.Of(target, now), parentTitle, reply, ctx);
+        // Pictured at the stage each was when it resolved, not today's.
+        return PlynlingEventStory.Build(inst, EventCast.Then(self, inst.SelfAgeSeconds, inst.ResolvedAt.Value, now),
+            target is null ? null : EventCast.Then(target, inst.TargetAgeSeconds, inst.ResolvedAt.Value, now), parentTitle, reply, ctx);
     }
 
     // /debug event only: any other living Plynling of the guild, for a forced social event.

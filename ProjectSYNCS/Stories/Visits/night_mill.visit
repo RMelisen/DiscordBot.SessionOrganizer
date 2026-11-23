@@ -1,0 +1,43 @@
+# visit: night_mill
+title: La meule de nuit
+place: 🌙 Au moulin de la Sommeille, la nuit
+bonds: enemies
+hours: 22-6
+
+Le Chardon a du grain à moudre avant le marché, et il faut quelqu'un pour surveiller la meule jusqu'à l'aube. Il a choisi {A} et {B}, exprès. « Vous deux, vous ne dormirez pas. Vous serez trop occupé{p:s|es} à vous surveiller. » Puis il est monté se coucher.
+
+* serious | Surveiller la meule, et rien d'autre  [lean honor +2]
+  ? good
+  {A} surveille la meule, et rien d'autre, toute la nuit. Au matin, la farine est fine comme de la poussière de lune. Le Chardon y passe la main, grogne, et grave une petite encoche sur la poutre, à côté des noms de ses apprentis.
+  ? bad
+  {A} surveille la meule si fixement qu'elle finit par tourner aussi dans sa tête. Au matin, {A} rentre en marchant en rond, très lentement.
+
+* race | Faire la course aux sacs  [lean energy +1] [lean vengefulness +1]
+  ? good
+  {A} lance une course : qui remplira le plus de sacs. On ne se parle pas, on se dépasse. À l'aube, il y a deux tas exactement égaux. Personne n'a gagné, et personne n'a dormi.
+  ? bad
+  {A} lance une course aux sacs, et un sac crève. Au matin, le Chardon trouve deux fantômes tout blancs qui se disputent, et la moitié de sa farine sur les poutres.
+
+* turns | Dormir chacun son tour, en premier  [lean greed +1] [lean rationality +1]
+  ? good
+  {A} propose de dormir chacun son tour, et prend le premier, bien sûr. Le premier tour dure toute la nuit. Au matin, {A} se réveille sous une couverture que personne ne reconnaît avoir posée.
+  ? bad
+  {A} propose de dormir chacun son tour, et s'endort au milieu de la phrase. On ne saura jamais qui devait prendre le deuxième tour. On en débat encore.
+
+> watch | Surveiller l'autre plutôt que la meule  [lean vengefulness +1] [lean rationality +1]
+  ? good
+  {B} surveille {A} plutôt que la meule, toute la nuit, sans ciller. C'est exactement ce que voulait le Chardon : personne n'a fermé l'œil. Il le dit au matin, très fier de son calcul.
+  ? bad
+  {B} surveille {A} plutôt que la meule, et la meule, que plus personne ne surveille, se met à moudre du vide. Toute la nuit, il y a beaucoup de bruit et très peu de farine.
+
+> tell | Raconter des histoires pour ne pas dormir  [lean sociability +2]
+  ? good
+  {B} raconte des histoires pour ne pas dormir, des histoires qu'on n'aime pas, exprès. Vers trois heures, on se surprend à rire au même endroit. On fait semblant que non.
+  ? bad
+  {B} raconte des histoires pour tenir tout le monde éveillé, si lentement que le moulin entier s'endort. Au matin, le grain a été moulu deux fois, et le Chardon ne sait plus s'il doit grogner.
+
+> boo | Faire peur à l'autre dans le noir  [lean boldness +1] [lean vengefulness +1]
+  ? good
+  {B} se cache derrière un sac et fait « hou ! » au bon moment. {A} sursaute, et la peur réveille si bien qu'on tient jusqu'à l'aube, chacun guettant sa revanche.
+  ? bad
+  {B} se cache derrière un sac pour faire peur à {A}, et c'est le Chardon, descendu voir, qui fait le plus beau sursaut. Il remonte se coucher en grognant pour trois.

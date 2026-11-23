@@ -1,0 +1,44 @@
+# visit: field_stone
+title: La borne des raies
+place: 🌾 Aux Longues Raies
+bonds: acquaintances friends bestfriends rivals enemies
+hours: 7-19
+stages: adult
+
+Le conseil a redistribué les Longues Raies, et la raie de {A} touche maintenant celle de {B}. Entre les deux, une borne penche, et personne ne sait plus de quel côté. Maître Frêne arrive avec son ruban à mesurer. « Examinons. Il me faut quelqu'un pour tenir le bout. »
+
+* hold | Tenir le bout du ruban sans bouger  [lean honor +1] [lean rationality +1]
+  ? good
+  {A} tient le bout du ruban sans bouger d'un cheveu, droit{a:|e} comme une borne. Maître Frêne mesure deux fois, trouve deux fois la même chose, et en est si ému qu'il le note dans la marge.
+  ? bad
+  {A} tient le bout du ruban sans bouger, si longtemps que Maître Frêne, à l'autre bout du champ, a oublié qu'il mesurait. Il est en train de rédiger un règlement sur les bornes.
+
+* nudge | Pousser la borne d'un doigt, l'air de rien  [lean greed +1] [lean honor -1]
+  ? good
+  {A} pousse la borne d'un doigt, l'air de rien, et elle se redresse toute seule, bien droite, exactement au milieu. Maître Frêne déclare la question réglée. {A} n'est pas sûr{a:|e} de l'avoir voulu.
+  ? bad
+  {A} pousse la borne d'un doigt, l'air de rien, et la borne se couche dans le sillon, de tout son long. Maître Frêne la regarde, puis regarde {A}, et sort une feuille neuve.
+
+* beans | Proposer de semer la même chose des deux côtés  [lean compassion +1] [lean rationality +1]
+  ? good
+  {A} propose de semer des fèves des deux côtés de la borne, pour que plus personne ne sache où finit quoi. Maître Frêne trouve l'idée si paisible qu'il demande des fèves pour sa raie aussi.
+  ? bad
+  {A} propose de semer la même chose des deux côtés, et Maître Frêne, enthousiaste, en fait un règlement de quatre pages, avec un article sur la couleur des fèves.
+
+> pace | Remesurer soi-même, à grands pas  [lean energy +1] [lean boldness +1]
+  ? good
+  {B} remesure à grands pas, d'un bout à l'autre, et tombe exactement sur le chiffre de Maître Frêne. Il en lâche son ruban : c'est la première fois que deux mesures tombent d'accord à Humeval.
+  ? bad
+  {B} remesure à grands pas, mais les pas de {B} ne sont pas tous de la même taille. On trouve onze pas, puis quatorze, puis neuf et demi. Maître Frêne les note tous.
+
+> leave | Déclarer que la borne est très bien comme ça  [lean vengefulness -1] [lean energy -1]
+  ? good
+  {B} déclare que la borne est très bien comme ça, penchée, et qu'elle en a bien le droit. Maître Frêne réfléchit longtemps, puis l'inscrit au registre : « borne penchée, d'un commun accord ». Il n'en a jamais écrit d'aussi rapide.
+  ? bad
+  {B} déclare que la borne est très bien comme ça, et s'assoit dessus pour le prouver. La borne penche un peu plus. Maître Frêne note l'angle.
+
+> lunch | Sortir le casse-croûte pour tout le monde  [lean sociability +1] [lean greed -1]
+  ? good
+  {B} sort le casse-croûte et le partage en trois, sur la borne, comme sur une table. Maître Frêne, qui n'avait pas prévu de manger, en oublie de mesurer. La question attendra demain, et personne ne s'en plaint.
+  ? bad
+  {B} pose le casse-croûte sur la borne, comme sur une table, et la borne, qui penchait déjà, le fait glisser dans le sillon. Maître Frêne ramasse le pain et le coupe en parts parfaitement égales quand même.
