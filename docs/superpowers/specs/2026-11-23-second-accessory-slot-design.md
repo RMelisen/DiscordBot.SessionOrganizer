@@ -11,7 +11,7 @@ Today one accessory is worn, and every dressed picture is a pre-rendered file on
 `2026-11-23-accessories-on-sprite-design.md`). Pre-rendering every pair would mean ~500 000 files
 (~5 GB), so the bot now **draws dressed pictures itself** from a bare sprite plus one small layer
 per item. The spike on branch `spike/runtime-layering` (`tools/layering-spike/`, not merged)
-proved it with ImageSharp 4.1.3: all 8 820 dressed pictures rebuilt pixel-exact from bare sprite +
+proved it with ImageSharp (108 pictures on 3.1.12, then all 8 820 on 4.1.3): all 8 820 dressed pictures rebuilt pixel-exact from bare sprite +
 layer, ~66 ms per picture on a desktop (lossless, `WebpEncodingMethod.Level0`; `Level6` takes 1.4 s,
 never use it), ~400 bytes per layer.
 
@@ -39,12 +39,13 @@ never use it), ~400 bytes per layer.
 - Pi (arm64): drawing is estimated 0.2–0.4 s per picture there; every interaction still answers
   within 3 s (`CLAUDE.md`, Reliability).
 - Components V2 cap of 40 per message; the Garde-robe's worst case is 25 today (checks section 59).
-- **ImageSharp 4 requires a Six Labors licence key at build time**: Debug warns, **Release fails**,
-  so the CI image build fails without it. The owner requests the free Community licence
-  (licensing.sixlabors.com, scoped to assembly `ProjectSYNCS`) and the key is committed
-  (`sixlabors.lic` beside the csproj, or the `SixLaborsLicenseKey` property; allowed in a public
-  repo per Six Labors). It expires: renew in its last 90 days with the same email, or builds fail
-  — this goes in `docs/agents/deployment.md`.
+- **ImageSharp 3.1.12, not 4** (owner): 4.x needs a Six Labors licence key at build time (Release
+  fails without one) and the owner doesn't want one. 3.1.12 is the last 3.x release; NuGet lists six
+  advisories against it. They concern decoding crafted images: the bot only ever decodes its own
+  shipped files, never user uploads, so the exposure is low. NuGet's audit warnings show in the build
+  but don't fail it (no `-warnaserror` on the csproj). The spike's 3.1.12 API is in commit
+  `da70e8e4` (`WebpFrameMetadata.BlendMethod = WebpBlendMethod.Source`, `DisposalMethod =
+  WebpDisposalMethod.RestoreToBackground`); the full 8 820 check is rerun on 3.1.12.
 - The image is built from `ProjectSYNCS/` only (`assets/` at the repo root is not in it).
   `ProjectSYNCS/Assets/` already ships icons and avatars via the csproj's `None Include`.
 - Keys are append-only; accessory keys stay as they are.
@@ -58,8 +59,6 @@ never use it), ~400 bytes per layer.
   dev guild. Until it passes, only work that needs no Discord may proceed, on the feature branch:
   layer export, data model and pure rules, the drawer, checks. Nothing wires a card to attachments
   before it passes.
-- **Everything stays on one feature branch until the licence key is committed** (my call): a commit
-  referencing ImageSharp on `main` without it breaks the CI image build.
 
 ## Approaches
 
@@ -177,7 +176,7 @@ My proposal, **schema-only** (no data migration, per `architecture.md`):
   accessory matches the body, which shows when a second accessory sits under it.
 - Compositing follows the spike: a 125 ms tick timeline (`motion.py` FRAME_MS; ImageSharp frame
   delays expanded to ticks, identical ticks merged on encode), every frame written with
-  `FrameBlendMode.Source` and `FrameDisposalMode.RestoreToBackground`, the largest canvas wins (an
+  Source blend and RestoreToBackground disposal, the largest canvas wins (an
   adult in a hat: the 40 px hat canvas) and every layer sits at its foot, lossless WebP Level0.
 - **One singleton drawer** with an in-memory, bounded cache keyed by the full look (shape, face,
   dirty, both accessories + styles, aura). Rendered bytes only; nothing on disk; resets on restart.
@@ -203,7 +202,7 @@ My proposal, **schema-only** (no data migration, per `architecture.md`):
 - Next **minor** bump (8.8.0 → 8.9.0 if nothing lands first): a new behaviour and a migration.
   CHANGELOG entry.
 - Docs: `economy.md` (two slots, categories, remembered styles), `plynling.md` Art (runtime
-  drawing replaces links for dressed pictures), `deployment.md` (licence and renewal).
+  drawing replaces links for dressed pictures), `deployment.md` (the assets shipped in the image, and why ImageSharp stays on 3.x).
 
 ## Left to the builder
 
