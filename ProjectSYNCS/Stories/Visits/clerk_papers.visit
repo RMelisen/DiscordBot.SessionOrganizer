@@ -1,0 +1,43 @@
+# visit: clerk_papers
+title: Les feuilles du clerc
+place: 📃 Sur la place du Puits, un jour de vent
+bonds: acquaintances friends bestfriends lovers rivals enemies
+hours: 8-18
+
+Le clerc de l'Intendant traverse la place, les bras chargés de registres, quand un coup de vent arrache toutes les feuilles du dessus. Elles s'envolent partout : vers le puits, vers l'auberge, vers le toit de la Maison commune. Le jeune roseau reste planté au milieu, plié en deux, l'air de quelqu'un qui va pleurer.
+
+* chase | Courir après les feuilles  [lean energy +2]
+  ? good
+  {A} court après les feuilles, saute, plonge, et les rattrape presque toutes au ras des pavés. Le clerc les serre contre lui comme des poussins retrouvés.
+  ? bad
+  {A} court après les feuilles et les rattrape toutes, sauf une, qui se pose tranquillement dans le puits. On la voit flotter, tout au fond. Elle y est encore.
+
+* calm | Consoler le clerc d'abord  [lean compassion +2]
+  ? good
+  {A} s'occupe du clerc d'abord, et lui dit que ce n'est que du vent. Le roseau se redresse un peu, puis tout à fait. Les feuilles, pendant ce temps, retombent toutes seules : le vent a eu sa journée.
+  ? bad
+  {A} console le clerc d'abord, si bien qu'il se met à raconter toute sa vie à Roncebelle, et les feuilles ont tout le temps de quitter le hameau.
+
+* weigh | Poser une pierre sur chaque feuille tombée  [lean rationality +1] [lean energy -1]
+  ? good
+  {A} pose une pierre sur chaque feuille tombée, sans courir, l'une après l'autre. Quand le vent retombe, la place est couverte de feuilles bien rangées, chacune sous sa pierre, comme une marelle.
+  ? bad
+  {A} pose une pierre sur chaque feuille tombée, et le vent, vexé, emporte les pierres les plus légères avec les feuilles. On n'avait jamais vu ça. Le clerc non plus.
+
+> roof | Grimper chercher celle du toit  [lean boldness +2]
+  ? good
+  {B} grimpe sur le toit de la Maison commune par la gouttière, et redescend avec la dernière feuille entre les dents. Toute la place applaudit. Le clerc la range tout en haut de la pile, comme une médaille.
+  ? bad
+  {B} grimpe sur le toit chercher la dernière feuille, et une fois en haut, découvre qu'on ne sait pas redescendre. Il faut aller chercher l'échelle du Noyer, et le Noyer avec.
+
+> read | Lire ce qu'il y a sur les feuilles  [lean rationality +1] [lean honor -1]
+  ? good
+  {B} jette un œil sur une feuille, par curiosité. C'est la liste des pousses du hameau, avec, à côté de chaque nom, un petit dessin. Le clerc rougit jusqu'à la tige : c'est lui qui les fait, en cachette.
+  ? bad
+  {B} lit une feuille, par curiosité. C'est le compte des chèvres du Communal. Il y en a une. Elle est marquée « à surveiller », trois fois souligné.
+
+> sort | Aider à remettre les feuilles dans l'ordre  [lean honor +1] [lean sociability +1]
+  ? good
+  {B} s'assoit avec le clerc sur la margelle du puits, et on remet les feuilles dans l'ordre, une par une. Il parle des registres comme d'autres parlent de chevaux. À la fin, il offre à chacun une feuille blanche, son plus beau cadeau.
+  ? bad
+  {B} aide à remettre les feuilles dans l'ordre, et le vent revient, juste un peu, juste pour voir. Tout est à refaire. Le clerc rit, cette fois : il a pris le pli.

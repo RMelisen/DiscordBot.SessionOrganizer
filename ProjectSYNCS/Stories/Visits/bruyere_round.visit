@@ -1,0 +1,44 @@
+# visit: bruyere_round
+title: La ronde de la Bruyère
+place: 🛏️ À la Maison des Pousses, après le couvre-feu
+bonds: acquaintances friends bestfriends rivals enemies
+hours: 21-2
+stages: teen
+
+Toute la Maison des Pousses le sait : la Bruyère borde les pousses une fois qu'elles dorment, pour qu'aucune ne puisse le raconter. Ce soir, {A} et {B}, dans deux lits voisins, ont décidé de faire semblant de dormir pour la prendre sur le fait. On entend ses pas dans le couloir.
+
+* snore | Ronfler un peu, pour faire vrai  [lean boldness +1] [lean honor -1]
+  ? good
+  {A} ronfle un peu, juste ce qu'il faut. La Bruyère entre, borde {A} jusqu'au menton, et murmure quelque chose que personne ne doit entendre. {A} l'entend, et ne le dira jamais.
+  ? bad
+  {A} ronfle un peu, puis beaucoup, pour faire vrai. La Bruyère s'arrête sur le seuil. « Personne ne ronfle comme ça. Pas même le Noyer. » Elle ressort sans border personne.
+
+* peek | Garder un œil entrouvert  [lean boldness +1] [lean rationality +1]
+  ? good
+  {A} garde un œil entrouvert, et voit tout : la Bruyère qui borde chaque lit, un par un, et s'arrête au dernier pour remonter une couverture de plus. Elle a l'air de quelqu'un qui compte ses trésors.
+  ? bad
+  {A} garde un œil entrouvert, et croise celui de la Bruyère, entrouvert lui aussi. Elle fait semblant de rien. {A} aussi. On reste là, chacun à faire semblant, très longtemps.
+
+* really | S'endormir pour de bon  [lean energy -2]
+  ? good
+  {A} ferme les yeux pour faire semblant, et s'endort pour de bon. Au matin, la couverture est bordée si serré que {A} met un quart d'heure à sortir du lit. C'est la preuve.
+  ? bad
+  {A} s'endort pour de bon, et rate tout. Au petit déjeuner, la Bruyère demande, l'air de rien, si on a bien dormi. Elle sait. Elle sait toujours.
+
+> whisper | Chuchoter pour commenter  [lean sociability +1] [lean boldness +1]
+  ? good
+  {B} chuchote un commentaire, puis un autre, si bas que la Bruyère croit entendre le vent. Elle ferme la fenêtre, borde un peu plus fort, et s'en va contente.
+  ? bad
+  {B} chuchote un commentaire, et la Bruyère, sans un mot, s'assoit au bout du lit de {B}, et y reste. Elle a toute la nuit. Elle l'a déjà fait.
+
+> grab | Lui attraper la main au passage  [lean boldness +2]
+  ? good
+  {B} attrape la main de la Bruyère au passage, pour la prendre sur le fait. Elle se fige. Puis elle serre, une seconde, et dit : « Mange. » Il n'y a rien à manger dans le dortoir. Tout le monde a compris quand même.
+  ? bad
+  {B} attrape la main de la Bruyère au passage, et la Bruyère, surprise, lâche la pile de couvertures sur tout le dortoir. Il faut tout rebrousser, lit par lit. Personne ne dort avant très tard.
+
+> dream | Dire une gentillesse en faisant semblant de rêver  [lean compassion +1] [lean boldness +1]
+  ? good
+  {B} fait semblant de parler en dormant, et dit, comme en rêve : « La Bruyère est la meilleure. » Elle s'arrête net, puis borde {B} avec un soin infini. Le lendemain, il y a une part de gâteau de plus dans l'assiette de {B}, et personne ne sait pourquoi.
+  ? bad
+  {B} fait semblant de parler en dormant, et se met à raconter, comme en rêve, toutes les bêtises de la semaine. La Bruyère écoute jusqu'au bout, très attentive, et prend des notes.

@@ -346,6 +346,6 @@ The intro: paragraphs, no tags, no fields.
   `ResponsePicker`'s history, and is stored nowhere. Renaming one closes the visits open on it as expired, so treat
   keys as forever anyway.
 - **Writing**: Claude writes a sheet in French (`docs/plynling-visit-scenes-sheet.md` for the launch's 20 + 1,
-  `docs/plynling-visit-scenes-sheet-2.md` for the second wave's 8), the
+  `docs/plynling-visit-scenes-sheet-2.md` and `-3.md` for the next waves of 8), the
   owner reviews it, and the files are copied from the approved sheet word for word; any wording change goes back to
   the owner.

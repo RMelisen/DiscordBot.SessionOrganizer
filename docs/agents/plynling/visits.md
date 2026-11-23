@@ -83,8 +83,8 @@ visits only (`PlynlingLife.Mood` never returns it). Both sprites go through `Ply
 (`_visit` files, a larger transparent canvas — `VISIT_CANVAS` in `tools/plynling-art/export.py`, 80 % —
 because a gallery of two spans the width), and stay clean.
 
-**Scenes are files**: `ProjectSYNCS/Stories/Visits/<key>.visit`, 28 scenes plus `confess` (20 at launch,
-8 more for lovers and enemies in 8.2.8), the format and the load rules in `plynling-storylines.md` (*Visit
+**Scenes are files**: `ProjectSYNCS/Stories/Visits/<key>.visit`, 36 scenes plus `confess` (20 at launch,
+8 for lovers and enemies in 8.2.8, 8 for the weak spots and everyday visits in 8.2.9), the format and the load rules in `plynling-storylines.md` (*Visit
 files*). Each scene names its bonds (a first meeting is acquaintances), its hours (Paris; `20-1` runs across
 midnight) and its stages. **A scene shared by several bonds is written neutral** (no fondness or grudge
 assumed; between enemies a good ending is a moment's truce); **a scene for one bond may lean into it** — the

@@ -1,0 +1,43 @@
+# visit: dawn_dew
+title: La rosée
+place: 💧 Au pré de la Sommeille, avant le soleil
+bonds: friends bestfriends lovers
+hours: 4-9
+
+La Sauge a besoin de rosée pour un baume, la rosée du trèfle, avant que le soleil la boive. Elle a confié deux petits bols à {A} et {B}, avec ses instructions : « Une goutte par feuille. Ne secouez pas. Et ne la buvez pas, je vous connais. » Le pré est gris et silencieux. Le soleil n'est pas loin.
+
+* careful | Cueillir la rosée goutte à goutte  [lean rationality +1] [lean energy -1]
+  ? good
+  {A} cueille la rosée goutte à goutte, feuille après feuille, sans en perdre une. Quand le soleil se lève, le bol est plein, et tout le pré brille comme si on l'avait remercié.
+  ? bad
+  {A} cueille goutte à goutte, avec tant de soin qu'au lever du soleil, il y a juste de quoi remplir un dé à coudre. La Sauge l'examine longtemps. « C'est un début. »
+
+* shake | Secouer les trèfles au-dessus du bol  [lean boldness +1] [lean honor -1]
+  ? good
+  {A} secoue les trèfles au-dessus du bol, malgré les instructions, et la rosée tombe comme une petite averse. Le bol est plein en un rien de temps. La Sauge n'a pas besoin de le savoir.
+  ? bad
+  {A} secoue les trèfles au-dessus du bol, et les gouttes partent partout, sauf dans le bol. {A} rentre trempé{a:|e}, le bol sec.
+
+* sip | Goûter une goutte, juste une  [lean zeal +1] [lean greed +1]
+  ? good
+  {A} goûte une goutte, juste une. Elle a le goût du matin, de l'herbe et du ciel. {A} jure que c'est pour vérifier la qualité, et la Sauge, plus tard, fera semblant de le croire.
+  ? bad
+  {A} goûte une goutte, puis une autre, pour vérifier, puis une autre encore. Au lever du soleil, le bol est vide, et {A} est très bien hydraté{a:|e}.
+
+> sunrise | S'arrêter pour regarder le soleil se lever  [lean energy -1] [lean zeal +1]
+  ? good
+  {B} s'arrête pour regarder le soleil se lever sur la Sommeille, le bol oublié dans les mains. Il y a un instant où tout le pré devient doré d'un coup. On s'en souviendra longtemps.
+  ? bad
+  {B} s'arrête pour regarder le soleil se lever, et le soleil, en se levant, boit la rosée du bol de {B} sans demander. Il ne reste qu'un petit rond humide au fond.
+
+> race | Proposer une course aux bols  [lean energy +1] [lean sociability +1]
+  ? good
+  {B} propose une course, à qui remplira son bol le premier. On court d'un trèfle à l'autre, on rit tout bas, et le soleil arrive sur deux bols pleins et deux nez mouillés.
+  ? bad
+  {B} propose une course aux bols, et le bol de {B} prend de l'avance tout seul, en roulant jusqu'à la rivière. Le passeur le repêche et le rend, plein d'eau de la Sommeille. Ça ne compte pas.
+
+> share | Verser un peu de sa rosée dans l'autre bol  [lean compassion +2]
+  ? good
+  {B} verse un peu de sa rosée dans le bol de {A}, sans rien dire, pour que les deux soient pareils. Au retour, la Sauge remarque que les deux bols sont exactement au même niveau. Elle ne pose pas de question.
+  ? bad
+  {B} verse un peu de sa rosée dans le bol de {A}, et la main tremble : il y en a maintenant sur les pieds, dans l'herbe, partout sauf dans les bols. Le soleil, lui, s'en régale.

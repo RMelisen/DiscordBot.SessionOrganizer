@@ -1,0 +1,43 @@
+# visit: wool_skein
+title: L'écheveau
+place: 🧶 Au coin de la tisserande, sur la place
+bonds: acquaintances friends bestfriends rivals
+hours: 8-19
+
+La tisserande dévide un écheveau de laine, et il lui faut deux paires de mains pour le tenir tendu. Elle ne demande pas : elle passe un bout de laine à {A}, l'autre à {B}, et se met à enrouler sa pelote. « Bougez pas. » Elle a tout son temps. La laine, elle, est très longue.
+
+* still | Ne pas bouger d'un fil  [lean honor +1] [lean energy -1]
+  ? good
+  {A} ne bouge pas d'un fil, bras tendus, et la pelote grossit, grossit. Quand c'est fini, la tisserande dit « bien ». C'est un mot qu'elle n'avait pas dit depuis la foire.
+  ? bad
+  {A} ne bouge pas d'un fil, et au bout d'une heure, les bras de {A} restent levés tout seuls. {A} rentre comme ça, les bras en l'air, et salue tout le monde sans le vouloir.
+
+* chat | Faire la conversation à la tisserande  [lean sociability +2]
+  ? good
+  {A} fait la conversation à la tisserande, qui voit tout passer depuis son coin de place. Elle répond par petits morceaux, et chaque morceau est un ragot de première qualité, plus ancien que tous ceux de la Courge.
+  ? bad
+  {A} fait la conversation avec de grands gestes, la laine à la main. La laine se retrouve nouée à la manche de {A}, puis à celle de {B}, puis au banc.
+
+* wind | Proposer d'enrouler à sa place  [lean compassion +1] [lean boldness +1]
+  ? good
+  {A} propose d'enrouler à sa place. La tisserande regarde longtemps, puis donne la pelote, et prend le bout de laine. Elle le tient mieux que personne. On dirait qu'elle n'attendait que ça.
+  ? bad
+  {A} propose d'enrouler à sa place, et enroule si vite que la pelote prend la forme d'un chou. La tisserande la contemple. Elle dit qu'elle en fera un bonnet. Pour un chou.
+
+> sway | Se balancer au rythme de la pelote  [lean sociability +1] [lean energy +1]
+  ? good
+  {B} se balance un peu, au rythme de la pelote, et la laine se met à danser entre les deux mains. La tisserande ne dit rien, mais elle enroule en mesure.
+  ? bad
+  {B} se balance au rythme de la pelote, et la laine fait un nœud, puis un deuxième, puis un très gros. La tisserande les défait un par un, sans un mot, et ça prend jusqu'au soir.
+
+> knot | Repérer les nœuds avant la pelote  [lean rationality +2]
+  ? good
+  {B} repère un nœud dans la laine avant qu'il n'arrive à la pelote, et le défait du bout des doigts. La tisserande hoche la tête : à son âge, on ne voit plus les nœuds, on les sent.
+  ? bad
+  {B} signale un nœud, puis un autre, puis un autre. Il n'y en avait qu'un ; les autres étaient des taches de soleil. La tisserande soupire comme soupire une ronce : longuement, et un peu piquant.
+
+> whom | Demander pour qui est la laine  [lean compassion +1] [lean sociability +1]
+  ? good
+  {B} demande pour qui est la laine. La tisserande s'arrête, ce qui n'arrive jamais. « Pour la Bruyère. Une écharpe par an, et elle n'a jamais assez de laine. » Tout le monde sait pour qui sont les écharpes. Personne ne le dit.
+  ? bad
+  {B} demande pour qui est la laine. La tisserande répond « pour qui la demande », et sort un deuxième écheveau.
