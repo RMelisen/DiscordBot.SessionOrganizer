@@ -25,8 +25,8 @@ Art: `tools/creature-art/creatures.py`, approved 2026-11-23.
 - **The owner commits by hand.** No task commits; each ends with the checks green and the change left in the tree.
 - **Every task's verification is** `dotnet build ProjectSYNCS -warnaserror` (0 warnings) and
   `dotnet run --project tests/ProjectSYNCS.Checks` printing `ALL CHECKS PASSED`. New checks go in
-  `tests/ProjectSYNCS.Checks/ExpeditionChecks.cs`, under **the next free section number** in `Program.cs` (upstream
-  already uses 60–64, and the RPG foundation's 60 must be renumbered when it is merged), called after `RpgChecks`
+  `tests/ProjectSYNCS.Checks/ExpeditionChecks.cs`, under **the next free section number** in `Program.cs` (66 after
+  the merge of 2026-11-23: upstream's 60–64, then the RPG foundation's 65), called after `RpgChecks`
   (`await ExpeditionChecks.Run(Fail);`), in the `Expect(bool, string)` style of `RpgChecks.cs`.
 - **French for every user-facing string; English for code, comments, logs, parser and validator errors.**
 - **Append-only:** `NotebookStep`, `ExpeditionStatus`, `ExpeditionPhase`, `JournalKind`, modifier keys, metric keys
@@ -42,17 +42,17 @@ Art: `tools/creature-art/creatures.py`, approved 2026-11-23.
   `.HasConversion<long>()`.
 - **Rolls** use `StableRoll`, never `Random`, except where an existing API takes a `Random` (none here).
 - **Version:** a minor (new subcommands and a migration): **the next minor above what `config.yaml` shows** when the
-  work starts (origin is at 8.6.0 on 2026-11-23, past the RPG foundation's uncommitted 8.4.0, which must itself be
-  renumbered when merged). If `git diff ProjectSYNCS/config.yaml` already shows a bump in the same batch, extend its
+  work starts (after the merge of 2026-11-23 the RPG foundation, still uncommitted, is 8.7.0 on top of origin's 8.6.0). If `git diff ProjectSYNCS/config.yaml` already shows a bump in the same batch, extend its
   CHANGELOG entry instead.
 - **Numbers pinned by the spec:** Combe Énergie 30, duration 1 h, 3 scenes, wounds out of 2 (the 2nd brings the
   rescue), abandon after **15 minutes** without a click, XP **30 base, up to 40**, no activity above **1.33 XP per
   Énergie**, cailloux **5–15** a trip, find rarity **25 / 40 / 28 / 7**, money **under three average `/work` shifts a
   day** (`3 × (PebbleEconomy.WorkMin + WorkMax) / 2` = 97.5).
 
-**Before starting:** this plan was written against the tree as of a27bfa5 plus the uncommitted RPG foundation. Origin
-has since gained cosmetics, crafting and forage places (8.3.0–8.6.0). Merge those and the RPG foundation first, then
-re-check every file and line this plan names.
+**Before starting:** this plan was written against a27bfa5 plus the uncommitted RPG foundation. On 2026-11-23 origin's
+cosmetics, crafting and forage places (8.3.0–8.6.0) were merged under the foundation (now 8.7.0); re-check every file
+and line this plan names against the tree, especially `/plynling forage` and `PlynlingService.Life.cs`, which forage
+places changed.
 
 ## Review Focus
 
