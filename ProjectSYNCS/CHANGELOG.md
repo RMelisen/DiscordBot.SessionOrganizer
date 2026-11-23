@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.5.1 — 2026-11-23
+
+- The Mycène, the Girolle and the Coprin no longer have sparkles around them, a leftover from when
+  some species were rarer than others.
+
 ## 8.5.0 — 2026-11-23
 
 - Accessories are now drawn on the Plynling's own picture — on its card, in the cosmetics try-on, in

@@ -173,8 +173,6 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None, blink=False, tear=0,
         blush(PINK_SOFT)
 
 
-SPARKLES = [(2, 6), (29, 9), (27, 1), (3, 1)]
-SPARKLES_ALT = [(1, 9), (30, 5), (26, 3), (5, 2)]
 STAR = (220, 246, 255)
 ZZZ = (226, 228, 255)
 
@@ -203,16 +201,6 @@ def star(px, pose):
     if phase == 1:
         for x, y in ((28, 1), (26, 3), (30, 3), (28, 5)):
             px(x, y, STAR, 150)
-
-
-def sparkles(px, s, pose):
-    """A rare species' sparkles: each one blinks out in turn and glints beside where it was."""
-    f = pose.f if pose else 0
-    for i, ((x, y), (ax, ay)) in enumerate(zip(SPARKLES, SPARKLES_ALT)):
-        if f in (4 * i + 2, 4 * i + 3):
-            px(ax, ay, s)
-        else:
-            px(x, y, s)
 
 
 def sweat_drops(f):
@@ -252,7 +240,7 @@ def anger_mark(px, pose, corner, nudge=(0, 0)):
 
 def extras(im, state, p, pose=None, body=(0, 0)):
     """The mood extras. `body` is how far the head has moved this frame, so anything stuck to
-    the face (the sweat) moves with it; the heart, the frost and the sparkles float free."""
+    the face (the sweat) moves with it; the heart and the frost float free."""
     def px(x, y, c, a=255):
         if 0 <= x < N and 0 <= y < N:
             im.putpixel((x, y), c + (a,))
@@ -282,8 +270,6 @@ def extras(im, state, p, pose=None, body=(0, 0)):
         for x, y in ((9, 5), (10, 4), (15, 3), (20, 4)):
             px(x, y, WHITE)
         star(px, pose)
-    if p["sparkle"] and state not in ("frozen", "starving", "sick"):
-        sparkles(px, p["sparkle"], pose)
 
 
 if __name__ == "__main__":

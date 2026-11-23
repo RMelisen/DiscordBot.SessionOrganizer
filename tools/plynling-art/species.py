@@ -341,8 +341,6 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
         frost(im, tops, bottoms, pose)
     elif state in ("hungry", "starving", "sick"):
         sweat(im, state, g, face_oy + pose.body[1], sweat_drops(pose))
-        if p["sparkle"] and state == "hungry":
-            extras(im, "content", p, pose)               # a rare species keeps its sparkle
     else:
         extras(im, state, p, pose)
     if dirt.ACTIVE:

@@ -39,9 +39,9 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   version bump — they are new filenames, and every existing file re-exports byte-identical.
 - **The sick face** (`sick`) is a card face only: heavy lids with bags, a queasy wavy mouth, a
   greenish flush instead of the pink, a green tint over the whole Plynling, a sliding fever sweat
-  drop and a fever shiver (the starving shudder: in place, never sideways). A rare species' sparkles
-  go out while it is sick. 14 files, added without a version bump.
-- **The dirt** (`dirt.py`, `build(..., dirty=True)`, `plynling_<species>[_baby]_<face>_dirty_v4.webp`,
+  drop and a fever shiver (the starving shudder: in place, never sideways). 14 files, added without
+  a version bump.
+- **The dirt** (`dirt.py`, `build(..., dirty=True)`, `plynling_<species>[_baby]_<face>_dirty_v5.webp`,
   98 files) marks a « sale » Plynling on its card, for the living faces in `DIRTY_STATES` — not
   frozen (the ice covers it), not angry and not the visit pictures. A brownish grime tint, mud on the
   cap, a streak and splashes on the body — painted on the model *before* the face, so the face is
@@ -50,7 +50,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   Russule's tipping cap, and outside the starving cold sweat; it is drawn before the wisps so they go
   round it. Everything is placed from the drawing, so it fits every species and stage. Added
   without a version bump.
-- **Visit pictures** (`plynling_<species>[_baby]_<face>_visit_v4.webp`, 56 files: happy, content, sad
+- **Visit pictures** (`plynling_<species>[_baby]_<face>_visit_v5.webp`, 56 files: happy, content, sad
   and angry, adults and babies) are the same animation on a larger transparent canvas
   (`VISIT_CANVAS = 40` cells against the sprite's 32, so the sprite fills 80 % of its tile; still
   whole-pixel scaling, so the pixel art stays sharp). A visit shows two Plynlings side by side in a
@@ -77,15 +77,15 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
   one longer frame, so a file holds fewer than 16 frames while still lasting 2 s. Then every card
   face (not angry) of every shape in every accessory look,
-  `plynling_<species>[_baby]_<face>[_dirty]_with_<accessory>[_<style>]_v4.webp` (7 560 files; the
+  `plynling_<species>[_baby]_<face>[_dirty]_with_<accessory>[_<style>]_v5.webp` (7 560 files; the
   ones in a hat 320×320 on an adult). Each loop is measured once and dressed in every look.
 
 Requires Python 3 and Pillow. Run from this folder: `python export.py`.
 
 **Changing the art:** bump `ART_VERSION` in `export.py` **and** `PlynlingArt.Version` in the
 bot, re-export, commit, push. The bot links to GitHub raw URLs on `main`, and Discord caches
-images by URL — a new version must be a new filename, never an overwrite. The art is at **v3**
-(the idle animation). Frame 0 of every loop is pixel-identical to the v2 still, so a client that
-cannot animate WebP shows exactly the old picture, and the memorials and foods are byte-identical
-to v2. A new species' drawing function must take `frame` and route through `finish` with its
-pose, or it will not move.
+images by URL — a new version must be a new filename, never an overwrite. The art is at **v5**
+(v3 the idle animation; v5 dropped the sparkles the Mycena, the Doré (Girolle) and the Coprin wore from the
+retired rarity tiers — no species is drawn as rarer than another). Frame 0 of every loop is the
+still, so a client that cannot animate WebP shows a picture that makes sense. A new species'
+drawing function must take `frame` and route through `finish` with its pose, or it will not move.

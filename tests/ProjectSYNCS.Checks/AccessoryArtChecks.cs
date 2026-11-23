@@ -79,7 +79,7 @@ public static class AccessoryArtChecks
     // The looks drawn for the content Amanite, read back from the filenames, against the bot's.
     private static void StylesMatchTheArt(string assets)
     {
-        const string head = "plynling_amanite_content_with_", tail = "_v4.webp";
+        string head = "plynling_amanite_content_with_", tail = $"_v{PlynlingArt.Version}.webp";
         var drawn = Directory.Exists(assets)
             ? Directory.GetFiles(assets, head + "*" + tail).Select(f => Path.GetFileName(f)[head.Length..^tail.Length]).ToHashSet()
             : new HashSet<string>();
@@ -103,7 +103,7 @@ public static class AccessoryArtChecks
         var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
         string Of(Plynling p, Outfit? outfit = null) => PlynlingArt.SpriteOf(p, now, PlynlingMood.Content, outfit);
 
-        Expect(Of(Living("cos.accessory.couronne")).EndsWith("_with_couronne_v4.webp"), "couronne: " + Of(Living("cos.accessory.couronne")));
+        Expect(Of(Living("cos.accessory.couronne")).EndsWith($"_with_couronne_v{PlynlingArt.Version}.webp"), "couronne: " + Of(Living("cos.accessory.couronne")));
         Expect(Of(Living("cos.accessory.noeud")).Contains("_with_noeud_rose_"), "nœud, no style: " + Of(Living("cos.accessory.noeud")));
         Expect(Of(Living("cos.accessory.noeud", "bleu")).Contains("_with_noeud_bleu_"), "nœud bleu: " + Of(Living("cos.accessory.noeud", "bleu")));
         Expect(Of(Living("cos.accessory.noeud", "vert")).Contains("_with_noeud_rose_"), "nœud, unknown style: " + Of(Living("cos.accessory.noeud", "vert")));

@@ -13,23 +13,23 @@ def lerp(a, b, t):
 SPOTS = [(8, 10, 1.7), (16, 5, 2.0), (23, 9, 1.5), (12, 12, 1.1), (20, 12, 1.0), (5, 12, 0.9)]
 SCALES = [(9, 9, 0.8), (18, 6, 0.8), (22, 11, 0.7), (13, 11, 0.6), (6, 11, 0.6)]
 SPECIES = {
-    "amanite":  dict(tier="commun", cap=[(255, 160, 142), (238, 96, 86), (206, 50, 58), (148, 30, 50), (92, 20, 40)],
-                     spot=((252, 247, 238), (212, 198, 190)), spots=SPOTS, gill=(238, 222, 200), sparkle=None),
-    "cepe":     dict(tier="commun", cap=[(230, 178, 120), (190, 132, 80), (152, 98, 58), (110, 68, 42), (70, 42, 30)],
-                     spot=((208, 158, 106), (158, 108, 66)), spots=SCALES, gill=(206, 196, 120), sparkle=None),
-    "rose":     dict(tier="commun", cap=[(255, 255, 252), (248, 244, 236), (226, 218, 206), (182, 172, 162), (122, 112, 106)],
-                     spot=((238, 228, 214), (208, 196, 182)), spots=SCALES, gill=(236, 146, 158), sparkle=None),
-    "russule":  dict(tier="peu commun", cap=[(206, 240, 176), (152, 210, 122), (98, 170, 88), (60, 120, 64), (34, 74, 44)],
-                     spot=((182, 228, 152), (122, 188, 106)), spots=SCALES[:3], gill=(244, 238, 222), sparkle=None),
-    "mystique": dict(tier="rare", cap=[(214, 186, 255), (170, 130, 242), (126, 82, 204), (84, 52, 152), (50, 30, 100)],
-                     spot=((176, 252, 255), (92, 200, 232)), spots=SPOTS, gill=(206, 196, 240), sparkle=(176, 252, 255),
+    "amanite":  dict(cap=[(255, 160, 142), (238, 96, 86), (206, 50, 58), (148, 30, 50), (92, 20, 40)],
+                     spot=((252, 247, 238), (212, 198, 190)), spots=SPOTS, gill=(238, 222, 200)),
+    "cepe":     dict(cap=[(230, 178, 120), (190, 132, 80), (152, 98, 58), (110, 68, 42), (70, 42, 30)],
+                     spot=((208, 158, 106), (158, 108, 66)), spots=SCALES, gill=(206, 196, 120)),
+    "rose":     dict(cap=[(255, 255, 252), (248, 244, 236), (226, 218, 206), (182, 172, 162), (122, 112, 106)],
+                     spot=((238, 228, 214), (208, 196, 182)), spots=SCALES, gill=(236, 146, 158)),
+    "russule":  dict(cap=[(206, 240, 176), (152, 210, 122), (98, 170, 88), (60, 120, 64), (34, 74, 44)],
+                     spot=((182, 228, 152), (122, 188, 106)), spots=SCALES[:3], gill=(244, 238, 222)),
+    "mystique": dict(cap=[(214, 186, 255), (170, 130, 242), (126, 82, 204), (84, 52, 152), (50, 30, 100)],
+                     spot=((176, 252, 255), (92, 200, 232)), spots=SPOTS, gill=(206, 196, 240),
                      stem_tint=((196, 176, 226), 0.3),
                      anger_nudge=(1, 2)),     # a Mycena's stem: lavender, near see-through
-    "dore":     dict(tier="légendaire", cap=[(255, 248, 186), (252, 216, 96), (224, 170, 42), (162, 112, 26), (100, 66, 18)],
-                     spot=((255, 255, 240), (236, 206, 140)), spots=SPOTS, gill=(250, 232, 176), sparkle=(255, 250, 205),
+    "dore":     dict(cap=[(255, 248, 186), (252, 216, 96), (224, 170, 42), (162, 112, 26), (100, 66, 18)],
+                     spot=((255, 255, 240), (236, 206, 140)), spots=SPOTS, gill=(250, 232, 176),
                      stem_tint=((252, 216, 96), 0.55)),     # a chanterelle is gold from cap to foot
-    "coprin":   dict(tier="rare", cap=[(255, 253, 247), (247, 240, 228), (230, 218, 200), (200, 182, 160), (132, 114, 96)],
-                     spot=((216, 176, 122), (160, 118, 74)), spots=SCALES, gill=(34, 28, 38), sparkle=(236, 236, 250),
+    "coprin":   dict(cap=[(255, 253, 247), (247, 240, 228), (230, 218, 200), (200, 182, 160), (132, 114, 96)],
+                     spot=((216, 176, 122), (160, 118, 74)), spots=SCALES, gill=(34, 28, 38),
                      anger_nudge=(1, 2)),
 }
 STEM = [(255, 252, 242), (250, 240, 220), (238, 222, 196), (212, 190, 162), (178, 154, 126)]
@@ -213,12 +213,6 @@ def build(state, sp, frame=0, shadow=True):
             im.putpixel((x, y), (255, 255, 255, 255))
         for x, y in ((28, 2), (27, 3), (28, 3), (29, 3), (28, 4)):
             im.putpixel((x, y), (220, 246, 255, 255))
-    if p["sparkle"] and state != "frozen":
-        s = p["sparkle"]
-        for x, y in ([(2, 6), (29, 9), (27, 1), (3, 1)] if frame == 0 else [(1, 9), (30, 5), (26, 3), (5, 2)]):
-            im.putpixel((x, y), s + (255,))
-        for x, y in ((28, 13), (29, 12), (28, 12), (27, 12), (28, 11)):
-            im.putpixel((x, y), s + (200,))
     return im
 
 
@@ -450,7 +444,7 @@ if __name__ == "__main__":
     species = list(SPECIES)
     states = ["happy", "content", "sad", "hungry", "frozen"]
     print(sheet(species, states, lambda sp, st: build(st, sp),
-                [f"{sp} ({SPECIES[sp]['tier']})" for sp in species], states, "plynling_mushrooms_v4.png"))
+                species, states, "plynling_mushrooms_v4.png"))
     mem_sp = ["amanite", "russule", "dore"]
     print(sheet(mem_sp, [1, 2, 3, 4, 5], lambda sp, t: memorial(t, sp), mem_sp,
                 ["1 cairn", "2 petite stèle", "3 stèle gravée", "4 urne", "5 statue"], "plynling_memorials_v2.png"))

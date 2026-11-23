@@ -24,7 +24,7 @@ from motion import FRAMES, FRAME_MS
 from accessories import looks, loop, wear
 from sprites import build
 
-ART_VERSION = 4
+ART_VERSION = 5
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))
