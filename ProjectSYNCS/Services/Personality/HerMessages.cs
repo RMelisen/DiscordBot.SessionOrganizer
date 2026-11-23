@@ -24,6 +24,19 @@ public enum ReplyContext
     Giveaway,
 }
 
+internal static class ReplyContexts
+{
+    /// <summary>
+    /// Whether what the reply says outranks the post it answers. Her morning hello says nothing in
+    /// particular, so a question, news or a word under it gets the intent's own lines (greeting or
+    /// not); every other post keeps its context line (« j'arrive dans 5 min » under the late call is
+    /// about the call, not news).
+    /// </summary>
+    public static bool YieldsToIntent(ReplyContext context, ChatIntent intent) =>
+        context == ReplyContext.MorningHello
+        && intent is ChatIntent.Question or ChatIntent.Sharing or ChatIntent.LowEffort;
+}
+
 /// <summary>
 /// The kind of the messages she posted on her own initiative lately, by message id. Each sender
 /// remembers what it just said; ChatterService looks up the message someone replied to.

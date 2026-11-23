@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.2 — 2026-11-23
+
+- Under SYNCS's morning hello, a question, a bit of news or a one-word reply now gets her usual answer to it instead of a generic line about the hello.
+- Greeting SYNCS back under her morning hello gets one of her morning bonjour lines; her family and her paid chouchou each get their own. Anywhere else, a greeting gets her usual greetings, and in a reply the owner now gets the owner's greetings too.
+
 ## 8.2.1 — 2026-11-23
 
 - Answering SYNCS's morning hello no longer always gets « bonjour » back: she greets you back only when you greeted her (by day), and answers anything else without a hello.

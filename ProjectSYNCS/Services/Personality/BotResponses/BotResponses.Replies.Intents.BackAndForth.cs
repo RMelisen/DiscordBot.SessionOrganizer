@@ -110,7 +110,7 @@ internal static partial class BotResponses
             ],
             // « j'ai mangé de la soupe »: someone telling her about their day, and she's into it. The
             // other half of the time she isn't (SharingShrugLines). Not specific: an answer to one of
-            // her own posts gets its context line first.
+            // her own posts gets its context line first, except under the morning hello.
             [ChatIntent.Sharing] =
             [
                 "Ah oui ? Raconte. J'ai du temps, je suis une bot." + Sticker.Happy,

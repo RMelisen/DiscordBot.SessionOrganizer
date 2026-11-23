@@ -87,7 +87,8 @@ namespace ProjectSYNCS.Services;
 //
 //   [Replies.Conversation] Answering one of her own posts (HerMessages)
 //     ReplyContextLines ........ keyed by ReplyContext: the welcome, the late call, the poll…
-//     MorningHelloGreetedLines . the hello greeted back, by day (ReplyContextPool picks)
+//     MorningHelloGreetedLines . the hello greeted back, by day; Owner…, Tata…, Chouchou… twins
+//                                (MorningHelloGreetedPool picks by HelloGreeter)
 //
 //   [Replies.Conversation] Long back-and-forths (ConversationStreak)
 //     StreakNudgeLines ......... the third insult or empty message

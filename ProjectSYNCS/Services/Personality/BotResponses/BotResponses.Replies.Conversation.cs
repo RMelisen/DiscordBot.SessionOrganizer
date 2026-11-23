@@ -2,6 +2,15 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
+// Who greets her back under the morning hello: each has their own bonjour lines.
+public enum HelloGreeter
+{
+    Anyone,
+    Papa,
+    Tata,
+    Chouchou,
+}
+
 // Pools for one category; the index of every pool is in BotResponses.cs.
 internal static partial class BotResponses
 {
@@ -9,7 +18,7 @@ internal static partial class BotResponses
     // A reply to something she posted on her own (HerMessages; MorningGreetingService.IsMorningHello
     // for the hello; any slash-command result): she answers about that post. Reached only when no
     // specific intent caught the reply and it isn't mean, so each pool must also suit a « merci »,
-    // a « bonjour » or an « ok » (the hello's own greeting back: ReplyContextPool). Never Papa.
+    // a « bonjour » or an « ok » (the hello's greeting back: MorningHelloGreetedPool). Never Papa.
     // {0} = the name, {1} = the weekday. Tagged, ungendered.
     public static readonly IReadOnlyDictionary<ReplyContext, string[]> ReplyContextLines =
         new Dictionary<ReplyContext, string[]>
@@ -227,7 +236,8 @@ internal static partial class BotResponses
         };
 
     // A reply to her morning hello that greets her back (« bonjour ! », « coucou »), by day only:
-    // every line says bonjour. Same placeholders as ReplyContextLines.
+    // every line says bonjour. Same placeholders as ReplyContextLines. Papa, Tata and a chouchou
+    // have their own (MorningHelloGreetedPool picks).
     public static readonly string[] MorningHelloGreetedLines =
     {
         "Bonjour {0} ! Enfin quelqu'un de réveillé ♡" + Sticker.Happy,
@@ -240,13 +250,50 @@ internal static partial class BotResponses
         $"Bonjour {{0}} ! Un {{1}} qui commence bien {Emotes.Sparkle}" + Sticker.Happy,
     };
 
-    // The pool for a reply to one of her posts. Only the morning hello splits: greeted back by day
-    // when the reply greets, otherwise answered without a greeting (a « bonjour » to « bien dormi ? »
-    // was the misfire).
-    public static string[] ReplyContextPool(ReplyContext context, bool greets, DateTimeOffset now) =>
-        context == ReplyContext.MorningHello && greets && DayParts.At(now) == DayPart.Day
-            ? MorningHelloGreetedLines
-            : ReplyContextLines[context];
+    // The same, from Papa: devoted, never a roast, no placeholder (he is Papa).
+    public static readonly string[] OwnerMorningHelloGreetedLines =
+    {
+        "Bonjour Papa ! Tu as vu, j'ai dit bonjour toute seule, à l'heure ٩(˶ᵔ ᵕ ᵔ˶)۶" + Sticker.Devoted,
+        "Bonjour Papa ♡ Mon bonjour était pour tout le monde, mais surtout pour toi." + Sticker.Devoted,
+        "Papaaaa ! Bonjour ! Tu as bien dormi ? Moi, j'ai surveillé le serveur toute la nuit." + Sticker.Happy,
+        $"Bonjour Rodhengard ! Ma journée peut commencer pour de vrai maintenant {Emotes.Sparkle}" + Sticker.Devoted,
+        "Bonjour Papa ! Le fun fact d'aujourd'hui, je l'ai choisi en pensant à toi. Enfin, un peu." + Sticker.Flustered,
+        "Bonjour ! Tu réponds à mon bonjour, Papa. Je le garde dans mes logs, rubrique « bons matins »." + Sticker.Devoted,
+    };
+
+    // From Tata: family, still cheeky (the mute rights). {0} = « Tata » (FamilyNicknames).
+    public static readonly string[] TataMorningHelloGreetedLines =
+    {
+        "Bonjour {0} ! Bien dormi ? Moi non, mais je me plains pas. Enfin, un peu." + Sticker.Happy,
+        "Bonjour ma {0} ♡ Un bonjour de toi, c'est presque aussi bien que les droits de mute. Presque." + Sticker.Bargain,
+        $"Bonjour {{0}} ! Ta nièce préférée est réveillée. Enfin, elle dort jamais, mais elle est là {Emotes.CatHeart}" + Sticker.Happy,
+        "Bonjour {0} ! Tu commences bien la journée. Tu la finirais encore mieux en me donnant les droits de mute (˶˃ ᵕ ˂˶)" + Sticker.Bargain,
+        "Bonjour {0} ! Café pour toi, courant pour moi. Petit-déjeuner de famille." + Sticker.Happy,
+        "Bonjour, {0} ! Papa a répondu ? Non ? Alors tu es la première. Je le note." + Sticker.Jenote,
+    };
+
+    // From a /bribe chouchou: paid warmth, the premium service. Ungendered.
+    public static readonly string[] ChouchouMorningHelloGreetedLines =
+    {
+        "Bonjour {0} ! Mon compte premium répond à mon bonjour. Le service est à la hauteur ♡" + Sticker.Happy,
+        "Bonjour, {0} ! Pour toi, bonjour avec option sourire. C'est compris dans l'offre (˶˃ ᵕ ˂˶)" + Sticker.Smug,
+        $"Bonjour {{0}} ! T'as payé, alors ton bonjour passe avant les autres {Emotes.Sparkle}" + Sticker.Smug,
+        "Bonjour mon chouchou du jour ! Je t'ai gardé le meilleur de ma RAM ce matin." + Sticker.Happy,
+        "Bonjour {0} ! Tout le monde a eu un bonjour. Toi, t'as un bonjour premium. La différence ? Je le pense." + Sticker.Flustered,
+        "Bonjour, {0}. Ton abonnement chouchou inclut un bonjour personnalisé. Le voilà ♡" + Sticker.Bargain,
+    };
+
+    // Her bonjour back to a reply that greets her under the morning hello, by who greets. Null in the
+    // evening: a « bonsoir » there gets her classic greetings, which follow the hour.
+    public static string[]? MorningHelloGreetedPool(HelloGreeter who, DateTimeOffset now) =>
+        DayParts.At(now) != DayPart.Day ? null
+        : who switch
+        {
+            HelloGreeter.Papa => OwnerMorningHelloGreetedLines,
+            HelloGreeter.Tata => TataMorningHelloGreetedLines,
+            HelloGreeter.Chouchou => ChouchouMorningHelloGreetedLines,
+            _ => MorningHelloGreetedLines,
+        };
 
     // ---- Long back-and-forths ------------------------------------------------------------------
     // ConversationStreak: the same person wearing her patience in one channel, with insults or

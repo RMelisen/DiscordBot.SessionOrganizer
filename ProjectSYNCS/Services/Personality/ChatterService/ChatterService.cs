@@ -601,6 +601,7 @@ internal sealed partial class ChatterService
         var isOwner = message.Author.Id == OwnerId;
         var mean = IsMean(mood, content);
         var chouchou = !mean && await IsChouchouAsync(message);
+        var context = ReadReplyContext(message);
 
         // What the reply says, then what it answers, then its mood. A mean reply skips the first
         // two: it gets roasted (or, from Papa, lands), whatever it was about.
@@ -612,12 +613,16 @@ internal sealed partial class ChatterService
         // A bare « oui » / « non » under one of her questions answers it. Not when the post has its own
         // context line (« oui » under the late call is « j'arrive »), which Papa never gets anyway.
         if (!mean && MessageCues.ReadAnswer(content) is { } answer && AskedSomething(message.ReferencedMessage)
-            && (isOwner || ReadReplyContext(message) is null))
+            && (isOwner || context is null))
             intent = answer;
+        // Greeted back under her morning hello, unless the reply also says something she answers
+        // (ReplyContexts.YieldsToIntent): her bonjour lines by day, her classic greetings at night.
+        var helloGreeting = !mean && greeting && context is ReplyContext.MorningHello
+                            && !ReplyContexts.YieldsToIntent(ReplyContext.MorningHello, intent);
 
         // Five insults or empty replies and she ends it; while ended, only a reaction. Never Papa. What
         // she has something to say to costs nothing (ConversationStreak.Wears).
-        var answeredAnyway = nice || greeting || ReadReplyContext(message) is not null
+        var answeredAnyway = nice || greeting || context is not null
                              || (AskedSomething(message.ReferencedMessage) && MessageCues.ReadShortAnswer(content) is not null);
         if (await StreakGateAsync(message, ChatPath.Reply, name, weekday, ConversationStreak.Wears(mean, intent, answeredAnyway)))
             return;
@@ -644,13 +649,29 @@ internal sealed partial class ChatterService
             // Being called that outranks whatever else his reply was: his nice, his greeting, his news.
             (pick, what) = (petPick, "his pet name for her");
         }
-        else if (!mean && !isOwner && ReadReplyContext(message) is { } context)
+        else if (helloGreeting && BotResponses.MorningHelloGreetedPool(
+                     isOwner ? HelloGreeter.Papa
+                     : message.Author.Id == BotResponses.TataId ? HelloGreeter.Tata
+                     : chouchou ? HelloGreeter.Chouchou
+                     : HelloGreeter.Anyone, DateTimeOffset.UtcNow) is { } hello)
+        {
+            // Her bonjour back, Papa, Tata and a chouchou included, each with their own lines.
+            (pick, what) = (IntentPick.Of(hello, isOwner ? AnswerKinds.PapaGreeting : AnswerKinds.Context(ReplyContext.MorningHello)),
+                "greeted back under her hello");
+        }
+        else if (!mean && !isOwner && !helloGreeting && context is { } post)
         {
             // An answer to one of her own posts (the late call, a welcome, the morning
-            // hello…) is answered about that post. Papa keeps his pools.
-            (pick, what) = (IntentPick.Of(BotResponses.ReplyContextPool(context, greeting, DateTimeOffset.UtcNow),
-                    AnswerKinds.Context(context)),
-                $"reply to her {context}");
+            // hello…) is answered about that post. Papa keeps his pools. Under the hello, a question,
+            // news or a word gets its intent's lines instead (ReplyContexts.YieldsToIntent).
+            if (!ReplyContexts.YieldsToIntent(post, intent))
+                (pick, what) = (IntentPick.Of(BotResponses.ReplyContextLines[post], AnswerKinds.Context(post)),
+                    $"reply to her {post}");
+            else if (intent == ChatIntent.Sharing)
+                (pick, what) = (SharingPick(isOwner: false), $"reply sharing, under her {post}");
+            else
+                (pick, what) = (IntentPick.Of(BotResponses.IntentLines[intent], AnswerKinds.Intent(intent)),
+                    $"reply intent ({intent}), under her {post}");
         }
         else if (nice)
         {
@@ -658,7 +679,8 @@ internal sealed partial class ChatterService
         }
         else if (greeting)
         {
-            pick = await GreetingPickAsync(message, isOwner: false);
+            // Her classic greetings, Papa his own: anywhere but a daytime reply to her hello.
+            pick = await GreetingPickAsync(message, isOwner);
         }
         else if (intent == ChatIntent.Sharing)
         {

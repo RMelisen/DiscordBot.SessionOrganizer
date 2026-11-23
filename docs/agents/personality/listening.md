@@ -28,10 +28,17 @@ A reply to one of her own posts is answered about that post (`ReplyContextLines`
 `ReplyContext`). Reached only for a non-mean reply that no specific intent caught, and never for
 Papa, so each pool must also suit a « merci », a « bonjour » or an « ok ».
 
-- **The morning hello splits** (`BotResponses.ReplyContextPool`): a reply that greets her, by day
-  (`DayParts`), gets `MorningHelloGreetedLines`, which all say bonjour; anything else (« bien
-  dormi ? », « ok », their news, a « bonsoir ») gets `ReplyContextLines[MorningHello]`, where no line
-  greets back. A « bonjour » to every reply was the misfire; checks section 58 holds both halves.
+- **A greeting under the morning hello gets her bonjour back** (`BotResponses.MorningHelloGreetedPool`,
+  by `HelloGreeter`): by day (`DayParts`), `MorningHelloGreetedLines`, and Papa, Tata and a chouchou
+  their own twins (`Owner…`, `Tata…`, `Chouchou…MorningHelloGreetedLines`), always, no roll. This is
+  the one context Papa is answered in. At night a « bonsoir » there gets her classic greetings
+  (`GreetingPickAsync`, Papa his own), which follow the hour; so does any greeting anywhere else.
+  Anything else under the hello gets `ReplyContextLines[MorningHello]`, where no line greets back. A
+  « bonjour » to every reply was the misfire; checks section 58 holds the halves.
+- **Under the hello, the reply's intent comes first** (`ReplyContexts.YieldsToIntent`): a
+  `Question`, `Sharing` or `LowEffort` gets that intent's lines, greeting or not, since the hello
+  says nothing in particular. Every other post keeps its context line over those three
+  (« j'arrive dans 5 min » under the late call is about the call).
 
 - **`HerMessages`** (singleton) remembers what she posted on her own, by message id, bounded at 500
   and lost on restart by design. Each sender calls `Remember` right after its send: the welcome and

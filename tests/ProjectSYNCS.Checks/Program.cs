@@ -68,6 +68,7 @@ var taggedPools = new[]
     "MilestoneBotLines", "MilestoneSelfLines", "RequestActionLines", "OwnerRequestActionLines", "TeamsNoVoiceLines",
     "RelayLines", "RelayGreetingLines", "RelayRefusedLines", "DefendedLines", "OwnerDefendedLines", "OwnerWorksOnHerLines",
     "TalkedAboutShipLines", "TalkedAboutDigLines", "ChouchouGreetings", "ChouchouReplies", "MorningHelloGreetedLines",
+    "OwnerMorningHelloGreetedLines", "TataMorningHelloGreetedLines", "ChouchouMorningHelloGreetedLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -5054,19 +5055,32 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
                 Fail($"{field}: blames their timing: {l}");
 }
 
-// 58. Replies to her morning hello (ReplyContextPool): greeted back only when the reply greets, by
-// day; anything else answered without a greeting. In the wild she said « bonjour » to every reply.
+// 58. Replies to her morning hello (MorningHelloGreetedPool): greeted back with her bonjour lines by
+// day, Papa, Tata and a chouchou with their own; at night none (her classic greetings follow the
+// hour); anything else answered without a greeting. In the wild she said « bonjour » to every reply.
 {
-    var pool = br.GetMethod("ReplyContextPool")!;
-    string[] PoolFor(ReplyContext c, bool greets, int h) =>
-        (string[])pool.Invoke(null, [c, greets, AppTime.AtWallClock(new DateTime(2026, 11, 18, h, 0, 0))])!;
+    var pool = br.GetMethod("MorningHelloGreetedPool")!;
+    string[]? PoolFor(HelloGreeter who, int h) =>
+        (string[]?)pool.Invoke(null, [who, AppTime.AtWallClock(new DateTime(2026, 11, 18, h, 0, 0))]);
     var contextLines = (IReadOnlyDictionary<ReplyContext, string[]>)Field("ReplyContextLines");
     var helloPlain = contextLines[ReplyContext.MorningHello];
     var greeted = (string[])Field("MorningHelloGreetedLines");
-    if (PoolFor(ReplyContext.MorningHello, true, 9) != greeted) Fail("hello reply: a greeting by day isn't greeted back");
-    if (PoolFor(ReplyContext.MorningHello, false, 9) != helloPlain) Fail("hello reply: a non-greeting is greeted back");
-    if (PoolFor(ReplyContext.MorningHello, true, 21) != helloPlain) Fail("hello reply: greeted back with bonjour in the evening");
-    if (PoolFor(ReplyContext.Welcome, true, 9) != contextLines[ReplyContext.Welcome]) Fail("hello reply: another context split");
+    var greetedBy = new Dictionary<HelloGreeter, string>
+    {
+        [HelloGreeter.Anyone] = "MorningHelloGreetedLines", [HelloGreeter.Papa] = "OwnerMorningHelloGreetedLines",
+        [HelloGreeter.Tata] = "TataMorningHelloGreetedLines", [HelloGreeter.Chouchou] = "ChouchouMorningHelloGreetedLines",
+    };
+    foreach (var who in Enum.GetValues<HelloGreeter>())
+    {
+        if (!greetedBy.TryGetValue(who, out var field)) { Fail($"hello reply: no bonjour lines for {who}"); continue; }
+        if (PoolFor(who, 9) != (string[])Field(field)) Fail($"hello reply: {who} greeting by day isn't {field}");
+        if (PoolFor(who, 21) is not null) Fail($"hello reply: {who} greeted back with bonjour in the evening");
+        foreach (var l in (string[])Field(field))
+            if (!l.ToLowerInvariant().Contains("bonjour")) Fail($"{field}: no bonjour: {l}");
+    }
+    // Papa is Papa: no name placeholder.
+    foreach (var l in (string[])Field("OwnerMorningHelloGreetedLines"))
+        if (l.Contains("{0}")) Fail($"OwnerMorningHelloGreetedLines: addresses him by name: {l}");
 
     // What decides it: the reply's own greeting, as the reply path reads it.
     bool Greets(string text)
@@ -5088,8 +5102,29 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         if (Greets(s) || helloWord.Replace(s, "").Contains("bonjour") || s.Contains("bonsoir"))
             Fail($"ReplyContextLines[MorningHello]: greets back: {s}");
     }
-    foreach (var l in greeted)
-        if (!l.ToLowerInvariant().Contains("bonjour")) Fail($"MorningHelloGreetedLines: no bonjour: {l}");
+    if (greeted.Intersect(helloPlain).Any()) Fail("hello reply: a line in both halves");
+
+    // Under the hello, what the reply says comes first: a question, news or a word gets its intent's
+    // lines; every other post keeps its context line.
+    var yields = asm.GetType("ProjectSYNCS.Services.ReplyContexts")!.GetMethod("YieldsToIntent")!;
+    bool Yields(ReplyContext c, string intent) => (bool)yields.Invoke(null, [c, Enum.Parse(intentType, intent)])!;
+    foreach (var intent in new[] { "Question", "Sharing", "LowEffort" })
+    {
+        if (!Yields(ReplyContext.MorningHello, intent)) Fail($"hello reply: {intent} gets the hello's line");
+        if (Yields(ReplyContext.SessionCall, intent)) Fail($"hello reply: {intent} under the late call skips its line");
+    }
+    if (Yields(ReplyContext.MorningHello, "None")) Fail("hello reply: nothing read, yet no hello line");
+    // How the usual answers to her hello read.
+    foreach (var (text, expected) in new[]
+    {
+        ("bien dormi ?", "HowAreYou"), ("bonjour, bien dormi ?", "HowAreYou"), ("t'as fait quoi cette nuit ?", "Question"),
+        ("j'ai trop mal dormi", "Sharing"), ("je commence le taf", "Sharing"), ("ok", "LowEffort"), ("👍", "LowEffort"),
+        ("bonjour !", "None"),
+    })
+    {
+        var got = readIntent.Invoke(null, [text])!.ToString();
+        if (got != expected) Fail($"hello reply: ReadIntent(\"{text}\") = {got}, expected {expected}");
+    }
 }
 
 // 48. Edits of a message she answered (EditReading): a typo, a case change or a link preview is
