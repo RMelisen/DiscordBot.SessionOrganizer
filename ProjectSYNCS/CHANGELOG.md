@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.5 — 2026-11-23
+
+- A Plynling visit's choice buttons (the visitor's options and the host's reactions) are green again, like the old « Accueillir », so the invited owner sees it is their turn.
+
 ## 8.2.4 — 2026-11-23
 
 - `/daily` (and `;daily`) now opens on lines of her own for her creator, for Tata, and for a `/bribe` chouchou, and has 30 more lines for everyone else.

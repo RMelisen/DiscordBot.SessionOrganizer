@@ -29,6 +29,10 @@ public static class PlynlingVisitCards
 
     public const string ConfessLabel = "💌 Lui avouer ses sentiments";
 
+    // Green, like the old « Accueillir »: grey options read as decoration and the invited owner missed
+    // the knock. Both steps share it; « 💌 » stays blurple so it stands apart from the scene's options.
+    private const ButtonStyle ChoiceStyle = ButtonStyle.Success;
+
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
     // A scene's text with both names, bold (TextDisplay).
@@ -67,7 +71,7 @@ public static class PlynlingVisitCards
         var at = expires.ToUnixTimeSeconds();
         var row = new ActionRowBuilder();
         foreach (var o in scene.Options)
-            row.WithButton(Label(o.Label, visitor, host), ChoiceId(visitor.Id, hostOwnerId, at, scene.Key, o.Key), ButtonStyle.Secondary);
+            row.WithButton(Label(o.Label, visitor, host), ChoiceId(visitor.Id, hostOwnerId, at, scene.Key, o.Key), ChoiceStyle);
         if (offerConfession) row.WithButton(ConfessLabel, ConfessId(visitor.Id, hostOwnerId, at, scene.Key), ButtonStyle.Primary);
         return new ComponentBuilderV2()
             .AddComponent(Frame(visitor, scene, visitor, host)
@@ -88,7 +92,7 @@ public static class PlynlingVisitCards
         var at = expires.ToUnixTimeSeconds();
         var row = new ActionRowBuilder();
         foreach (var r in scene.Reactions)
-            row.WithButton(Label(r.Label, visitor, host), ReactionId(visitor.Id, hostOwnerId, at, scene.Key, option.Key, r.Key), ButtonStyle.Secondary);
+            row.WithButton(Label(r.Label, visitor, host), ReactionId(visitor.Id, hostOwnerId, at, scene.Key, option.Key, r.Key), ChoiceStyle);
         return new ComponentBuilderV2()
             .AddComponent(Frame(visitor, scene, visitor, host)
                 .AddComponent(WithVisitor(visitor, now, $"{Say(scene.Intro, visitor, host)}\n\n**{a}** a choisi : {chose}."))
