@@ -357,15 +357,25 @@ every Ready and on `JoinedGuild`.
 - **The worn accessory is drawn on the picture** (8.5.0): `SpriteOf` adds
   `_with_<accessory>[_<style>]` after the face and its `_dirty`, from the Plynling's `Outfit` — or the
   try-on's, which `CardHead` passes. Every card face but angry (a visit face: angry stays plain), every
-  shape, every accessory in every style is pre-rendered (`tools/plynling-art/accessories.py`, ~7 500
+  shape, every accessory in every style is pre-rendered (`tools/plynling-art/accessories.py`, ~8 800
   files, new names so no version bump). An accessory key the catalogue doesn't know falls back to the
   plain picture, a style that isn't one of its to the default (`AccessoryStyles.Resolve`). An adult in a
   hat is a taller picture (40 px canvas, the Plynling at 80 %). **Checks section 62 reads
   `assets/plynlings/`**: every URL the bot can build must exist and the bot's styles must equal the
   drawn ones — a new accessory or style needs its drawing and a re-export before it ships. **Bumping
-  `Version` now renames ~7 900 files (~54 MB more in the public repo's history)**: to redraw one
+  `Version` now renames ~9 100 files (~54 MB more in the public repo's history)**: to redraw one
   accessory, prefer giving it new filenames over bumping the shared version. Visits and
   event cards keep the plain picture (owner's call: piece B of the cosmetics rework was dropped).
+- **The worn aura is drawn too** (8.6.0): `_aura_<aura>` comes **last**, after any accessory segment,
+  on the faces in `PlynlingArt.AuraMoods` only — happy, content, sad, hungry, starving, sleeping, clean
+  or dirty. Frozen (the ice), sick (the old sparkles went out when sick) and angry stay without it, as
+  does an unknown key. Every such face × every look (none + each accessory style) × each aura is
+  pre-rendered (`tools/plynling-art/auras.py`, 21 672 files; `python export.py auras` writes only
+  those, `python export.py accessories <name>…` only a new accessory's looks, plain and in each aura).
+  **The cost multiplies**: a new accessory look now costs 4 files per face and shape (plain +
+  three auras), a new aura ~6 200 files (~65 MB: moving particles compress worse than a still
+  accessory), and a `Version` bump re-exports ~30 800 files (~250 MB).
+  Checks section 64 reads the folder like section 62.
 
 ## Families — dormant
 

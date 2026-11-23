@@ -3,6 +3,29 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.6.0 — 2026-11-23
+
+- A fifth cosmetic slot, the **aura**: an animated effect drawn around the Plynling on its picture, worn
+  together with its accessory. It shows on the card, in the try-on, in games, the journal and announcements.
+- Three auras: **Scintillements** (twinkling stars) and **Bulles** (soap bubbles) in the weekly shop, and
+  **Pétales** (falling petals), a *Chef-d'œuvre* crafted from spring flowers — craftable from spring.
+- The card says what aura a Plynling wears, under its accessory. An aura doesn't show while a Plynling is
+  sick or frozen, and the try-on says so.
+- The Garde-robe has an « Aura » tab, between Accessoire and Cadre.
+- The « Aura dorée » grave frame is now called « Halo doré », so it isn't mistaken for an aura. Owned
+  copies keep working.
+- 14 new titles: Grognon, Câlin, Distrait, Bavard, Timide, Fripon and Immortel in the weekly shop;
+  Frileux (winter) and Bronzé (summer) as seasonal ones; Sommeillant, Mouillé and Puisatier as
+  *Ouvrages* from the place each is named after; Mycologue and Entomologiste as *Chefs-d'œuvre*.
+- 10 new grave frames: Plumes, Nuages, Coquillages, Bulles de savon, Cœurs and Notes de musique in the
+  weekly shop; Citrouilles (autumn) and Bonhomme de neige (winter) as seasonal ones; Mousse and Roseaux
+  as *Ouvrages*.
+- 4 new accessories, drawn on the Plynling: a straw hat (summer), a bonnet in red, blue or green
+  (winter), a little lantern (autumn, which had no accessory) and a flower crown, an *Ouvrage* made in
+  spring.
+- The Fabrication tab has one list for the *Ouvrages* and one for the *Chefs-d'œuvre*, and a Garde-robe
+  slot holding more than 24 items is split into two lists.
+
 ## 8.5.1 — 2026-11-23
 
 - The Mycène, the Girolle and the Coprin no longer have sparkles around them, a leftover from when

@@ -303,7 +303,7 @@ they work in any server), and **the bot uploads them itself**.
 - **`ApplicationEmojiService`**, on the first Ready, lists the application's emojis, uploads any
   missing sprite (from both folders via `ItemEmojis.Sources`), and records the markup in the static
   `ItemEmojis` map. Names: mushrooms `shroom_<slug>`, the rest `ItemEmojis.EmojiName`'s short
-  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `tr2_`, `b_`) — Discord caps names at 32 chars. Each
+  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr2_`, `b_`) — Discord caps names at 32 chars. Each
   application (dev, prod) gets its own copy with no manual step.
 - **An existing emoji is reused by name, never replaced** — to change a picture, delete the emoji in
   the developer portal and restart. To redraw a few icons, add their keys to `ItemEmojis.Revisions`
@@ -339,12 +339,14 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is four keys on it.** `CosmeticCatalog` holds the 67
+**Cosmetics are items; what a Plynling wears is five keys on it.** `CosmeticCatalog` holds the 98
 (`cos.<slot>.<name>`, stored, **append-only** — two retired in 8.5.0, see below) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
-no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey` are read and written only through
-`CosmeticSlots`. Wearing uses nothing up; a dead row keeps its keys (its grave shows its cadre).
+no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey`, `AuraKey` are read and written only through
+`CosmeticSlots`. **`CosmeticSlot` is append-only**: the shop seeds each slot's draw on its number. The
+order players see is `CosmeticCatalog.SlotOrder` (Thème, Titre, Accessoire, Aura, Cadre); the Garde-robe's
+slot row is then 5 buttons, a row's maximum — a sixth slot needs a select there. Wearing uses nothing up; a dead row keeps its keys (its grave shows its cadre).
 
 - **Losing the last one takes it off**: `InventoryService.TakeAsync` clears the key from the owner's
   *living* Plynling in the same unit of work.
@@ -361,6 +363,15 @@ no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey` are read and
   it, and a try-on of another accessory shows that one's default. Option keys are stored:
   append-only, never renamed, never containing « _ »; a new option needs its drawing first (checks
   section 62 compares the two).
+- **Auras** (8.6.0, `cos.aura.*`): an animated effect drawn around the Plynling, worn **with** the
+  accessory — `Outfit.With`/`Without` on one never touch the other. Three, fixed by design: Scintillements
+  (the look the rarer species lost in 8.5.1, now for anyone) and Bulles in the weekly rotation — with two
+  rotating auras and `RotatingPerSlot` 2, both are on sale every week until more exist — and Pétales, a
+  *Chef-d'œuvre* from primevères and cerises, **spring-only** (a recipe mixing seasons can't be measured by
+  section 61, which simulates one season). Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
+  « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line. Not drawn on
+  the sick and frozen faces: the try-on then says « Son aura ne se voit pas tant qu'il est malade ou gelé. »
+  Art and file cost: `plynling.md` *Art*.
 - **Retired accessories**: the sac à dos and the casque audio left the catalogue in 8.5.0; the data
   migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. Their keys
   stay retired — never reuse them.
@@ -393,7 +404,10 @@ redraws in place.
   `/inventory shop` (`ShopCards.Receipt` around `CosmeticCards.Bought`). A craft keeps its notice on
   the card: it is not a purchase.
 - **Custom-ids use the `cosm:` prefix**, one verb per control: `cosm:tab:{tab}`, `cosm:slot:{slot}`,
-  `cosm:pick:{tab}:{week}` (the one select; the wardrobe's « Aucun » is `none:{slot}`),
+  `cosm:pick:{tab}:{week}` (the shop's select; the wardrobe's « Aucun » is `none:{slot}`). **A select
+  holds 25 options**: the Fabrication tab has one select per group (`:0` Ouvrages, `:1` Chefs-d'œuvre)
+  and a wardrobe slot splits « Aucun » + what is owned into selects of 25 (`:0`, `:1`, … — titles and
+  cadres pass 25); the handler reads that segment only on the shop. Checks section 59 measures it with everything owned.
   `cosm:buy`/`cosm:buyw:{week}:{key}`, `cosm:make`/`cosm:makew:{key}`, `cosm:wear:{tab}:{key}`,
   `cosm:back:{tab}`, `cosm:style:{choice}:{key}` (the worn accessory's colour or place, on the Accessoire
   slot; refused if that accessory is no longer worn). The view (tab, slot, picked key) lives only in the
@@ -404,12 +418,14 @@ redraws in place.
 
 ### Crafting — Ouvrages and Chefs-d'œuvre
 
-18 recipes, each made **once per person** (`AlreadyOwned`). `CosmeticInfo.Trophy` splits them, and the
+27 recipes, each made **once per person** (`AlreadyOwned`). `CosmeticInfo.Trophy` splits them, and the
 Fabrication tab lists them in that order:
 
-- **Ouvrages** (8, 2 per slot, ~100 cailloux): commons (at most one peu commun) found at **one place**,
-  every place served, for the duplicates. **Band: 10–25 aimed forages.**
-- **Chefs-d'œuvre** (10, 200–300 cailloux): aimed hunts. **Band: 60–150 aimed forages.**
+- **Ouvrages** (14: Thème 2, Titre 5, Accessoire 3, Cadre 4, ~100 cailloux; the per-slot counts are pinned
+  in `CraftingChecks.OuvragesPerSlot`): commons (at most one peu commun) found at **one place**, every
+  place served, for the duplicates. Three titles are named after their place (Sommeillant, Mouillé,
+  Puisatier). **Band: 10–25 aimed forages.**
+- **Chefs-d'œuvre** (13, 200–300 cailloux): aimed hunts. **Band: 60–150 aimed forages.**
 - **The bands are enforced** (checks section 61, `CraftingChecks.ExpectedForages`: 300 seeded runs from
   nothing, aiming each time at the place covering the most missing units, in the ingredients' season or
   mid-April). A recipe outside its band fails the checks: retune it, never widen the band to fit.

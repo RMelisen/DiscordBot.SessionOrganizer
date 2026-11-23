@@ -42,7 +42,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         await RedrawAsync(new CosmeticView(CosmeticTab.Wardrobe, slot), null);
     }
 
-    // The screen's one select. In the wardrobe a pick is worn at once (« Aucun » takes the slot off);
+    // The screen's selects. In the wardrobe a pick is worn at once (« Aucun » takes the slot off);
     // in the shop and the recipes it is only tried on.
     [ComponentInteraction("cosm:pick:*:*", ignoreGroupNames: true)]
     public async Task OnPickAsync(string tabStr, string weekStr, string[] selected)
@@ -67,7 +67,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
                 if (cosmetic is not null) slot = cosmetic.Slot;
                 var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, slot, cosmetic?.Key, now);
                 var notice = outcome != CosmeticOutcome.Done ? CosmeticCards.Notice(outcome, cosmetic)
-                    : cosmetic is null ? $"{CosmeticCatalog.SlotLabel(slot)} retiré."
+                    : cosmetic is null ? CosmeticCards.TakenOff(slot)
                     : WornNotice(plynling!.Name, cosmetic);
                 await RedrawAsync(new CosmeticView(tab, slot), notice);
                 return;

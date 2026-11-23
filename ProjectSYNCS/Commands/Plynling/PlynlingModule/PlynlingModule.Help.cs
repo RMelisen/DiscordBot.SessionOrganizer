@@ -114,7 +114,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "et médicaments (−10 % dès 5).\n" +
                 "**`/inventory give`** · **`/inventory trade`** · **`/inventory sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
             .AddField("Cosmétiques",
-                "**`/inventory cosmetics`** — La **garde-robe** (thème, titre, accessoire, cadre de tombe), la " +
+                "**`/inventory cosmetics`** — La **garde-robe** (thème, titre, accessoire, aura, cadre de tombe), la " +
                 "**boutique** (sélection renouvelée chaque lundi) et la **fabrication** (des ouvrages faits de tes doubles, " +
                 "des chefs-d'œuvre à chasser). Choisis un article pour l'**essayer** sur ton Plynling avant de payer.\n" +
                 "**`/plynling wardrobe`** — Le même écran, ouvert sur la garde-robe.\n" +

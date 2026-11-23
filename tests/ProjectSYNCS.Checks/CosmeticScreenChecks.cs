@@ -63,6 +63,8 @@ public static class CosmeticScreenChecks
         Name = new string('W', 32), Gender = PlynlingGender.Female, OwnerId = ulong.MaxValue,
         ThemeKey = "cos.theme.aurore_boreale", TitleKey = "cos.title.chercheur_tresors",
         AccessoryKey = "cos.accessory.echarpe", GraveKey = "cos.grave.couronne_fleurs",   // the écharpe: two style selects, the widest
+        AuraKey = "cos.aura.scintillements",                       // the aura line in the heading
+        SickSince = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),   // and the « aura ne se voit pas » note
     };
 
     private static void Caps()

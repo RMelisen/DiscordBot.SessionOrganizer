@@ -45,10 +45,28 @@ public static class PlynlingArt
     // (tools/plynling-art/accessories.py) — new filenames, so no version bump. An accessory key the
     // catalogue doesn't know (retired, mistyped) shows the plain picture; angry is a visit face and
     // has no accessory pictures; an unknown style shows the default one (AccessoryStyles.Resolve).
+    // A worn aura adds « _aura_<name> » last (tools/plynling-art/auras.py), on the faces in AuraMoods
+    // only; elsewhere, or for a key that isn't a known aura, the picture is the same as without one.
     public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false,
-        string? accessory = null, string? style = null) =>
+        string? accessory = null, string? style = null, string? aura = null) =>
         $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}" +
-        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}{AccessorySegment(mood, accessory, style)}_v{Version}.webp";
+        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}{AccessorySegment(mood, accessory, style)}{AuraSegment(mood, aura)}_v{Version}.webp";
+
+    // The card faces drawn with an aura. Must match AURA_STATES in tools/plynling-art/auras.py (checks
+    // section 64): the ice covers it, a sick Plynling's sparkle goes out, angry is a visit face.
+    private static readonly IReadOnlySet<PlynlingMood> AuraMoods = new HashSet<PlynlingMood>
+    {
+        PlynlingMood.Happy, PlynlingMood.Content, PlynlingMood.Sad, PlynlingMood.Hungry,
+        PlynlingMood.Starving, PlynlingMood.Sleeping,
+    };
+
+    private const string AuraPrefix = "cos.aura.";
+
+    private static string AuraSegment(PlynlingMood mood, string? aura) =>
+        AuraMoods.Contains(mood) && CosmeticCatalog.ByKey(aura) is { Slot: CosmeticSlot.Aura } worn
+            && worn.Key.StartsWith(AuraPrefix, StringComparison.Ordinal)
+            ? "_aura_" + worn.Key[AuraPrefix.Length..]
+            : "";
 
     private const string AccessoryPrefix = "cos.accessory.";
 
@@ -63,14 +81,14 @@ public static class PlynlingArt
 
     /// <summary>
     /// The one way to picture a living Plynling on its own: its species, its stage, its mood (or
-    /// the one given), whether it is « sale », and the accessory it wears in its style — or, for a
-    /// try-on, the one <paramref name="outfit"/> puts on. Never frozen and dirty — the ice covers it.
+    /// the one given), whether it is « sale », the accessory it wears in its style and its aura — or,
+    /// for a try-on, the ones <paramref name="outfit"/> puts on. Never frozen and dirty — the ice covers it.
     /// </summary>
     public static string SpriteOf(Plynling p, DateTimeOffset now, PlynlingMood? mood = null, Outfit? outfit = null)
     {
         var worn = outfit ?? Outfit.Of(p);
         return Sprite(p.Species, PlynlingLife.Stage(p, now), mood ?? PlynlingLife.Mood(p, now),
-            p.FrozenAt is null && PlynlingLife.IsDirty(p, now), worn.Accessory?.Key, worn.AccessoryStyle);
+            p.FrozenAt is null && PlynlingLife.IsDirty(p, now), worn.Accessory?.Key, worn.AccessoryStyle, worn.Aura?.Key);
     }
 
     /// <summary>

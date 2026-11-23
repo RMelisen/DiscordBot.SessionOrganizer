@@ -18,7 +18,7 @@ def check(ok, what):
 
 
 check(sorted(k for keys in GROUPS.values() for k in keys) == sorted(ICONS), "GROUPS and ICONS disagree")
-check(all(k.startswith(("col.", "set.", "cos.theme.", "cos.title.", "cos.accessory.", "cos.grave.", "trait.",
+check(all(k.startswith(("col.", "set.", "cos.theme.", "cos.title.", "cos.accessory.", "cos.grave.", "cos.aura.", "trait.",
                          "badge."))
           for k in ICONS), "a key of no known kind")
 

@@ -28,6 +28,7 @@ public static class AccessoryStyles
         "cos.accessory.casquette" => new[] { Colour(("bleue", "Bleue"), ("rouge", "Rouge"), ("verte", "Verte")) },
         "cos.accessory.ballon" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("jaune", "Jaune")) },
         "cos.accessory.moufles" => new[] { Colour(("rouges", "Rouges"), ("bleues", "Bleues"), ("vertes", "Vertes")) },
+        "cos.accessory.bonnet" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("vert", "Vert")) },
         "cos.accessory.collier_coquillages" or "cos.accessory.medaillon" => new[] { Place },
         _ => Array.Empty<Choice>(),
     };

@@ -1,0 +1,231 @@
+"""The auras a Plynling wears: an animated effect around it (cosmetics, docs/agents/economy.md).
+
+Three effects, each a function of the frame over the shared 16-frame idle loop (motion.py), so
+frame 15 flows back into frame 0. They are drawn last — over the plain or dressed frame — and only
+on empty pixels (or the faint ground shadow), so a particle never covers the body, the face or an
+accessory: one passing behind the Plynling simply disappears. Where they sit is read from the
+body's own regions at rest, so one drawing fits the 7 species and their 7 babies and doesn't
+follow the breath. They are not dirtied with the body, and never drawn on the frozen, sick and
+angry faces (AURA_STATES).
+
+On an adult in a hat the frame is the taller hat canvas (accessories.HAT_CANVAS), the sprite at
+HAT_AT: positions are in the sprite's coordinates, offset by HAT_AT, so the aura surrounds the body.
+
+    python tools/plynling-art/auras.py <outdir>     # the preview sheets and animations
+"""
+
+import os
+import sys
+
+from PIL import Image, ImageDraw
+
+from accessories import HAT_AT, loop, tall, wear
+from common import LABEL, N, SPECIES
+from motion import FRAMES, FRAME_MS
+
+# The card faces an aura is drawn on. Must match AuraMoods in PlynlingArt.cs (checks section 64).
+AURA_STATES = ["happy", "content", "sad", "hungry", "starving", "sleeping"]
+
+SHADOW_ALPHA = 90          # under this a pixel is empty or the ground shadow: a particle may cover it
+
+
+def _bounds(body):
+    """The body's box at rest (its regions, plus the one-pixel outline)."""
+    r = body.rest.r
+    xs = [x for y in range(N) for x in range(N) if r[y][x]]
+    ys = [y for y in range(N) for x in range(N) if r[y][x]]
+    return min(xs) - 1, min(ys) - 1, max(xs) + 1, max(ys) + 1
+
+
+class _Spray:
+    """Puts particle pixels onto `out` in the sprite's coordinates, only where `under` (the frame
+    before the aura) is empty."""
+
+    def __init__(self, out, under, ox, oy):
+        self.out, self.under, self.ox, self.oy = out, under, ox, oy
+        # the whole canvas, in sprite coordinates
+        self.x_min, self.y_min = -ox, -oy
+        self.x_max, self.y_max = out.width - 1 - ox, out.height - 1 - oy
+
+    def clamp(self, x, y, margin=1):
+        return (min(max(x, self.x_min + margin), self.x_max - margin),
+                min(max(y, self.y_min + margin), self.y_max - margin))
+
+    def put(self, x, y, c, a=255):
+        X, Y = x + self.ox, y + self.oy
+        if 0 <= X < self.out.width and 0 <= Y < self.out.height and self.under.getpixel((X, Y))[3] < SHADOW_ALPHA:
+            self.out.putpixel((X, Y), c + (a,))
+
+
+# ---- Scintillements: twinkling stars, the look the rare species wore until 8.5.1 ------------
+
+STAR_CORE, STAR, STAR_DIM = (255, 255, 240), (255, 236, 150), (255, 250, 205)
+
+
+def scintillements(spray, box, f):
+    x0, y0, x1, y1 = box
+    h = y1 - y0
+    # (site, phase): six places around the body, two or three lit on any frame, frame 0 included
+    sites = [((x0 - 2, y0 + 2), 2), ((x1 + 2, y0 + h // 4), 7), ((x1 - 1, y0 - 2), 12),
+             ((x0 - 1, y0 + h // 2), 10), ((x1 + 1, y0 + h // 2 + 3), 1), ((x0 + 1, y0 - 2), 5)]
+    for (sx, sy), phase in sites:
+        x, y = spray.clamp(sx, sy, margin=2)
+        t = (f + phase) % FRAMES
+        if t in (0, 5):                   # rising and falling: one dim dot
+            spray.put(x, y, STAR_DIM, 170)
+        elif t in (1, 4):                 # a small plus
+            spray.put(x, y, STAR_CORE)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                spray.put(x + dx, y + dy, STAR, 200)
+        elif t in (2, 3):                 # full twinkle: a longer cross
+            spray.put(x, y, STAR_CORE)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                spray.put(x + dx, y + dy, STAR, 230)
+            for dx, dy in ((2, 0), (-2, 0), (0, 2), (0, -2)):
+                spray.put(x + dx, y + dy, STAR_DIM, 130)
+
+
+# ---- Bulles: soap bubbles rising straight up, then popping -----------------------------------
+
+BUBBLE_RIM, BUBBLE_SHINE, BUBBLE_IN = (176, 222, 255), (255, 255, 255), (214, 240, 255)
+BIG_BUBBLE = [".oo.", "os.o", "o..o", ".oo."]
+SMALL_BUBBLE = [".o.", "o.o", ".o."]
+
+
+def _bubble(spray, x, y, shape):
+    for j, row in enumerate(shape):
+        for i, ch in enumerate(row):
+            if ch == "o":
+                spray.put(x + i, y + j, BUBBLE_RIM, 210)
+            elif ch == "s":
+                spray.put(x + i, y + j, BUBBLE_SHINE, 240)
+            elif ch == "." and 0 < i < len(row) - 1 and 0 < j < len(shape) - 1:
+                spray.put(x + i, y + j, BUBBLE_IN, 70)
+
+
+def bulles(spray, box, f):
+    x0, y0, x1, y1 = box
+    # (start column, phase, shape): each bubble lives one loop — 12 frames rising, a 2-frame pop.
+    # Two on the left: the mood marks (heart, Zzz, sweat) live on the right.
+    for sx, phase, shape in ((x0 - 4, 0, BIG_BUBBLE), (x0 - 2, 8, SMALL_BUBBLE), (x1 + 2, 4, BIG_BUBBLE)):
+        t = (f + phase) % FRAMES
+        x, start = spray.clamp(sx, y1 - 4, margin=0)
+        x = min(max(x, spray.x_min), spray.x_max - len(shape[0]) + 1)
+        if t < 12:
+            _bubble(spray, x, start - (t * 3) // 2, shape)
+        elif t < 14:                       # the pop: four droplets flying apart
+            cx, cy, d = x + len(shape[0]) // 2, start - 18 + 1, t - 11
+            for dx, dy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+                spray.put(cx + dx * d, cy + dy * d, BUBBLE_RIM, 200 - 60 * (d - 1))
+
+
+# ---- Pétales: petals drifting down, swaying a little -----------------------------------------
+
+PETAL_L, PETAL, PETAL_D = (255, 214, 228), (250, 160, 192), (214, 110, 150)
+SWAY = [0, 0, 1, 1, 1, 1, 0, 0, 0, 0, -1, -1, -1, -1, 0, 0]
+# a petal leaning right and its mirror, as it rocks (l light, p pink, d its dark tip)
+PETAL_RIGHT, PETAL_LEFT = ["lp.", ".pd"], [".pl", "dp."]
+PETAL_FLAT = ["lpd"]
+
+
+def petales(spray, box, f):
+    x0, y0, x1, y1 = box
+    top, fall = y0 - 2, (y1 - y0) + 2
+    # four petals, mostly at the sides (the adults' caps fill the top), a quarter-loop apart
+    for sx, phase in ((x0 - 3, 0), (x1 + 1, 4), (x0 - 1, 8), (x1 + 3, 12)):
+        t = (f + phase) % FRAMES
+        x, _ = spray.clamp(sx, top, margin=2)
+        y = top + (t * fall) // FRAMES
+        s = SWAY[t]
+        shape = PETAL_RIGHT if s > 0 else PETAL_LEFT if s < 0 else PETAL_FLAT
+        for j, row in enumerate(shape):
+            for i, ch in enumerate(row):
+                if ch != ".":
+                    spray.put(x + s + i - 1, y + j, {"l": PETAL_L, "p": PETAL, "d": PETAL_D}[ch], 235)
+
+
+# key (the cosmetic key without « cos.aura. ») -> drawing, in catalogue order
+AURAS = {"scintillements": scintillements, "bulles": bulles, "petales": petales}
+
+
+def surround(im, body, state, aura, frame, tall=False):
+    """A copy of the built (and maybe dressed) frame `im` with aura `aura` drawn for `frame`; `tall`
+    when `im` is the hat canvas, the sprite at HAT_AT. Faces outside AURA_STATES come back unchanged."""
+    out = im.copy()
+    if state not in AURA_STATES:
+        return out
+    ox, oy = HAT_AT if tall else (0, 0)
+    AURAS[aura](_Spray(out, im, ox, oy), _bounds(body), frame)
+    return out
+
+
+def aura_loop(state, sp, aura, stage="adult", dirty=False, acc=None, style=None):
+    """Every frame of the idle loop, dressed in `acc` (or not) and surrounded by `aura`."""
+    frames = []
+    for f, (im, body) in enumerate(loop(state, sp, FRAMES, stage, dirty)):
+        if acc:
+            im = wear(im, acc, body, state, style)
+        frames.append(surround(im, body, state, aura, f, tall=bool(acc) and tall(acc, stage)))
+    return frames
+
+
+# ---- previews -----------------------------------------------------------------------------
+
+BG = (47, 49, 54, 255)
+
+
+def _grid(cells, row_labels, col_labels, path, k=5, cell=40):
+    """A sheet of pictures, each bottom-centred in a `cell`-square box (so a 32 sprite and a 40 hat
+    canvas share the scale), scaled by k without smoothing."""
+    gap, top, left = 10, 26, 130
+    T = cell * k
+    out = Image.new("RGBA", (left + len(col_labels) * (T + gap), top + len(row_labels) * (T + gap)), BG)
+    d = ImageDraw.Draw(out)
+    for j, lab in enumerate(col_labels):
+        d.text((left + j * (T + gap) + T // 2, top // 2), lab, fill=(220, 221, 222), anchor="mm", font=LABEL)
+    for i, lab in enumerate(row_labels):
+        d.text((left // 2, top + i * (T + gap) + T // 2), lab, fill=(220, 221, 222), anchor="mm", font=LABEL)
+        for j in range(len(col_labels)):
+            im = cells[i][j]
+            big = im.resize((im.width * k, im.height * k), Image.NEAREST)
+            out.alpha_composite(big, (left + j * (T + gap) + (T - big.width) // 2, top + i * (T + gap) + T - big.height))
+    out.save(path)
+    return path
+
+
+def _animated(frame_grids, path, k=6, cell=40):
+    """An animated WebP of a grid of loops (rows of [frames]), for seeing the motion."""
+    rows, cols = len(frame_grids), len(frame_grids[0])
+    T = cell * k
+    frames = []
+    for f in range(FRAMES):
+        out = Image.new("RGBA", (cols * T, rows * T), BG)
+        for i in range(rows):
+            for j in range(cols):
+                im = frame_grids[i][j][f]
+                big = im.resize((im.width * k, im.height * k), Image.NEAREST)
+                out.alpha_composite(big, (j * T + (T - big.width) // 2, i * T + T - big.height))
+        frames.append(out)
+    frames[0].save(path, save_all=True, append_images=frames[1:], duration=FRAME_MS, loop=0, lossless=True)
+    return path
+
+
+if __name__ == "__main__":
+    out = sys.argv[1] if len(sys.argv) > 1 else "."
+    os.makedirs(out, exist_ok=True)
+    shapes = [(sp, st) for sp in SPECIES for st in ("adult", "baby")]
+    names = [f"{sp}{' bébé' if st == 'baby' else ''}" for sp, st in shapes]
+    worn = [None, "couronne", "haut_de_forme", "echarpe", "ballon", "lunettes"]
+    for aura in AURAS:
+        # every shape in every aura face, frame 0, plain
+        cells = [[aura_loop(state, sp, aura, st)[0] for state in AURA_STATES] for sp, st in shapes]
+        print(_grid(cells, names, AURA_STATES, os.path.join(out, f"aura_{aura}_faces.png")))
+        # the content Amanite and Cèpe adults with accessories (the hats on the taller canvas)
+        cells = [[aura_loop("content", sp, aura, acc=acc)[0] for acc in worn] for sp in ("amanite", "cepe", "coprin")]
+        print(_grid(cells, ["amanite", "cepe", "coprin"], [a or "rien" for a in worn], os.path.join(out, f"aura_{aura}_accessories.png")))
+        # the motion: every shape, content, and three faces of the Amanite with a hat
+        loops = [[aura_loop("content", sp, aura, st) for sp, st in shapes[r::2]] for r in (0, 1)]
+        loops.append([aura_loop(s, "amanite", aura, acc="couronne") for s in ("happy", "sad", "sleeping")]
+                     + [aura_loop("content", "amanite", aura, dirty=True), aura_loop("hungry", "rose", aura, acc="echarpe"),
+                        aura_loop("starving", "dore", aura), aura_loop("happy", "russule", aura, "baby")])
+        print(_animated(loops, os.path.join(out, f"aura_{aura}_motion.webp")))

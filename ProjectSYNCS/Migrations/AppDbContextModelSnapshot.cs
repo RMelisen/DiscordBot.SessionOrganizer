@@ -1336,6 +1336,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("AgeBankedSeconds")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("AuraKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("DeathAnnounced")
                         .HasColumnType("INTEGER");
 

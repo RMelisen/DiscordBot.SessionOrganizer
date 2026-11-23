@@ -148,6 +148,8 @@ public class Plynling
     public string? TitleKey { get; set; }
     public string? AccessoryKey { get; set; }
     public string? GraveKey { get; set; }
+    // The aura, worn with the accessory (drawn around the Plynling on its picture).
+    public string? AuraKey { get; set; }
 
     // The worn accessory's style (AccessoryStyles: « bleue_haut »), null for its default. Reset
     // whenever the accessory changes (CosmeticSlots.Set); picked, free, in the Garde-robe.

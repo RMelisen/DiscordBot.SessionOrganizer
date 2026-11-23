@@ -46,6 +46,9 @@ public static class PlynlingCardUi
         // ♂/♀ at heading size, far too big beside the name.
         var title = worn.Title is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
         var accessory = worn.Accessory is { } a ? $"\nPorte {a.Emoji} {a.Name}" : "";
+        accessory += worn.Aura is { } au
+            ? $"\n{au.Emoji} {p.Gender.Agree("Entouré", "Entourée")} de {au.Name.ToLower(System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))}"
+            : "";
         return $"## {SafeName(p.Name)}{(epithet is null ? "" : ", " + LowerArticle(epithet))}\n" + title +
                $"{p.Gender.Symbol()} {info.Name}\n" +
                $"À <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +

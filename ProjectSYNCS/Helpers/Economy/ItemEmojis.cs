@@ -39,7 +39,7 @@ public static class ItemEmojis
     private static readonly (string Key, string Emoji)[] Prefixes =
     {
         ("col.", "c_"), ("set.", "s_"), ("cos.theme.", "th_"), ("cos.title.", "ti_"),
-        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("trait.", "tr2_"), ("badge.", "b_"),
+        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("cos.aura.", "au_"), ("trait.", "tr2_"), ("badge.", "b_"),
     };
 
     // Redrawing one picture gives it a revision instead: « _v2 » after its name, so the new picture

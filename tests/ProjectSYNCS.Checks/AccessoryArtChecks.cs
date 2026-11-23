@@ -81,7 +81,8 @@ public static class AccessoryArtChecks
     {
         string head = "plynling_amanite_content_with_", tail = $"_v{PlynlingArt.Version}.webp";
         var drawn = Directory.Exists(assets)
-            ? Directory.GetFiles(assets, head + "*" + tail).Select(f => Path.GetFileName(f)[head.Length..^tail.Length]).ToHashSet()
+            ? Directory.GetFiles(assets, head + "*" + tail).Select(f => Path.GetFileName(f)[head.Length..^tail.Length])
+                .Where(look => !look.Contains("_aura_", StringComparison.Ordinal)).ToHashSet()     // the auras: section 64
             : new HashSet<string>();
         var bot = Accessories().SelectMany(a => StylesOf(a.Key).Select(s => a.Key["cos.accessory.".Length..] + (s is null ? "" : "_" + s))).ToHashSet();
         Expect(drawn.SetEquals(bot),
@@ -152,10 +153,11 @@ public static class AccessoryArtChecks
         db.InventoryItems.Add(new InventoryItem { GuildId = 1, UserId = 8, Key = "cos.accessory.lunettes", Quantity = 1, DiscoveredAt = at });
         // given one, never had a wallet
         db.InventoryItems.Add(new InventoryItem { GuildId = 1, UserId = 9, Key = "cos.accessory.casque_audio", Quantity = 1, DiscoveredAt = at });
-        db.Plynlings.Add(new Plynling { GuildId = 1, OwnerId = 7, Name = "Pépin", AdoptedAt = at, NeedsAsOf = at, AccessoryKey = "cos.accessory.casque_audio", AccessoryStyle = "x" });
-        db.Plynlings.Add(new Plynling { GuildId = 1, OwnerId = 8, Name = "Mousse", AdoptedAt = at, NeedsAsOf = at, AccessoryKey = "cos.accessory.lunettes" });
         db.SaveChanges();
         db.ChangeTracker.Clear();
+        // The Plynlings go in by SQL: the EF model has every later column (AuraKey…), this schema doesn't.
+        InsertAtOldSchema(conn, "Plynlings", new() { ["GuildId"] = 1, ["OwnerId"] = 7, ["Name"] = "Pépin", ["AccessoryKey"] = "cos.accessory.casque_audio", ["AccessoryStyle"] = "x" });
+        InsertAtOldSchema(conn, "Plynlings", new() { ["GuildId"] = 1, ["OwnerId"] = 8, ["Name"] = "Mousse", ["AccessoryKey"] = "cos.accessory.lunettes" });
 
         migrator.Migrate();
         var wallets = db.PebbleWallets.ToDictionary(w => w.UserId, w => w.Balance);
@@ -166,9 +168,32 @@ public static class AccessoryArtChecks
         Expect(logged == 4 * 1200, $"retirement: the economy log records {logged} cailloux refunded, expected {4 * 1200}");
         var keys = db.InventoryItems.Select(i => i.Key).ToList();
         Expect(!keys.Any(Retired.Contains) && keys.Contains("cos.accessory.lunettes"), "retirement: inventory rows left " + string.Join(", ", keys));
-        var worn = db.Plynlings.ToDictionary(p => p.OwnerId, p => (p.AccessoryKey, p.AccessoryStyle));
+        var worn = db.Plynlings.Select(p => new { p.OwnerId, p.AccessoryKey, p.AccessoryStyle }).ToList()
+            .ToDictionary(p => p.OwnerId, p => (p.AccessoryKey, p.AccessoryStyle));
         Expect(worn[7] == (null, null), $"retirement: Pépin still wears {worn[7]}");
         Expect(worn[8].AccessoryKey == "cos.accessory.lunettes", "retirement: Mousse lost her lunettes");
+    }
+
+    // One row into a table at whatever schema the database is at: the given values, and a zero (or
+    // empty text) for every other NOT NULL column without a default.
+    private static void InsertAtOldSchema(Microsoft.Data.Sqlite.SqliteConnection conn, string table, Dictionary<string, object> values)
+    {
+        var columns = new List<(string Name, string Type)>();
+        using (var info = conn.CreateCommand())
+        {
+            info.CommandText = $"PRAGMA table_info(\"{table}\")";
+            using var r = info.ExecuteReader();
+            while (r.Read())
+                if (r.GetInt32(5) == 0 && (values.ContainsKey(r.GetString(1)) || (r.GetInt32(3) == 1 && r.IsDBNull(4))))
+                    columns.Add((r.GetString(1), r.GetString(2)));
+        }
+        using var insert = conn.CreateCommand();
+        insert.CommandText = $"INSERT INTO \"{table}\" ({string.Join(", ", columns.Select(c => $"\"{c.Name}\""))}) " +
+                             $"VALUES ({string.Join(", ", columns.Select((_, i) => "$p" + i))})";
+        for (var i = 0; i < columns.Count; i++)
+            insert.Parameters.AddWithValue("$p" + i, values.TryGetValue(columns[i].Name, out var v) ? v
+                : columns[i].Type.Equals("TEXT", StringComparison.OrdinalIgnoreCase) ? "" : 0);
+        insert.ExecuteNonQuery();
     }
 
     private static void StyleResets()

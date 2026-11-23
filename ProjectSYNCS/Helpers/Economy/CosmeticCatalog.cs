@@ -3,8 +3,10 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Helpers;
 
-// The four things a Plynling can wear, one of each.
-public enum CosmeticSlot { Theme, Title, Accessory, Grave }
+// The five things a Plynling can wear, one of each. Append-only: the weekly shop seeds its draw on
+// the slot's number, so a slot inserted mid-list would reshuffle every week's selection. The order
+// players see is CosmeticCatalog.SlotOrder.
+public enum CosmeticSlot { Theme, Title, Accessory, Grave, Aura }
 
 // Where a cosmetic comes from: always in the shop, in the weekly rotation, in its season, or
 // made from collectibles.
@@ -29,7 +31,7 @@ public sealed record CosmeticInfo(
     public string? GraveRight => GraveLeft;
 }
 
-// Reads and writes the slot columns on Plynling by slot, so nothing switches on the four
+// Reads and writes the slot columns on Plynling by slot, so nothing switches on the five
 // property names but here.
 public static class CosmeticSlots
 {
@@ -38,6 +40,7 @@ public static class CosmeticSlots
         CosmeticSlot.Theme => p.ThemeKey,
         CosmeticSlot.Title => p.TitleKey,
         CosmeticSlot.Accessory => p.AccessoryKey,
+        CosmeticSlot.Aura => p.AuraKey,
         _ => p.GraveKey,
     };
 
@@ -51,6 +54,7 @@ public static class CosmeticSlots
                 if (p.AccessoryKey != key) p.AccessoryStyle = null;     // a style belongs to one accessory
                 p.AccessoryKey = key;
                 break;
+            case CosmeticSlot.Aura: p.AuraKey = key; break;
             default: p.GraveKey = key; break;
         }
     }
@@ -69,6 +73,13 @@ public static class CosmeticCatalog
     // How many rotating items per slot the shop shows each week.
     public const int RotatingPerSlot = 2;
 
+    // The order players see the slots in (the Garde-robe, the inventory): the aura beside the
+    // accessory it is worn with, the cadre last since it only shows on a grave.
+    public static readonly IReadOnlyList<CosmeticSlot> SlotOrder = new[]
+    {
+        CosmeticSlot.Theme, CosmeticSlot.Title, CosmeticSlot.Accessory, CosmeticSlot.Aura, CosmeticSlot.Grave,
+    };
+
     public static readonly IReadOnlyList<CosmeticInfo> All = Build();
 
     private static readonly Dictionary<string, CosmeticInfo> ByKeyMap = All.ToDictionary(c => c.Key);
@@ -82,6 +93,7 @@ public static class CosmeticCatalog
         CosmeticSlot.Theme => "Thème",
         CosmeticSlot.Title => "Titre",
         CosmeticSlot.Accessory => "Accessoire",
+        CosmeticSlot.Aura => "Aura",
         _ => "Cadre de tombe",
     };
 
@@ -94,6 +106,7 @@ public static class CosmeticCatalog
         CosmeticSlot.Theme => $"Thème {c.Name}",
         CosmeticSlot.Title => $"Titre « {c.Name} / {c.NameF} »",
         CosmeticSlot.Accessory => Capitalize(WithoutArticle(c.Name)),
+        CosmeticSlot.Aura => $"Aura {c.Name}",
         _ => $"Cadre {c.Name}",
     };
 
@@ -106,6 +119,7 @@ public static class CosmeticCatalog
         CosmeticSlot.Theme => "thèmes",
         CosmeticSlot.Title => "titres",
         CosmeticSlot.Accessory => "accessoires",
+        CosmeticSlot.Aura => "auras",
         _ => "cadres",
     };
 
@@ -193,8 +207,8 @@ public static class CosmeticCatalog
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Theme, source, rarity), recipe ?? none, trophy));
 
         void Title(string key, string m, string f, CosmeticSource source, ItemRarity rarity = C, long craftPrice = 0, (string, int)[]? recipe = null,
-            bool trophy = false) =>
-            list.Add(new CosmeticInfo($"cos.title.{key}", CosmeticSlot.Title, source, rarity, Season.None, "🏷️", m, f,
+            bool trophy = false, Season season = Season.None) =>
+            list.Add(new CosmeticInfo($"cos.title.{key}", CosmeticSlot.Title, source, rarity, season, "🏷️", m, f,
                 null,
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Title, source, rarity), recipe ?? none, trophy));
 
@@ -205,10 +219,17 @@ public static class CosmeticCatalog
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Accessory, source, rarity), recipe ?? none, trophy));
 
         void Grave(string key, string emoji, string name, CosmeticSource source, ItemRarity rarity = C, long craftPrice = 0, (string, int)[]? recipe = null,
-            bool trophy = false) =>
-            list.Add(new CosmeticInfo($"cos.grave.{key}", CosmeticSlot.Grave, source, rarity, Season.None, emoji, name, null,
+            bool trophy = false, Season season = Season.None) =>
+            list.Add(new CosmeticInfo($"cos.grave.{key}", CosmeticSlot.Grave, source, rarity, season, emoji, name, null,
                 null,
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Grave, source, rarity), recipe ?? none, trophy));
+
+        // An aura's Name is bare and plural (« Bulles »): the card says « Entouré de bulles ».
+        void Aura(string key, string emoji, string name, CosmeticSource source, ItemRarity rarity = C, long craftPrice = 0,
+            (string, int)[]? recipe = null, bool trophy = false) =>
+            list.Add(new CosmeticInfo($"cos.aura.{key}", CosmeticSlot.Aura, source, rarity, Season.None, emoji, name, null,
+                null,
+                source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Aura, source, rarity), recipe ?? none, trophy));
 
         // « Any commons of a set » ingredient (Recipes): any common mushroom, pebble…
         static (string, int) Any(string set, int count) => (Recipes.AnyCommon(set), count);
@@ -264,6 +285,27 @@ public static class CosmeticCatalog
             recipe: new[] { Any("nature", 5) });
         Title("brocanteur", "Le Brocanteur", "La Brocanteuse", Cr, craftPrice: 100,
             recipe: new[] { ("col.bouton", 2), ("col.bille", 2), ("col.cle_rouillee", 1) });
+        Title("grognon", "Le Grognon", "La Grognonne", Rot, C);
+        Title("calin", "Le Câlin", "La Câline", Rot, C);
+        Title("distrait", "Le Distrait", "La Distraite", Rot, C);
+        Title("bavard", "Le Bavard", "La Bavarde", Rot, U);
+        Title("timide", "Le Timide", "La Timide", Rot, U);
+        Title("fripon", "Le Fripon", "La Friponne", Rot, R);
+        Title("immortel", "L'Immortel", "L'Immortelle", Rot, L);
+        Title("frileux", "Le Frileux", "La Frileuse", S, season: Season.Winter);
+        Title("bronze", "Le Bronzé", "La Bronzée", S, season: Season.Summer);
+        // One Ouvrage per place of Humeval it is named after.
+        Title("sommeillant", "Le Sommeillant", "La Sommeillante", Cr, craftPrice: 100,
+            recipe: new[] { ("col.silex", 2), ("col.galet", 2), ("col.agate", 1) });
+        Title("mouille", "Le Mouillé", "La Mouillée", Cr, craftPrice: 100,
+            recipe: new[] { ("col.mouche", 2), ("col.moustique", 2), ("col.chenille", 1) });
+        // Coins thrown down the well.
+        Title("puisatier", "Le Puisatier", "La Puisatière", Cr, craftPrice: 100,
+            recipe: new[] { ("col.cle_rouillee", 2), ("col.bille", 2), ("col.piece_ancienne", 1) });
+        Title("mycologue", "Le Mycologue", "La Mycologue", Cr, craftPrice: 300, trophy: true,
+            recipe: new[] { ("col.lactaire_indigo", 1), ("col.pholiote_doree", 1), ("col.polypore_soufre", 1) });
+        Title("entomologiste", "L'Entomologiste", "L'Entomologiste", Cr, craftPrice: 300, trophy: true,
+            recipe: new[] { ("col.grillon", 2), ("col.abeille", 1), ("col.coccinelle", 2) });
 
         // Accessoires
         Accessory("noeud", "🎀", "un nœud", B);
@@ -290,6 +332,13 @@ public static class CosmeticCatalog
             recipe: new[] { ("col.fourmi", 2), ("col.mouche", 1), ("col.coccinelle", 1) });
         Accessory("canne_peche", "🎣", "une petite canne à pêche", Cr, craftPrice: 100,
             recipe: new[] { ("col.silex", 2), ("col.caillou_plat", 2), ("col.galet", 1) });
+        Accessory("chapeau_paille", "👒", "un chapeau de paille", S, season: Season.Summer);
+        Accessory("bonnet", "🧶", "un bonnet", S, season: Season.Winter);
+        // Autumn had no accessory: lanterns for the long evenings.
+        Accessory("lanterne", "🪔", "une petite lanterne", S, season: Season.Autumn);
+        // Spring only: primevères grow at le Communal in spring, among the nature commons found there all year.
+        Accessory("couronne_fleurs", "💐", "une couronne de fleurs", Cr, craftPrice: 100,
+            recipe: new[] { ("col.primevere", 1), Any("nature", 3) });
 
         // Cadres de tombe
         Grave("bougies", "🕯️", "Bougies", B);
@@ -302,7 +351,8 @@ public static class CosmeticCatalog
         Grave("papillons", "🦋", "Papillons", Rot, U);
         Grave("clair_de_lune", "🌙", "Clair de lune", Rot, R);
         Grave("lanternes", "🏮", "Lanternes", Rot, R);
-        Grave("aura_doree", "✨", "Aura dorée", Rot, L);
+        // Named « Aura dorée » until 8.6.0, renamed so it doesn't read as one of the auras; the key stays.
+        Grave("aura_doree", "✨", "Halo doré", Rot, L);
         Grave("cristaux", "💎", "Cristaux", Cr, craftPrice: 200, trophy: true,
             recipe: new[] { ("col.cristal_givre", 2), ("col.flocon", 3) });
         Grave("cercle_fees", "🍄", "Cercle de fées", Cr, craftPrice: 300, trophy: true,
@@ -311,6 +361,28 @@ public static class CosmeticCatalog
             recipe: new[] { ("col.moustique", 2), ("col.fourmi", 1), ("col.chenille", 1) });
         Grave("glands", "🌰", "Glands", Cr, craftPrice: 100,
             recipe: new[] { Any("nature", 4), ("col.pomme_pin", 1) });
+        Grave("plumes", "🪶", "Plumes", Rot, C);
+        Grave("nuages", "☁️", "Nuages", Rot, C);
+        Grave("coquillages", "🐚", "Coquillages", Rot, C);
+        Grave("bulles_savon", "🫧", "Bulles de savon", Rot, U);
+        Grave("coeurs", "💕", "Cœurs", Rot, U);
+        Grave("notes_musique", "🎶", "Notes de musique", Rot, R);
+        Grave("citrouilles", "🎃", "Citrouilles", S, season: Season.Autumn);
+        Grave("bonhomme_neige", "⛄", "Bonhomme de neige", S, season: Season.Winter);
+        // Moss on the river stones; reeds of the marsh.
+        Grave("mousse", "🌿", "Mousse", Cr, craftPrice: 100,
+            recipe: new[] { Any("cailloux", 6) });
+        Grave("roseaux", "🌾", "Roseaux", Cr, craftPrice: 100,
+            recipe: new[] { Any("insectes", 6) });
+
+        // Auras — drawn around the Plynling, worn with any accessory (tools/plynling-art/auras.py).
+        // Scintillements bring back the look the rarer species wore until 8.5.1, for everyone.
+        Aura("scintillements", "✨", "Scintillements", Rot, R);
+        Aura("bulles", "🫧", "Bulles", Rot, U);
+        // Spring only: both flowers are found at le Communal in spring, and the crafting check measures
+        // a recipe in one season (CraftingChecks.ExpectedForages).
+        Aura("petales", "🌸", "Pétales", Cr, craftPrice: 300, trophy: true,
+            recipe: new[] { ("col.primevere", 8), ("col.cerise", 2) });
 
         return list;
     }

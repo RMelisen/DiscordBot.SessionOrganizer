@@ -13,15 +13,24 @@ Every card face (not angry, a visit face) is also exported with each accessory l
 wear (accessories.py): « _with_<accessory>[_<style>] » after the face and its « _dirty ». New
 filenames, so they add to the folder without touching a single existing file. Must match
 PlynlingArt.Sprite and AccessoryStyles in the bot (checks section 62 reads this folder).
+
+The aura faces (auras.AURA_STATES), plain and in every accessory look, are exported once more per
+aura (auras.py): « _aura_<aura> » last. 18 648 files, also new names (checks section 64).
+
+    python export.py          # everything, after deleting the old files
+    python export.py auras    # only the aura files, nothing deleted
+    python export.py accessories bonnet lanterne   # only these accessories' files, with their auras
 """
 import os
+import sys
 
 from PIL import Image
 
 from common import SPECIES
 from memorials import memorial
 from motion import FRAMES, FRAME_MS
-from accessories import looks, loop, wear
+from accessories import looks, loop, tall, wear
+from auras import AURA_STATES, AURAS, surround
 from sprites import build
 
 ART_VERSION = 5
@@ -114,14 +123,15 @@ def main():
         save(Image.open(os.path.join(HERE, "source", f"food_{food}.png")).convert("RGBA"), f"food_{food}")
         count += 1
     count += export_accessories()
+    count += export_auras()
     print(f"{count} files written to {OUT}")
 
 
-def export_accessories():
+def export_accessories(only=None):
     """Every card face of every shape, in every accessory look: the loop is measured once per
-    face, then dressed in each look."""
+    face, then dressed in each look. `only`: just these accessories' looks."""
     count = 0
-    every = looks()
+    every = [(acc, style) for acc, style in looks() if only is None or acc in only]
     for sp in SPECIES:
         for stage in (["adult", "baby"] if sp in STAGED else ["adult"]):
             for state in STATES:
@@ -137,5 +147,39 @@ def export_accessories():
     return count
 
 
+def export_auras(only=None):
+    """Every aura face of every shape, clean and dirty, plain and in every accessory look, in each
+    aura: the loop is measured once per face, dressed once per look, then surrounded by each aura.
+    `only`: just these accessories' looks (and not the plain one)."""
+    count = 0
+    every = [(None, "")] + looks() if only is None else [(acc, style) for acc, style in looks() if acc in only]
+    for sp in SPECIES:
+        for stage in (["adult", "baby"] if sp in STAGED else ["adult"]):
+            for state in AURA_STATES:
+                for dirty in ([False, True] if state in DIRTY_STATES else [False]):
+                    frames = loop(state, sp, FRAMES, stage, dirty)
+                    base = f"plynling_{sp}{'_baby' if stage == 'baby' else ''}_{state}{'_dirty' if dirty else ''}"
+                    for acc, style in every:
+                        dressed = [(wear(im, acc, body, state, style or None) if acc else im, body) for im, body in frames]
+                        on_hat = bool(acc) and tall(acc, stage)
+                        look = f"_with_{acc}{f'_{style}' if style else ''}" if acc else ""
+                        for aura in AURAS:
+                            save_loop([surround(im, body, state, aura, f, tall=on_hat) for f, (im, body) in enumerate(dressed)],
+                                      f"{base}{look}_aura_{aura}")
+                            count += 1
+    return count
+
+
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["auras"]:
+        os.makedirs(OUT, exist_ok=True)
+        print(f"{export_auras()} files written to {OUT}")
+    elif sys.argv[1:2] == ["accessories"] and len(sys.argv) > 2:
+        new = set(sys.argv[2:])
+        unknown = new - {acc for acc, _ in looks()}
+        if unknown:
+            sys.exit(f"unknown accessories: {sorted(unknown)}")
+        os.makedirs(OUT, exist_ok=True)
+        print(f"{export_accessories(new) + export_auras(new)} files written to {OUT}")
+    else:
+        main()

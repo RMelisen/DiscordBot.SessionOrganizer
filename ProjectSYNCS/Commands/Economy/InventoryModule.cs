@@ -388,7 +388,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         {
             // What is held, one field per slot.
             var any = false;
-            foreach (var slot in Enum.GetValues<CosmeticSlot>())
+            foreach (var slot in CosmeticCatalog.SlotOrder)
             {
                 var owned = CosmeticCatalog.InSlot(slot).Where(c => Count(c.Key) > 0).Select(c => $"{c.Emoji} {CosmeticCatalog.ShortName(c)}").ToList();
                 if (owned.Count == 0) continue;

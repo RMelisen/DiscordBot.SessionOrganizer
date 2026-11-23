@@ -57,19 +57,28 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   gallery and Discord stretches each to half the message width, which can't be shrunk from the
   bot — so the sprite is shrunk inside its picture. Change `VISIT_CANVAS` and re-export to make
   them smaller or larger. Added without a version bump, like the angry faces.
-- `accessories.py` — the 17 cosmetic accessories, drawn on the Plynling's own picture. Each has a
-  family that says where it sits — a hat on the cap (couronne, haut-de-forme, casquette), on the cap
+- `accessories.py` — the 21 cosmetic accessories, drawn on the Plynling's own picture. Each has a
+  family that says where it sits — a hat on the cap (couronne, haut-de-forme, casquette, chapeau de paille, bonnet, couronne de fleurs), on the cap
   (nœud, fleur), on the eyes, at the neck (écharpe, collier, médaillon), on the hands, or held in the
   left hand (the heart, the sweat and the « z » are on the right) — and is placed from the drawing
   itself on every frame (the cap's real top, the first stem row under it, the arms), so one drawing
   fits every species and stage and follows the breath and the hop. Some come in **styles** the player
-  picks: colours (nœud, fleur, écharpe, casquette, ballon, moufles) and a place at the neck (haut,
+  picks: colours (nœud, fleur, écharpe, casquette, ballon, moufles, bonnet) and a place at the neck (haut,
   bas); the first of each is the default, and the names must match `AccessoryStyles` in the bot. An
   adult's cap reaches the top of its picture, so an adult in a hat is drawn on a 40 px canvas
   (`HAT_CANVAS`, the Plynling at 80 %); `HAT_SETTLE` sinks the hat a row into some caps. The accessory
   stays clean on a muddy Plynling and takes the ice tint on a frozen one. Every placement and colour
   was approved by the owner species by species — redraw through the preview sheets
   (`python accessories.py <outdir>`) and show them before exporting.
+- `auras.py` — the 3 cosmetic auras, animated around the Plynling over the 16-frame loop:
+  Scintillements (twinkling stars, the look the rarer species lost in v5), Bulles (bubbles rising and
+  popping, two of three on the left, away from the mood marks) and Pétales (petals falling along the
+  sides). Drawn last, over the plain or dressed frame, **only on empty pixels** (or the faint ground
+  shadow), so a particle never covers the body, the face or an accessory; placed from the body's box at
+  rest, so it fits every shape and doesn't breathe with it; around the body on the hat canvas too. Only on
+  `AURA_STATES` (happy, content, sad, hungry, starving, sleeping) — must match `AuraMoods` in the bot.
+  Approved by the owner on the preview sheets (`python auras.py <outdir>`: faces, accessories, and an
+  animated WebP per aura) — redraw through them.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
 - `export.py` — renders all 319 files into `assets/plynlings/` (256×256, and 320×320 for the 56 `_visit` ones): the 224 living sprites as
@@ -77,10 +86,17 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
   one longer frame, so a file holds fewer than 16 frames while still lasting 2 s. Then every card
   face (not angry) of every shape in every accessory look,
-  `plynling_<species>[_baby]_<face>[_dirty]_with_<accessory>[_<style>]_v5.webp` (7 560 files; the
-  ones in a hat 320×320 on an adult). Each loop is measured once and dressed in every look.
+  `plynling_<species>[_baby]_<face>[_dirty]_with_<accessory>[_<style>]_v5.webp` (8 820 files; the
+  ones in a hat 320×320 on an adult). Each loop is measured once and dressed in every look. Then every
+  aura face, plain and in every accessory look, in each aura,
+  `plynling_<species>[_baby]_<face>[_dirty][_with_<accessory>[_<style>]]_aura_<aura>_v5.webp` (21 672
+  files: 14 shapes × 12 faces × 43 looks × 3 auras). **Each new accessory look now costs 4 files per face
+  and shape, each new aura ~6 200.**
 
-Requires Python 3 and Pillow. Run from this folder: `python export.py`.
+Requires Python 3 and Pillow. Run from this folder: `python export.py` (everything, after deleting the
+old files), `python export.py auras` (only the aura files, nothing deleted), or
+`python export.py accessories <name>…` (only those accessories' looks, plain and in every aura: how a
+new accessory ships without re-rendering the rest).
 
 **Changing the art:** bump `ART_VERSION` in `export.py` **and** `PlynlingArt.Version` in the
 bot, re-export, commit, push. The bot links to GitHub raw URLs on `main`, and Discord caches

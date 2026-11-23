@@ -66,14 +66,21 @@ public static class CraftingChecks
 
     private static IEnumerable<CosmeticInfo> Crafted => CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted);
 
-    // Two tiers: 8 Ouvrages (2 per slot, each from one place, every place served, la Lisière's from
-    // any common mushrooms) and 10 trophies.
+    // Two tiers: 14 Ouvrages (each from one place, every place served, la Lisière's from any common
+    // mushrooms) and 13 trophies. The Aura slot has no Ouvrage: its three effects were fixed by
+    // design, and its one recipe is a trophy (Pétales).
+    private static readonly Dictionary<CosmeticSlot, int> OuvragesPerSlot = new()
+    {
+        [CosmeticSlot.Theme] = 2, [CosmeticSlot.Title] = 5, [CosmeticSlot.Accessory] = 3, [CosmeticSlot.Grave] = 4, [CosmeticSlot.Aura] = 0,
+    };
+
     private static void Catalog()
     {
         var ouvrages = Crafted.Where(c => !c.Trophy).ToList();
-        Expect(Crafted.Count() == 18 && ouvrages.Count == 8, $"{Crafted.Count()} recipes, {ouvrages.Count} Ouvrages; want 18 and 8");
+        Expect(Crafted.Count() == 27 && ouvrages.Count == 14, $"{Crafted.Count()} recipes, {ouvrages.Count} Ouvrages; want 27 and 14");
         foreach (var slot in Enum.GetValues<CosmeticSlot>())
-            Expect(ouvrages.Count(c => c.Slot == slot) == 2, $"{slot}: {ouvrages.Count(c => c.Slot == slot)} Ouvrages, want 2");
+            Expect(ouvrages.Count(c => c.Slot == slot) == OuvragesPerSlot[slot],
+                $"{slot}: {ouvrages.Count(c => c.Slot == slot)} Ouvrages, want {OuvragesPerSlot[slot]}");
 
         foreach (var c in Crafted)
         {

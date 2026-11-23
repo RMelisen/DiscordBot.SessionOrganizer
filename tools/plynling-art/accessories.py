@@ -44,6 +44,7 @@ TULIP_L, TULIP, TULIP_D, LEAF, LEAF_D = (255, 140, 160), (232, 64, 98), (168, 36
 CREAM_L, CREAM, CREAM_D, CONE, CONE_D = (255, 222, 232), (255, 168, 198), (222, 112, 156), (230, 178, 104), (182, 124, 62)
 QUILL = (244, 234, 204)
 GREEN_L, GREEN_DD = (168, 222, 136), (40, 92, 48)
+STRAW_L, STRAW, STRAW_D = (252, 230, 160), (232, 194, 108), (182, 136, 66)
 
 # One character per colour in the drawings below; "." is empty.
 INKS = {
@@ -57,6 +58,7 @@ INKS = {
     "u": TULIP_L, "U": TULIP, "V": TULIP_D, "f": LEAF, "F": LEAF_D,
     "m": CREAM_L, "M": CREAM, "N": CREAM_D, "K": CONE, "Q": CONE_D, "Z": QUILL,
     "1": MITT, "2": MITT_D, "3": CUFF, "6": GREEN_L, "7": GREEN_DD,
+    "4": STRAW_L, "5": STRAW, "8": STRAW_D,
 }
 
 
@@ -193,6 +195,39 @@ MOUFLE = art(          # the left hand; the cuff column (2) sits on the arm itse
     "113",
     "223",
 )
+CHAPEAU_PAILLE = art(  # a straw hat with a red ribbon and a wide brim
+    "....4455....",
+    "...445558...",
+    "...rrrrrR...",
+    "445555555558",
+    ".8888888888.",
+)
+BONNET = art(          # knitted, the moufles' colours (it swaps the same 1/2), a cream cuff and pompom
+    "....33....",
+    "...1111...",
+    "..111112..",
+    ".11111122.",
+    "3333333333",
+    "3s3s3s3s3s",
+)
+COURONNE_FLEURS = art(  # three flowers on a ring of leaves: white, pink, yellow
+    ".w...P...y.",
+    "wyw.PyP.yEy",
+    "fwfFfPfFfyf",
+    ".FfFfFfFfF.",
+)
+LANTERNE = art(        # a glowing paper lantern hanging from a little stick
+    "..ooooo...",
+    "..k....oo.",
+    "..k......o",
+    ".DDD......",
+    "EyllE.....",
+    "EyllE.....",
+    "EyyyE.....",
+    ".DDD......",
+    "..k.......",
+)
+LANTERNE_GRIP = (9, 2)
 
 
 # ---- the body, measured -----------------------------------------------------------------
@@ -398,6 +433,7 @@ NECK_PLACES = [("haut", "haut"), ("bas", "bas")]
 CASQUETTE_COLOURS = {"bleue": {}, "rouge": {"j": "e", "B": "r", "J": "R", "v": "R"},
                      "verte": {"j": "6", "B": "f", "J": "F", "v": "7"}}
 BALLON_COLOURS = {"rouge": {}, "bleu": {"a": "j", "A": "B", "z": "J"}, "jaune": {"a": "l", "A": "g", "z": "d"}}
+BONNET_COLOURS = {"rouge": {}, "bleu": {"1": "B", "2": "J"}, "vert": {"1": "f", "2": "F"}}
 
 # key (the cosmetic key without « cos.accessory. ») -> family and styles; the first style is the
 # default, the one shown until the player picks another.
@@ -423,6 +459,10 @@ ACCESSORIES = {
     "medaillon": dict(family="neck", styles=styles(lambda p: at_neck(medaillon, p), NECK_PLACES)),
     "bocal": dict(family="held", styles={"": held(BOCAL, BOCAL_GRIP)}),
     "canne_peche": dict(family="held", styles={"": held(CANNE)}),
+    "chapeau_paille": dict(family="hat", styles={"": hat(CHAPEAU_PAILLE)}),
+    "bonnet": dict(family="hat", styles=styles(lambda swap: hat(recolour(BONNET, swap)), BONNET_COLOURS.items())),
+    "lanterne": dict(family="held", styles={"": held(LANTERNE, LANTERNE_GRIP)}),
+    "couronne_fleurs": dict(family="hat", styles={"": hat(COURONNE_FLEURS)}),
 }
 
 

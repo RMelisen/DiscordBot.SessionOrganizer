@@ -5600,5 +5600,8 @@ AccessoryArtChecks.Run(Fail);
 // 63. The pictures on an event's story (faces, face tags, the stage then): EventFaceChecks.cs.
 EventFaceChecks.Run(Fail);
 
+// 64. Auras, the fifth slot: catalogue, worn with an accessory, the picture, the screens: AuraChecks.cs.
+await AuraChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

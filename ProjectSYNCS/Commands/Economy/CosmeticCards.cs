@@ -28,13 +28,21 @@ public sealed record CosmeticScreenData(
 // Static and Context-free, so the checks measure it.
 //
 // One verb per control, so no id repeats on a message: cosm:tab:{tab}, cosm:slot:{slot},
-// cosm:pick:{tab}:{week} (the one select; « Aucun » is none:{slot}), cosm:buy:{week}:{key},
+// cosm:pick:{tab}:{week} (the shop's select; the wardrobe and the recipes number theirs instead, as a
+// slot or the recipes need more than one; « Aucun » is none:{slot}), cosm:buy:{week}:{key},
 // cosm:buyw:{week}:{key}, cosm:make:{key}, cosm:makew:{key}, cosm:wear:{tab}:{key}, cosm:back:{tab},
 // cosm:style:{choice}:{key} (the worn accessory's colour or position).
 // The prefix is new (the old screens used cos:), so no handler here answers an old screen's select.
 public static class CosmeticCards
 {
     public const string NonePrefix = "none:";
+
+    // Discord's cap on a select's options.
+    private const int MaxOptions = 25;
+
+    // The notice when « Aucun » takes a slot off, agreeing with the slot's label (« Aura » is feminine).
+    public static string TakenOff(CosmeticSlot slot) =>
+        $"{CosmeticCatalog.SlotLabel(slot)} {(slot == CosmeticSlot.Aura ? "retirée" : "retiré")}.";
 
     public static async Task<CosmeticScreenData> LoadAsync(PlynlingService plynlings, CosmeticService cosmetics, ulong guildId, ulong userId,
         DateTimeOffset now)
@@ -95,6 +103,11 @@ public static class CosmeticCards
         if (picked is not null && worn.In(picked.Slot)?.Key != picked.Key)
             container.AddComponent(new TextDisplayBuilder(
                 $"-# Essai : {picked.Emoji} {Shown(picked, p)} — {(data.Owns(picked) ? "à toi, pas encore porté" : "pas encore à toi")}"));
+        // An aura isn't drawn on the sick and frozen faces (PlynlingArt.AuraMoods): say so, or the
+        // try-on would look like nothing changed.
+        if (tried.Aura is not null && PlynlingLife.Mood(p, now) is PlynlingMood.Sick or PlynlingMood.Frozen)
+            container.AddComponent(new TextDisplayBuilder(
+                $"-# Son aura ne se voit pas tant qu'{p.Gender.Agree("il est malade ou gelé", "elle est malade ou gelée")}."));
         // A cadre only shows on a grave: its preview is the grave's first line, as it would read.
         if (picked?.Slot == CosmeticSlot.Grave || (picked is null && view.Tab == CosmeticTab.Wardrobe && view.Slot == CosmeticSlot.Grave))
             container.AddComponent(new TextDisplayBuilder($"-# Sa tombe, le jour venu :\n{PlynlingCardUi.GraveFirstLine(p, tried.Grave)}"));
@@ -107,7 +120,7 @@ public static class CosmeticCards
     {
         if (data.Plynling is not { } p)
         {
-            var lines = Enum.GetValues<CosmeticSlot>()
+            var lines = CosmeticCatalog.SlotOrder
                 .Select(s => (Slot: s, Owned: CosmeticCatalog.InSlot(s).Where(data.Owns).Select(c => $"{c.Emoji} {CosmeticCatalog.ShortName(c)}").ToList()))
                 .Where(x => x.Owned.Count > 0)
                 .Select(x => $"**{CosmeticCatalog.SlotLabel(x.Slot)}** : {string.Join(" · ", x.Owned)}")
@@ -119,7 +132,7 @@ public static class CosmeticCards
         }
 
         var slots = new ActionRowBuilder();
-        foreach (var s in Enum.GetValues<CosmeticSlot>())
+        foreach (var s in CosmeticCatalog.SlotOrder)        // five buttons: a row's maximum
             slots.WithButton(CosmeticCatalog.SlotLabel(s), $"cosm:slot:{s}", s == slot ? ButtonStyle.Primary : ButtonStyle.Secondary);
         container.AddComponent(slots);
 
@@ -134,13 +147,16 @@ public static class CosmeticCards
 
         container.AddComponent(new TextDisplayBuilder(
             $"**{CosmeticCatalog.SlotLabel(slot)}** · {owned.Count} à toi. Choisis : c'est porté tout de suite."));
-        var menu = new SelectMenuBuilder()
-            .WithCustomId($"cosm:pick:{CosmeticTab.Wardrobe}:0")
-            .WithPlaceholder($"{CosmeticCatalog.SlotLabel(slot)}…")
-            .AddOption("Aucun", NonePrefix + slot, isDefault: worn is null);
-        foreach (var c in owned)
-            menu.AddOption(Shown(c, p), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key);
-        container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+        // « Aucun » then everything owned, 25 to a select (a slot can hold more than one select's worth:
+        // titles and cadres do). The last segment numbers the selects; the handler ignores it here.
+        var options = owned.Select(c => new SelectMenuOptionBuilder(Shown(c, p), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key))
+            .Prepend(new SelectMenuOptionBuilder("Aucun", NonePrefix + slot, isDefault: worn is null))
+            .Chunk(MaxOptions).ToList();
+        for (var i = 0; i < options.Count; i++)
+            container.AddComponent(new ActionRowBuilder().WithSelectMenu(new SelectMenuBuilder()
+                .WithCustomId($"cosm:pick:{CosmeticTab.Wardrobe}:{i}")
+                .WithPlaceholder($"{CosmeticCatalog.SlotLabel(slot)}…" + (options.Count > 1 ? $" ({i + 1}/{options.Count})" : ""))
+                .WithOptions(options[i].ToList())));
 
         // The worn accessory's styles: one select per choice (« Couleur », « Position »), free, worn at once.
         if (slot == CosmeticSlot.Accessory && worn is not null && AccessoryStyles.Resolve(worn.Key, p.AccessoryStyle) is { } style)
@@ -216,13 +232,18 @@ public static class CosmeticCards
             "mais restent découverts dans ton carnet. Envoie ton Plynling fouiller au bon endroit : `/plynling forage place:`.\n" +
             $"**Ouvrages**\n{Group(false)}\n**Chefs-d'œuvre**\n{Group(true)}"));
 
-        var menu = new SelectMenuBuilder()
-            .WithCustomId($"cosm:pick:{CosmeticTab.Craft}:0")
-            .WithPlaceholder("Voir une recette…");
-        foreach (var c in recipes)
-            menu.AddOption(CosmeticCatalog.Label(c), c.Key, $"{CosmeticCatalog.SlotLabel(c.Slot)} · {RecipeStatus(c, data)}",
-                EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == picked?.Key);
-        container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+        // One select per group: together they hold more than a select's 25 options. The last segment
+        // tells them apart; the handler ignores it here.
+        foreach (var trophy in new[] { false, true })
+        {
+            var menu = new SelectMenuBuilder()
+                .WithCustomId($"cosm:pick:{CosmeticTab.Craft}:{(trophy ? 1 : 0)}")
+                .WithPlaceholder(trophy ? "Voir un chef-d'œuvre…" : "Voir un ouvrage…");
+            foreach (var c in recipes.Where(c => c.Trophy == trophy))
+                menu.AddOption(CosmeticCatalog.Label(c), c.Key, $"{CosmeticCatalog.SlotLabel(c.Slot)} · {RecipeStatus(c, data)}",
+                    EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == picked?.Key);
+            container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+        }
 
         if (picked is null) return;
         var owned = data.Owns(picked);
