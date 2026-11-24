@@ -1,13 +1,13 @@
 """The accessories a Plynling wears, drawn on its own picture (cosmetics, docs/agents/economy.md).
 
 Each accessory is one small drawing and a family that says where it sits: on the cap, over the
-eyes, at the neck, on the hands, or held in the left hand. Some come in styles the player picks
+eyes, at the neck, on the hands, or held in the left hand (or the right: the side is a style). Some come in styles the player picks
 (a colour, a position); the first style is the default. Where is measured from the drawing itself
 (the cap's real top and rim, the first stem row under it, the arms), so one drawing fits the 7
 species and their 7 babies, and follows the breath and the hop. Nothing moves sideways. The
 accessory stays clean on a muddy Plynling and takes the ice tint on a frozen one.
 
-    python tools/plynling-art/accessories.py <outdir>     # the two preview sheets
+    python tools/plynling-art/accessories.py <outdir>     # the three preview sheets (all, faces, sides)
 """
 import os
 import sys
@@ -321,8 +321,12 @@ def hat(drawing):
     return draw
 
 
-def on_cap(drawing, at, centre):
-    """A small thing tucked on the cap's surface, `at` of the way across it."""
+def on_cap(drawing, at, centre, mirror=False):
+    """A small thing tucked on the cap's surface, `at` of the way across it. `mirror`: the other
+    side of the cap, the drawing flipped and `at` and its centre flipped with it."""
+    if mirror:
+        at, centre = 1 - at, (len(drawing[0]) - 1 - centre[0], centre[1])
+
     def draw(pen, b):
         r = b.rest
         left, right = r.cap_span()
@@ -330,13 +334,20 @@ def on_cap(drawing, at, centre):
         top = r.cap_top_at(x)
         cx, cy = centre
         y = max((top if top is not None else r.cap_top) + 1, cy + HOP)      # clear of the hop
-        pen.stamp(drawing, x - cx, y - cy)
+        pen.stamp(drawing, x - cx, y - cy, mirror)
     return draw
 
 
-def held(drawing, grip=None):
-    """In the left hand: the drawing's grip lands just outside the arm."""
+def held(drawing, grip=None, side="gauche"):
+    """In the left hand (`side` gauche) or the right: the drawing's grip lands just outside the arm.
+    On the right the drawing is stamped mirrored, its grip mirrored with it."""
     gx, gy = grip or (len(drawing[0]) - 1, len(drawing) - 1)
+    if side == "droite":
+        gx = len(drawing[0]) - 1 - gx
+
+        def draw_right(pen, b):
+            pen.stamp(drawing, b.hand_r + 1 - gx, b.arms[0] - gy, mirror=True)
+        return draw_right
 
     def draw(pen, b):
         pen.stamp(drawing, b.hand_l - 1 - gx, b.arms[0] - gy)
@@ -435,33 +446,61 @@ CASQUETTE_COLOURS = {"bleue": {}, "rouge": {"j": "e", "B": "r", "J": "R", "v": "
 BALLON_COLOURS = {"rouge": {}, "bleu": {"a": "j", "A": "B", "z": "J"}, "jaune": {"a": "l", "A": "g", "z": "d"}}
 BONNET_COLOURS = {"rouge": {}, "bleu": {"1": "B", "2": "J"}, "vert": {"1": "f", "2": "F"}}
 
+# The side a nœud, a fleur or a held thing sits on: the last part of its style name, the default
+# first (« rose_gauche », « blanche_droite », « droite »). Bare held items are just the side.
+SIDES = ("gauche", "droite")
+DEFAULT_SIDE = {"noeud": "gauche", "fleur": "droite", "ballon": "gauche"}
+
+
+def sided(make, colours, default):
+    """`make(swap, side)` in every colour and both sides, the default side first in each colour."""
+    order = (default,) + tuple(s for s in SIDES if s != default)
+    return {f"{colour}_{side}": make(swap, side) for colour, swap in colours.items() for side in order}
+
+
+def held_sides(drawing, grip=None):
+    return {side: held(drawing, grip, side) for side in SIDES}
+
+
+def file_style(acc, style):
+    """The style as it has always been named in exported files: the default side has no part in it
+    (« rose_gauche » -> « rose », a bare « gauche » -> nothing), the other side keeps its own."""
+    if not style:
+        return style
+    default = DEFAULT_SIDE.get(acc, "gauche" if ACCESSORIES[acc]["family"] == "held" else None)
+    if default is None:
+        return style
+    if style == default:
+        return ""
+    return style[:-len(default) - 1] if style.endswith("_" + default) else style
+
 # key (the cosmetic key without « cos.accessory. ») -> family and styles; the first style is the
 # default, the one shown until the player picks another.
 ACCESSORIES = {
-    "noeud": dict(family="cap", styles=styles(
-        lambda swap: on_cap(recolour(NOEUD, swap), 0.3, (3, 1)), NOEUD_COLOURS.items())),
+    "noeud": dict(family="cap", styles=sided(
+        lambda swap, side: on_cap(recolour(NOEUD, swap), 0.3, (3, 1), side != "gauche"), NOEUD_COLOURS, "gauche")),
     "echarpe": dict(family="neck", styles={               # colour, then place: « bleue_haut »
         f"{colour}_{place}": (lambda c, pl: lambda pen, b: echarpe(pen, b, neck_row(b, pl), c))(colour, place)
         for colour in SCARF_COLOURS for place, _ in NECK_PLACES}),
-    "fleur": dict(family="cap", styles=styles(
-        lambda swap: on_cap(recolour(FLEUR, swap), 0.74, (2, 3)), FLEUR_COLOURS.items())),
+    "fleur": dict(family="cap", styles=sided(
+        lambda swap, side: on_cap(recolour(FLEUR, swap), 0.74, (2, 3), side != "droite"), FLEUR_COLOURS, "droite")),
     "casquette": dict(family="hat", styles=styles(lambda swap: hat(recolour(CASQUETTE, swap)), CASQUETTE_COLOURS.items())),
-    "ballon": dict(family="held", styles=styles(lambda swap: held(recolour(BALLON, swap)), BALLON_COLOURS.items())),
+    "ballon": dict(family="held", styles=sided(lambda swap, side: held(recolour(BALLON, swap), None, side), BALLON_COLOURS, "gauche")),
     "lunettes": dict(family="eyes", styles={"": lunettes}),
     "haut_de_forme": dict(family="hat", styles={"": hat(HAUT_DE_FORME)}),
-    "baguette": dict(family="held", styles={"": held(BAGUETTE)}),
+    "baguette": dict(family="held", styles=held_sides(BAGUETTE)),
     "couronne": dict(family="hat", styles={"": hat(COURONNE)}),
-    "tulipe": dict(family="held", styles={"": held(TULIPE, TULIPE_GRIP)}),
-    "glace": dict(family="held", styles={"": held(GLACE, GLACE_GRIP)}),
+    "tulipe": dict(family="held", styles=held_sides(TULIPE, TULIPE_GRIP)),
+    "glace": dict(family="held", styles=held_sides(GLACE, GLACE_GRIP)),
     "moufles": dict(family="hands", styles=styles(lambda swap: lambda pen, b: moufles(pen, b, swap), MOUFLE_COLOURS.items())),
-    "plume_doree": dict(family="held", styles={"": held(PLUME)}),
+    "plume_doree": dict(family="held", styles=held_sides(PLUME)),
     "collier_coquillages": dict(family="neck", styles=styles(lambda p: at_neck(collier_coquillages, p), NECK_PLACES)),
     "medaillon": dict(family="neck", styles=styles(lambda p: at_neck(medaillon, p), NECK_PLACES)),
-    "bocal": dict(family="held", styles={"": held(BOCAL, BOCAL_GRIP)}),
-    "canne_peche": dict(family="held", styles={"": held(CANNE)}),
+    "bocal": dict(family="held", styles=held_sides(BOCAL, BOCAL_GRIP)),
+    "canne_peche": dict(family="held", styles=held_sides(CANNE)),
     "chapeau_paille": dict(family="hat", styles={"": hat(CHAPEAU_PAILLE)}),
     "bonnet": dict(family="hat", styles=styles(lambda swap: hat(recolour(BONNET, swap)), BONNET_COLOURS.items())),
-    "lanterne": dict(family="held", styles={"": held(LANTERNE, LANTERNE_GRIP)}),
+    "lanterne": dict(family="held", styles=held_sides(LANTERNE, LANTERNE_GRIP)),
     "couronne_fleurs": dict(family="hat", styles={"": hat(COURONNE_FLEURS)}),
 }
 
@@ -550,5 +589,14 @@ if __name__ == "__main__":
     b = os.path.join(out, "accessories_faces.png")
     sheet(four, faces, lambda acc, fc: dressed(fc[0], "amanite", dirty=fc[1], acc=acc),
           four, [fc[0] + (" sale" if fc[1] else "") for fc in faces], b, K=4)
+    # every switched side (the non-default one of a nœud, a fleur or a held item), on all 14 shapes
+    switched = [(acc, st) for acc, st in every if acc in DEFAULT_SIDE or ACCESSORIES[acc]["family"] == "held"
+                if file_style(acc, st) == st]
+    rows = [(sh, face) for sh in shapes for face in ("content", "happy")]
+    c = os.path.join(out, "accessories_sides.png")
+    sheet(rows, switched, lambda r, l: dressed(r[1], r[0][0], stage=r[0][1], acc=l[0], style=l[1]),
+          [f"{r[0][0]} {'bébé' if r[0][1] == 'baby' else ''}\n{r[1]}" for r in rows],
+          [f"{acc}\n{st}" for acc, st in switched], c, K=4)
+    print(c)
     print(a)
     print(b)

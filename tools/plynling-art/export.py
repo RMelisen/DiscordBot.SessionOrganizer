@@ -29,7 +29,7 @@ from PIL import Image
 from common import SPECIES
 from memorials import memorial
 from motion import FRAMES, FRAME_MS
-from accessories import looks, loop, tall, wear
+from accessories import file_style, looks, loop, tall, wear
 from auras import AURA_STATES, AURAS, surround
 from sprites import build
 
@@ -142,7 +142,7 @@ def export_accessories(only=None):
                     name = f"plynling_{sp}{'_baby' if stage == 'baby' else ''}_{state}{'_dirty' if dirty else ''}_with_"
                     for acc, style in every:
                         save_loop([wear(im, acc, body, state, style or None) for im, body in frames],
-                                  name + acc + (f"_{style}" if style else ""))
+                                  name + acc + (f"_{file_style(acc, style)}" if file_style(acc, style) else ""))
                         count += 1
     return count
 
@@ -162,7 +162,7 @@ def export_auras(only=None):
                     for acc, style in every:
                         dressed = [(wear(im, acc, body, state, style or None) if acc else im, body) for im, body in frames]
                         on_hat = bool(acc) and tall(acc, stage)
-                        look = f"_with_{acc}{f'_{style}' if style else ''}" if acc else ""
+                        look = f"_with_{acc}{f'_{file_style(acc, style)}' if file_style(acc, style) else ''}" if acc else ""
                         for aura in AURAS:
                             save_loop([surround(im, body, state, aura, f, tall=on_hat) for f, (im, body) in enumerate(dressed)],
                                       f"{base}{look}_aura_{aura}")

@@ -64,7 +64,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   itself on every frame (the cap's real top, the first stem row under it, the arms), so one drawing
   fits every species and stage and follows the breath and the hop. Some come in **styles** the player
   picks: colours (nœud, fleur, écharpe, casquette, ballon, moufles, bonnet) and a place at the neck (haut,
-  bas); the first of each is the default, and the names must match `AccessoryStyles` in the bot. An
+  bas); the first of each is the default, and the names must match `AccessoryStyles` in the bot. **Sides:** nœud, fleur and every held item also carry a side as the last style part (`rose_gauche`, `blanche_droite`, `rouge_gauche` for the ballon, a bare `gauche`/`droite` for the other held items); the default side comes first (nœud and held items gauche, fleur droite) and draws exactly as before. The other side mirrors the drawing (`on_cap` flips `at` and the centre; `held` stamps mirrored with its grip just outside `hand_r`). `file_style` keeps the old file names: the default side drops out of a name (`_with_noeud_rose`), only the other side shows (`_with_noeud_rose_droite`). `python accessories.py <outdir>` also writes `accessories_sides.png` (every switched side on all 14 shapes, content and happy). An
   adult's cap reaches the top of its picture, so an adult in a hat is drawn on a 40 px canvas
   (`HAT_CANVAS`, the Plynling at 80 %); `HAT_SETTLE` sinks the hat a row into some caps. The accessory
   stays clean on a muddy Plynling and takes the ice tint on a frozen one. Every placement and colour
