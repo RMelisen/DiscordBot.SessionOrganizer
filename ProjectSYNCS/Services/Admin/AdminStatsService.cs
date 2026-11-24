@@ -44,7 +44,7 @@ public class AdminStatsService
         var bySpecies = living.GroupBy(p => p.Species).OrderByDescending(g => g.Count()).ThenBy(g => g.Key)
             .Select(g => (g.Key, g.Count())).ToList();
         var worn = living.Sum(p => Enum.GetValues<CosmeticSlot>().Count(s => CosmeticSlots.Get(p, s) is not null)
-            + (CosmeticSlots.AccessorySlots(p).Second is not null ? 1 : 0));      // the second accessory too
+            + Math.Max(0, CosmeticSlots.Accessories(p).Count - 1));      // the other accessories too
 
         var completions = (await _db_context.CollectionCompletions.AsNoTracking().Where(c => c.GuildId == guildId)
                 .Select(c => c.SetKey).ToListAsync())

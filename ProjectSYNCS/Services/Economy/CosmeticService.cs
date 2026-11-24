@@ -96,9 +96,8 @@ public class CosmeticService
             CosmeticSlots.Set(plynling, cosmetic.Slot, cosmetic.Key);
             return (true, null);
         }
-        var (first, second) = CosmeticSlots.AccessorySlots(plynling);
         var saved = SavedStyles.Parse(plynling.SavedAccessoryStyles);
-        var change = AccessoryFit.TryOn(first, second, new WornAccessory(cosmetic.Key, saved.GetValueOrDefault(cosmetic.Key)));
+        var change = AccessoryFit.TryOn(CosmeticSlots.Accessories(plynling), new WornAccessory(cosmetic.Key, saved.GetValueOrDefault(cosmetic.Key)));
         CosmeticSlots.Apply(plynling, change);
         return (true, change);
     }
@@ -106,15 +105,15 @@ public class CosmeticService
     /// <summary>
     /// Puts a cosmetic on the person's living Plynling, in its slot — or takes that slot off when
     /// <paramref name="key"/> is null. Wearing needs at least one in the inventory and uses none.
-    /// For the accessory slot <paramref name="picker"/> (0 or 1) says which of the two pickers
-    /// chose, and the third value says what happened to the two slots (null for any other slot).
+    /// For the accessory slot <paramref name="picker"/> (0 to <see cref="AccessoryFit.MaxWorn"/> - 1) says
+    /// which picker chose, and the third value says what happened to the slots (null for any other slot).
     /// </summary>
     public async Task<(CosmeticOutcome Outcome, Plynling? Plynling, AccessoryChange? Change)> WearAsync(
         ulong guildId, ulong userId, CosmeticSlot slot, string? key, DateTimeOffset now, int picker = 0)
     {
         var plynling = await _db_context.Plynlings.FirstOrDefaultAsync(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null);
         if (plynling is null) return (CosmeticOutcome.NoPlynling, null, null);
-        if (picker is not (0 or 1)) return (CosmeticOutcome.UnknownItem, plynling, null);
+        if (picker is < 0 or >= AccessoryFit.MaxWorn) return (CosmeticOutcome.UnknownItem, plynling, null);
         if (key is not null)
         {
             if (CosmeticCatalog.ByKey(key) is not { } cosmetic || cosmetic.Slot != slot) return (CosmeticOutcome.UnknownItem, plynling, null);
@@ -123,9 +122,8 @@ public class CosmeticService
         AccessoryChange? change = null;
         if (slot == CosmeticSlot.Accessory)
         {
-            var (first, second) = CosmeticSlots.AccessorySlots(plynling);
             var saved = SavedStyles.Parse(plynling.SavedAccessoryStyles);
-            change = AccessoryFit.Pick(first, second, picker, key is null ? null : new WornAccessory(key, saved.GetValueOrDefault(key)));
+            change = AccessoryFit.Pick(CosmeticSlots.Accessories(plynling), picker, key is null ? null : new WornAccessory(key, saved.GetValueOrDefault(key)));
             CosmeticSlots.Apply(plynling, change);
         }
         else CosmeticSlots.Set(plynling, slot, key);
@@ -135,7 +133,7 @@ public class CosmeticService
 
     /// <summary>
     /// Wears an owned cosmetic the way the shop's try-on shows it: an accessory replaces a clashing
-    /// one, else fills the empty slot, else replaces the second (<see cref="AccessoryFit.TryOn"/>), in
+    /// one, else fills the first empty slot, else replaces the last (<see cref="AccessoryFit.TryOn"/>), in
     /// the style the Plynling remembers for it. Any other slot is a plain <see cref="WearAsync"/>.
     /// </summary>
     public async Task<(CosmeticOutcome Outcome, Plynling? Plynling, AccessoryChange? Change)> WearFittedAsync(
@@ -153,22 +151,22 @@ public class CosmeticService
 
     /// <summary>
     /// Sets one choice (colour, position, side) of an accessory the person's living Plynling wears,
-    /// in either slot — free, like wearing. Refused (<see cref="CosmeticOutcome.UnknownItem"/>) when
+    /// in any slot — free, like wearing. Refused (<see cref="CosmeticOutcome.UnknownItem"/>) when
     /// that accessory is no longer worn (a screen left open across a change) or the option isn't one of
-    /// its. A side the other accessory had flips that one (the change says which).
+    /// its. A side another accessory had flips that one (the change says which).
     /// </summary>
     public async Task<(CosmeticOutcome Outcome, Plynling? Plynling, AccessoryChange? Change)> StyleAsync(
         ulong guildId, ulong userId, string accessoryKey, int choice, string option)
     {
         var plynling = await _db_context.Plynlings.FirstOrDefaultAsync(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null);
         if (plynling is null) return (CosmeticOutcome.NoPlynling, null, null);
-        var (first, second) = CosmeticSlots.AccessorySlots(plynling);
-        var at = first?.Key == accessoryKey ? 0 : second?.Key == accessoryKey ? 1 : -1;
+        var worn = CosmeticSlots.Accessories(plynling);
+        var at = worn.ToList().FindIndex(w => w.Key == accessoryKey);
         var choices = AccessoryStyles.Choices(accessoryKey);
         if (at < 0 || choice < 0 || choice >= choices.Count || choices[choice].Options.All(o => o.Key != option))
             return (CosmeticOutcome.UnknownItem, plynling, null);
-        var style = AccessoryStyles.With(accessoryKey, at == 0 ? first!.Style : second!.Style, choice, option);
-        var change = AccessoryFit.Restyle(first, second, at, style ?? "");
+        var style = AccessoryStyles.With(accessoryKey, worn[at].Style, choice, option);
+        var change = AccessoryFit.Restyle(worn, at, style ?? "");
         CosmeticSlots.Apply(plynling, change);
         await _db_context.SaveChangesAsync();
         return (CosmeticOutcome.Done, plynling, change);

@@ -73,16 +73,16 @@ public static class PlynlingArt
         if (face == PlynlingMood.Angry) return null;
         var worn = outfit ?? Outfit.Of(p);
         // Under to over (AccessoryFit.InDrawOrder): the file name names them in the order they are drawn.
-        var items = AccessoryFit.InDrawOrder(new[] { (Item: worn.Accessory, Style: worn.AccessoryStyle), (Item: worn.Accessory2, Style: worn.Accessory2Style) }
+        var items = AccessoryFit.InDrawOrder(worn.Items
             .Where(w => w.Item is { Slot: CosmeticSlot.Accessory } c && c.Key.StartsWith(AccessoryPrefix, StringComparison.Ordinal))
-            .Select(w => new WornAccessory(w.Item!.Key, AccessoryStyles.Resolve(w.Item.Key, w.Style))));
+            .Select(w => new WornAccessory(w.Item.Key, AccessoryStyles.Resolve(w.Item.Key, w.Style))));
         var aura = AuraMoods.Contains(face) && worn.Aura is { Slot: CosmeticSlot.Aura } a && a.Key.StartsWith(AuraPrefix, StringComparison.Ordinal)
             ? a.Key[AuraPrefix.Length..]
             : null;
         if (items.Count == 0 && aura is null) return null;
         var dirty = p.FrozenAt is null && PlynlingLife.IsDirty(p, now) && DirtyMoods.Contains(face);
         return new PlynlingLook(Key(p.Species) + StageSegment(p.Species, PlynlingLife.Stage(p, now)), face.ToString().ToLowerInvariant(),
-            dirty, items.ElementAtOrDefault(0), items.ElementAtOrDefault(1), aura);
+            dirty, items.ElementAtOrDefault(0), items.ElementAtOrDefault(1), aura, items.ElementAtOrDefault(2));
     }
 
     /// <summary>

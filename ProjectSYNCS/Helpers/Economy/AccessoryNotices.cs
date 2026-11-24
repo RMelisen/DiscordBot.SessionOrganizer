@@ -3,7 +3,7 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>
-/// The sentences that say what a change of accessories did to the other one: « Le bonnet a remplacé
+/// The sentences that say what a change of accessories did to the others: « Le bonnet a remplacé
 /// la petite couronne. », « La fleur est passée à gauche. ». Built from the catalogue's names, which
 /// carry their indefinite article (« une écharpe », « des moufles »), so the articles are re-derived here.
 /// </summary>
@@ -22,7 +22,7 @@ public static class AccessoryNotices
             lines.Add($"{Capitalize(Definite(incoming))} {Replace(incoming, preview)} {Definite(old)}.");
         if (change.Moved is { } moved && CosmeticCatalog.ByKey(moved) is { } item)
         {
-            var worn = change.First?.Key == moved ? change.First : change.Second?.Key == moved ? change.Second : null;
+            var worn = change.Worn.FirstOrDefault(w => w.Key == moved);
             var side = worn is null ? null : AccessoryFit.Side(moved, worn.Style);
             if (side is not null)
                 lines.Add($"{Capitalize(Definite(item))} {Passed(item, preview)} à {side}.");

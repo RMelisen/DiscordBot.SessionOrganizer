@@ -103,6 +103,19 @@ public static class PaintChecks
                 firstBad ??= name;
             }
         }
+        // Every triple, on one face (a third only with a first and a second).
+        foreach (var first in items.OfType<WornAccessory>())
+        foreach (var second in items.OfType<WornAccessory>())
+        foreach (var third in items.OfType<WornAccessory>())
+        {
+            var look = new PlynlingLook("coprin", "content", false, first, second, "bulles", third);
+            checkedCount++;
+            if (PlynlingLook.Parse(look.FileName) != look)
+            {
+                bad++;
+                firstBad ??= look.FileName;
+            }
+        }
         Expect(checkedCount > 10_000, $"only {checkedCount} look names checked");
         Expect(bad == 0, $"{bad} look name(s) don't round-trip, e.g. {firstBad}");
         Expect(new PlynlingLook("amanite_baby", "content", true, new("cos.accessory.noeud", "rose_droite"),
@@ -110,7 +123,7 @@ public static class PaintChecks
                == "pl__amanite_baby__content__dirty__noeud-rose_droite__ballon-rouge__aura-bulles.webp",
             "the brief's example name");
         foreach (var junk in new[] { "", "pl__amanite.webp", "sprite.webp", "pl__amanite__content", "pl__../x__content.webp",
-                     "pl__amanite__content__aura-bulles__noeud.webp", "pl__amanite__content__a__b__c.webp",
+                     "pl__amanite__content__aura-bulles__noeud.webp", "pl__amanite__content__a__b__c__d.webp",
                      "pl__amanite__content____.webp", "pl__amanite__content__noeud-.webp", "PL__amanite__content.webp" })
             Expect(PlynlingLook.Parse(junk) is null, $"Parse(\"{junk}\") is not null");
     }
@@ -302,6 +315,13 @@ public static class PaintChecks
         var a = PlynlingPainter.Draw(look);
         var b = PlynlingPainter.Draw(look with { First = new("cos.accessory.couronne", null) });
         Expect(a is not null && ReferenceEquals(a, b), "the same look drawn twice is not the same array");
+
+        // Three items draw, and differ from the same look without the third.
+        var three = new PlynlingLook("amanite", "content", false, new("cos.accessory.echarpe", "rouge_haut"),
+            new("cos.accessory.couronne", null), "bulles", new("cos.accessory.ballon", "rouge_gauche"));
+        var drawn = PlynlingPainter.Draw(three);
+        var two = PlynlingPainter.Draw(three with { Third = null });
+        Expect(drawn is { Length: > 0 } && two is not null && !drawn.AsSpan().SequenceEqual(two), "a look with three items doesn't draw its third");
     }
 
     private static void FilesForFindsPictures()

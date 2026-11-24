@@ -75,7 +75,7 @@ public static class AccessoryArtChecks
     {
         var shapeFace = $"{look.Shape}_{look.Face}";
         yield return Path.Combine("base", shapeFace + (look.Dirty ? "_dirty" : "") + ".webp");
-        foreach (var item in new[] { look.First, look.Second }.OfType<WornAccessory>())
+        foreach (var item in look.Items)
             yield return Path.Combine("acc", $"{shapeFace}_{item.Key["cos.accessory.".Length..]}{(item.Style is null ? "" : "_" + item.Style)}.webp");
         if (look.Aura is null) yield break;
         yield return Path.Combine("aura", $"{shapeFace}_{look.Aura}.webp");
@@ -149,7 +149,7 @@ public static class AccessoryArtChecks
     {
         var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
         PlynlingLook? Look(Plynling p, Outfit? outfit = null) => PlynlingArt.LookOf(p, now, PlynlingMood.Content, outfit);
-        string Items(PlynlingLook? l) => l is null ? "no look" : string.Join(" + ", new[] { l.First, l.Second }.OfType<WornAccessory>().Select(i => $"{i.Key}:{i.Style}"));
+        string Items(PlynlingLook? l) => l is null ? "no look" : string.Join(" + ", l.Items.Select(i => $"{i.Key}:{i.Style}"));
         void Wears(Plynling p, string expected, string what, Outfit? outfit = null) =>
             Expect(Items(Look(p, outfit)) == expected, $"{what}: {Items(Look(p, outfit))}, expected {expected}");
 

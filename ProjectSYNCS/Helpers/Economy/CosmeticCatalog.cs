@@ -31,15 +31,15 @@ public sealed record CosmeticInfo(
     public string? GraveRight => GraveLeft;
 }
 
-// Reads and writes the slot columns on Plynling by slot, so nothing switches on the five
-// property names but here.
+// Reads and writes the slot columns on Plynling by slot, so nothing switches on the property
+// names but here.
 public static class CosmeticSlots
 {
     public static string? Get(Plynling p, CosmeticSlot slot) => slot switch
     {
         CosmeticSlot.Theme => p.ThemeKey,
         CosmeticSlot.Title => p.TitleKey,
-        CosmeticSlot.Accessory => AccessorySlots(p).First?.Key,        // the first accessory
+        CosmeticSlot.Accessory => Accessories(p).FirstOrDefault()?.Key,        // the first accessory
         CosmeticSlot.Aura => p.AuraKey,
         _ => p.GraveKey,
     };
@@ -54,9 +54,8 @@ public static class CosmeticSlots
             case CosmeticSlot.Theme: p.ThemeKey = key; break;
             case CosmeticSlot.Title: p.TitleKey = key; break;
             case CosmeticSlot.Accessory:
-                var (first, second) = AccessorySlots(p);
                 var saved = SavedStyles.Parse(p.SavedAccessoryStyles);
-                Apply(p, AccessoryFit.Pick(first, second, 0, key is null ? null : new WornAccessory(key, saved.GetValueOrDefault(key))));
+                Apply(p, AccessoryFit.Pick(Accessories(p), 0, key is null ? null : new WornAccessory(key, saved.GetValueOrDefault(key))));
                 break;
             case CosmeticSlot.Aura: p.AuraKey = key; break;
             default: p.GraveKey = key; break;
@@ -64,39 +63,39 @@ public static class CosmeticSlots
     }
 
     /// <summary>
-    /// The two worn accessories as stored, the first never empty under a second (a lone second reads
-    /// as the first). Retired keys are kept: only the catalogue lookups ignore them.
+    /// The worn accessories as stored, in slot order with the gaps closed (a lone second reads as the
+    /// first). Retired keys are kept: only the catalogue lookups ignore them.
     /// </summary>
-    public static (WornAccessory? First, WornAccessory? Second) AccessorySlots(Plynling p)
-    {
-        var first = p.AccessoryKey is { } k1 ? new WornAccessory(k1, p.AccessoryStyle) : null;
-        var second = p.Accessory2Key is { } k2 ? new WornAccessory(k2, p.Accessory2Style) : null;
-        return first is null ? (second, null) : (first, second);
-    }
+    public static IReadOnlyList<WornAccessory> Accessories(Plynling p) =>
+        new[] { (p.AccessoryKey, p.AccessoryStyle), (p.Accessory2Key, p.Accessory2Style), (p.Accessory3Key, p.Accessory3Style) }
+            .Where(c => c.Item1 is not null)
+            .Select(c => new WornAccessory(c.Item1!, c.Item2))
+            .ToList();
 
     /// <summary>
-    /// Writes both accessory slots from a change, and remembers the latest style of every item that
+    /// Writes every accessory slot from a change, and remembers the latest style of every item that
     /// was or is worn (taken off, moved, restyled), so putting one back restores it.
     /// </summary>
     public static void Apply(Plynling p, AccessoryChange change)
     {
-        var (oldFirst, oldSecond) = AccessorySlots(p);
         var saved = SavedStyles.Parse(p.SavedAccessoryStyles).ToDictionary(kv => kv.Key, kv => kv.Value);
-        foreach (var item in new[] { oldFirst, oldSecond, change.First, change.Second })    // the new ones last: they win
+        foreach (var item in Accessories(p).Concat(change.Worn))    // the new ones last: they win
             if (item is { Style: { } style }) saved[item.Key] = style;
-        p.AccessoryKey = change.First?.Key;
-        p.AccessoryStyle = change.First?.Style;
-        p.Accessory2Key = change.Second?.Key;
-        p.Accessory2Style = change.Second?.Style;
+        p.AccessoryKey = change.At(0)?.Key;
+        p.AccessoryStyle = change.At(0)?.Style;
+        p.Accessory2Key = change.At(1)?.Key;
+        p.Accessory2Style = change.At(1)?.Style;
+        p.Accessory3Key = change.At(2)?.Key;
+        p.Accessory3Style = change.At(2)?.Style;
         p.SavedAccessoryStyles = SavedStyles.Format(saved);
     }
 
-    /// <summary>Takes the accessory <paramref name="key"/> off wherever it is worn, the second moving up. Nothing if it is not worn.</summary>
+    /// <summary>Takes the accessory <paramref name="key"/> off wherever it is worn, the later ones moving up. Nothing if it is not worn.</summary>
     public static void TakeOff(Plynling p, string key)
     {
-        var (first, second) = AccessorySlots(p);
-        var at = first?.Key == key ? 0 : second?.Key == key ? 1 : -1;
-        if (at >= 0) Apply(p, AccessoryFit.Pick(first, second, at, null));
+        var worn = Accessories(p);
+        var at = worn.ToList().FindIndex(w => w.Key == key);
+        if (at >= 0) Apply(p, AccessoryFit.Pick(worn, at, null));
     }
 
     // What it wears, slot by slot, as catalog entries (an unknown key reads as nothing).

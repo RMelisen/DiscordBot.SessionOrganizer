@@ -602,8 +602,9 @@ looks after her.
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
 - **Cosmetics:** 97 things a Plynling can wear — a **thème** that recolours its card and adds a
-  banner, a **titre** under its name (in its gender), up to two **accessoires** (« porte 🧣 une
-  écharpe et … », from different categories, a clash replaces the other), drawn on the Plynling's
+  banner, a **titre** under its name (in its gender), up to three **accessoires** (« porte 🧣 une
+  écharpe, … et … », from different categories, a clash replaces the other; two held items at most,
+  one per hand), drawn on the Plynling's
   picture — some in a colour, a place or a side you pick for free in the wardrobe, and remembered
   for next time — an **aura** worn with it, animated around the Plynling (twinkling
   stars, soap bubbles, falling petals), and a **cadre** for its grave. `/inventory cosmetics` is one screen

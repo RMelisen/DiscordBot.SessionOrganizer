@@ -23,7 +23,7 @@ public static class CosmeticScreenChecks
         TryOnWritesNothing();
         MissingNamesItems();
         WhereToFind();
-        TwoAccessories();
+        SeveralAccessories();
         AccessoryNoticeWording();
     }
 
@@ -60,9 +60,10 @@ public static class CosmeticScreenChecks
             "recipe view: the any-common line is not « Champignons communs 0/… — à la Lisière »");
     }
 
-    // Two accessories worn: the card line names both, the Garde-robe has a second picker with its own
-    // style selects, and at the worst (écharpe + nœud, every select present) it stays inside 40 components.
-    private static void TwoAccessories()
+    // Several accessories worn: the card line names them, the Garde-robe has a picker per slot with its
+    // own style selects, and at the worst (écharpe + nœud + ballon, every select present) it stays inside
+    // 40 components.
+    private static void SeveralAccessories()
     {
         var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
         var noeud = CosmeticCatalog.ByKey("cos.accessory.noeud")!;
@@ -82,38 +83,47 @@ public static class CosmeticScreenChecks
 
         var worst = Fullest();
         worst.AccessoryKey = echarpe.Key; worst.AccessoryStyle = "bleue_bas"; worst.Accessory2Key = noeud.Key; worst.Accessory2Style = "dore_droite";
+        worst.Accessory3Key = ballon.Key; worst.Accessory3Style = "jaune_droite";
         var held = ItemCatalog.All.ToDictionary(i => i.Key, _ => 9999);
         var data = new CosmeticScreenData(worst, held, 9_999_999_999, new string('W', 32), "La Chercheuse de trésors perdus");
         var card = CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), data, now, new string('x', 200));
         var parts = card.Components.Select(EconomySinkChecks.Measure).ToList();
         var count = parts.Sum(p => p.Count);
-        Console.WriteLine($"cosmetics screen, écharpe + nœud with every select: {count} components");
-        Expect(count <= 40, $"two accessories: {count} components, over 40");
+        Console.WriteLine($"cosmetics screen, écharpe + nœud + ballon with every select: {count} components");
+        Expect(count <= 40, $"three accessories: {count} components, over 40");
 
         var selects = Selects(card.Components).ToList();
         var ids = selects.Select(s => s.CustomId).Concat(parts.SelectMany(p => p.Ids)).ToList();
         Expect(ids.Count == ids.Distinct().Count(), "two accessories: a custom-id repeats: " + string.Join(", ", ids));
-        Expect(ids.Contains("cosm:pick2:0"), "two accessories: no second picker");
+        Expect(ids.Contains("cosm:pick2:0") && ids.Contains("cosm:pick3:0"), "three accessories: a second or third picker is missing");
+        Expect(ids.Contains($"cosm:style:0:{ballon.Key}") && ids.Contains($"cosm:style:1:{ballon.Key}"), "three accessories: the ballon's style selects are missing");
+        Expect(selects.FirstOrDefault(s => s.CustomId == $"cosm:style:0:{ballon.Key}")?.Options.Single(o => o.IsDefault == true).Value == "jaune",
+            "the third accessory's style selects read its own style");
         Expect(ids.Contains($"cosm:style:0:{echarpe.Key}") && ids.Contains($"cosm:style:1:{echarpe.Key}")
                && ids.Contains($"cosm:style:0:{noeud.Key}") && ids.Contains($"cosm:style:1:{noeud.Key}"), "two accessories: a style select is missing");
         Expect(selects.FirstOrDefault(s => s.CustomId == "cosm:pick:Wardrobe:0")?.Placeholder.StartsWith("Premier accessoire") == true, "first picker label");
-        Expect(selects.FirstOrDefault(s => s.CustomId == "cosm:pick2:0")?.Placeholder.StartsWith("Second accessoire") == true, "second picker label");
+        Expect(selects.FirstOrDefault(s => s.CustomId == "cosm:pick2:0")?.Placeholder.StartsWith("Deuxième accessoire") == true, "second picker label");
+        Expect(selects.FirstOrDefault(s => s.CustomId == "cosm:pick3:0")?.Placeholder.StartsWith("Troisième accessoire") == true, "third picker label");
         var second = selects.FirstOrDefault(s => s.CustomId == $"cosm:style:0:{noeud.Key}");
         Expect(second?.Options.Single(o => o.IsDefault == true).Value == "dore", "the second accessory's style selects read its own style");
         var firstSide = selects.FirstOrDefault(s => s.CustomId == $"cosm:style:1:{echarpe.Key}");
         Expect(firstSide?.Options.Single(o => o.IsDefault == true).Value == "bas", "the first accessory's style selects read its own style");
 
-        // One accessory: a second picker still offers a second. None: no second picker.
+        // Two accessories: a third picker offers a third. One: a second picker, no third. None: neither.
+        worst.Accessory3Key = null; worst.Accessory3Style = null;
+        var two = Selects(CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), data, now, null).Components).ToList();
+        Expect(two.Any(s => s.CustomId == "cosm:pick3:0"), "two accessories worn: the third picker should offer a third");
         worst.Accessory2Key = null; worst.Accessory2Style = null;
         var one = Selects(CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), data, now, null).Components).ToList();
         Expect(one.Any(s => s.CustomId == "cosm:pick2:0"), "one accessory worn: the second picker should offer a second");
+        Expect(!one.Any(s => s.CustomId.StartsWith("cosm:pick3:", StringComparison.Ordinal)), "one accessory worn: a third picker shows");
         worst.AccessoryKey = null; worst.AccessoryStyle = null;
         var none = Selects(CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), data, now, null).Components).ToList();
         Expect(!none.Any(s => s.CustomId.StartsWith("cosm:pick2:", StringComparison.Ordinal)), "no accessory worn: a second picker shows");
 
         // The shop's try-on keeps the worn accessory and adds the tried one beside it.
         var withOne = Fullest();
-        withOne.AccessoryKey = noeud.Key; withOne.Accessory2Key = null;
+        withOne.AccessoryKey = noeud.Key; withOne.Accessory2Key = null; withOne.Accessory3Key = null;
         var shopData = new CosmeticScreenData(withOne, new Dictionary<string, int>(), 0);
         var shop = CosmeticCatalog.Shop(now).FirstOrDefault(c => c.Slot == CosmeticSlot.Accessory && c.Key != noeud.Key);
         if (shop is not null)
@@ -128,7 +138,7 @@ public static class CosmeticScreenChecks
     {
         const string P = "cos.accessory.";
         string? Notice(string? replaced, string? moved, string newKey, WornAccessory? first = null, WornAccessory? second = null) =>
-            AccessoryNotices.Of(new AccessoryChange(first, second, replaced, moved), CosmeticCatalog.ByKey(P + newKey));
+            AccessoryNotices.Of(new AccessoryChange(new[] { first, second }.OfType<WornAccessory>().ToList(), replaced, moved), CosmeticCatalog.ByKey(P + newKey));
         string? R(string old, string neu) => Notice(P + old, null, neu);
         Expect(R("couronne", "bonnet") == "Le bonnet a remplacé la petite couronne.", "Replaced: " + R("couronne", "bonnet"));
         Expect(R("casquette", "echarpe") == "L'écharpe a remplacé la casquette.", "Replaced, elided: " + R("casquette", "echarpe"));
@@ -143,7 +153,7 @@ public static class CosmeticScreenChecks
         var both = Notice(P + "couronne", P + "ballon", "bonnet", first: right);
         Expect(both == "Le bonnet a remplacé la petite couronne. Le ballon est passé à droite.", "both notices: " + both);
         Expect(Notice(null, null, "bonnet") is null, "no change, no notice");
-        var preview = AccessoryNotices.Of(new AccessoryChange(null, null, P + "couronne", null), CosmeticCatalog.ByKey(P + "bonnet"), preview: true);
+        var preview = AccessoryNotices.Of(new AccessoryChange([], P + "couronne", null), CosmeticCatalog.ByKey(P + "bonnet"), preview: true);
         Expect(preview == "Le bonnet remplacerait la petite couronne.", "try-on wording: " + preview);
     }
 
@@ -152,6 +162,7 @@ public static class CosmeticScreenChecks
         Name = new string('W', 32), Gender = PlynlingGender.Female, OwnerId = ulong.MaxValue,
         ThemeKey = "cos.theme.aurore_boreale", TitleKey = "cos.title.chercheur_tresors",
         AccessoryKey = "cos.accessory.echarpe", Accessory2Key = "cos.accessory.noeud", GraveKey = "cos.grave.couronne_fleurs",   // the écharpe: two style selects, the widest
+        Accessory3Key = "cos.accessory.ballon",                    // and a third with two more
         AuraKey = "cos.aura.scintillements",                       // the aura line in the heading
         SickSince = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),   // and the « aura ne se voit pas » note
     };

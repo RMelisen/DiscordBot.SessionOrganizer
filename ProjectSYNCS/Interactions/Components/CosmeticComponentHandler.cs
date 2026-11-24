@@ -66,14 +66,19 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         }
     }
 
-    // The second accessory's select (cosm:pick2:{i}, i numbering the selects): the same pick, into the
-    // second slot. « Aucun » takes the second off.
+    // The second and third accessories' selects (cosm:pick2:{i}, cosm:pick3:{i}, i numbering the
+    // selects; CosmeticCards.AccessoryPickerIds): the same pick, into that slot. « Aucun » takes it off.
     [ComponentInteraction("cosm:pick2:*", ignoreGroupNames: true)]
-    public async Task OnPickSecondAsync(string indexStr, string[] selected)
+    public Task OnPickSecondAsync(string indexStr, string[] selected) => AccessoryPickAsync(1, selected);
+
+    [ComponentInteraction("cosm:pick3:*", ignoreGroupNames: true)]
+    public Task OnPickThirdAsync(string indexStr, string[] selected) => AccessoryPickAsync(2, selected);
+
+    private async Task AccessoryPickAsync(int picker, string[] selected)
     {
         var value = selected.FirstOrDefault() ?? "";
         await DeferAsync();
-        await WardrobePickAsync(value, picker: 1, DateTimeOffset.UtcNow);
+        await WardrobePickAsync(value, picker, DateTimeOffset.UtcNow);
     }
 
     // A wardrobe pick is worn at once (« Aucun » takes the slot off); picker says which accessory select spoke.

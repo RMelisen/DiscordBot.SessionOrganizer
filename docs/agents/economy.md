@@ -364,19 +364,27 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
 - On the card a thème costs one component (its banner); titre and accessoire ride in the heading
   text — and the accessoire is also **drawn on the Plynling's picture** (8.5.0, `PlynlingArt.SpriteOf`,
   see `plynling.md` *Art*).
-- **Two accessories** (8.9.0): a Plynling wears up to two, in `AccessoryKey` and `Accessory2Key` (the
-  Accessoire slot is one slot with two pickers, `cosm:pick2:{i}`). Each accessory has an
-  `AccessoryCategory` (`AccessoryFit.Category`): Chapeau, Sur la tête (sided), Yeux, Cou, Mains, Tenu
-  (sided). Two in the same category clash and the newcomer **replaces** the other; wearing a sided item on
-  the occupied side **moves** the other across; an item is never worn twice. The Garde-robe says so in
-  a notice (replaced, moved). **The two-slot rules live in `AccessoryFit`**; the only place that writes
-  both slots and the saved styles is `CosmeticSlots.Apply` (read the others through `Outfit`). The card
-  line reads « Porte … et … ». A new accessory needs a category in `AccessoryFit.Category`.
+- **Three accessories** (two in 8.9.0, three in 8.16.0): a Plynling wears up to `AccessoryFit.MaxWorn`
+  (3), in `AccessoryKey`, `Accessory2Key`, `Accessory3Key`, never one under an empty earlier slot (the
+  Accessoire slot is one slot with a picker per worn item plus one for the next:
+  `CosmeticCards.AccessoryPickerIds`). Each accessory has an `AccessoryCategory` (`AccessoryFit.Category`):
+  Chapeau, Sur la tête (sided), Yeux, Cou, Mains, Tenu (sided). Two in the same non-sided category clash
+  and the newcomer **replaces** the other; a sided category holds at most two, one per side: wearing one
+  on the occupied side **moves** the other across, and a third (both sides taken) **replaces** the one
+  on its side. An item is never worn twice. A try-on with every slot full and no clash replaces the
+  last slot. The Garde-robe says so in a notice (replaced, moved). **The slot rules live in
+  `AccessoryFit`**, which works on a list of any length up to `MaxWorn` (checks section 71 walks every
+  reachable outfit); the only place that writes the slots and the saved styles is `CosmeticSlots.Apply`
+  (read them through `CosmeticSlots.Accessories` or `Outfit.Items`). The card line reads « Porte A, B
+  et C ». A new accessory needs a category in `AccessoryFit.Category`. **A fourth slot** is a column
+  pair, `MaxWorn`, one entry in `AccessoryPickerIds` (and a handler verb) and `PlynlingLook` — but the
+  Garde-robe's worst case is already 37 of 40 components (section 59 prints it): it would need the
+  pickers on their own view first.
 - **Accessory styles** (`AccessoryStyles`): some accessories have one or two choices — a colour (nœud,
   fleur, écharpe, casquette, ballon, moufles), a place at the neck (écharpe, collier, médaillon), and
   the **side** of the sided ones (« Côté » for nœud and fleur, « Main » for held items). A side is a
   style, not a slot. The first option is the default. The picked options are one string per
-  worn accessory (`AccessoryStyle`, `Accessory2Style`; « bleue_haut », null = default), written by the
+  worn accessory (`AccessoryStyle`, `Accessory2Style`, `Accessory3Style`; « bleue_haut », null = default), written by the
   Garde-robe's style selects (`CosmeticService.StyleAsync`, free) and cleared when that slot's
   accessory changes. **Styles are remembered per accessory per Plynling** in `SavedAccessoryStyles`
   (`SavedStyles.Parse`/`Format` are the format): putting an item back on restores its last colour and
@@ -397,7 +405,7 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   Citrouilles cadre (`cos.grave.citrouilles`, autumn) left in 8.8.0, the owner's call;
   `RetirePumpkinGraveFrame` refunded 2 400 (the seasonal price) the same way and cleared `GraveKey`
   on any Plynling, dead or alive. To retire another, copy one of those migrations — and clear
-  **both** slots (`AccessoryKey`/`AccessoryStyle` **and** `Accessory2Key`/`Accessory2Style`). A
+  **every** slot (`AccessoryKey`/`AccessoryStyle`, `Accessory2Key`/`Accessory2Style` **and** `Accessory3Key`/`Accessory3Style`). A
   retired key still occupies its slot until then. Their keys stay retired — never reuse them.
 
 **The shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` = the basics, then
@@ -433,7 +441,7 @@ redraws in place.
   and a wardrobe slot splits « Aucun » + what is owned into selects of 25 (`:0`, `:1`, … — titles and
   cadres pass 25); the handler reads that segment only on the shop. Checks section 59 measures it with everything owned.
   `cosm:buy`/`cosm:buyw:{week}:{key}`, `cosm:make`/`cosm:makew:{key}`, `cosm:wear:{tab}:{key}`,
-  `cosm:back:{tab}`, `cosm:pick2:{i}` (the second accessory picker), `cosm:style:{choice}:{key}` (the worn accessory's colour, place or side, on the Accessoire
+  `cosm:back:{tab}`, `cosm:pick2:{i}` and `cosm:pick3:{i}` (the second and third accessory pickers), `cosm:style:{choice}:{key}` (the worn accessory's colour, place or side, on the Accessoire
   slot; refused if that accessory is no longer worn). The view (tab, slot, picked key) lives only in the
   ids, so a restart loses nothing.
   The old screens' `cos:` ids answer nothing, on purpose: a new prefix keeps every wildcard clear of them.

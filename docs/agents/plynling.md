@@ -365,8 +365,8 @@ every Ready and on `JoinedGuild`.
   no stage segment. Every mushroom baby is hand-drawn (`<species>_baby` in `species.py`) — a derived
   shrink kept the adult's full-size cap.
 - `PlynlingArt.Key` is exhaustive and **throws** on an unkeyed species (never default to one).
-- **Dressed pictures are drawn at runtime** (8.9.0, two accessories make pre-rendering every pair
-  impossible): `PlynlingPainter` composes the bare picture with `PlynlingLook` (accessories with their
+- **Dressed pictures are drawn at runtime** (8.9.0, several accessories make pre-rendering every
+  combination impossible): `PlynlingPainter` composes the bare picture with `PlynlingLook` (accessories with their
   styles and sides, aura, marks) from layers in `ProjectSYNCS/Assets/Plynlings/` (`base`, `acc`, `aura`,
   `marks`; ImageSharp 3.1.12) and keeps a **bounded cache**. A draw that fails falls back to the bare
   link. **`Helpers/Core/CardSend.cs` is the single send path for a picture-carrying card**: any new send

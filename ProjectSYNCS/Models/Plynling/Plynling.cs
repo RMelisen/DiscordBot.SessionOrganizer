@@ -178,10 +178,14 @@ public class Plynling
     // free, in the Garde-robe.
     public string? AccessoryStyle { get; set; }
 
-    // The second accessory (AccessoryFit): never set while the first is empty (CosmeticSlots reads a
-    // lone second as the first), with its own style.
+    // The second accessory (AccessoryFit): never set while the first is empty (CosmeticSlots closes
+    // the gap), with its own style.
     public string? Accessory2Key { get; set; }
     public string? Accessory2Style { get; set; }
+
+    // The third accessory, same rule: never set while an earlier slot is empty.
+    public string? Accessory3Key { get; set; }
+    public string? Accessory3Style { get; set; }
 
     // The style each accessory was last worn in, « key=style;key=style » (SavedStyles), so taking
     // one off and putting it back restores it.

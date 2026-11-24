@@ -158,7 +158,7 @@ public static class PlynlingPainter
     private static byte[] Paint(PlynlingLook look)
     {
         // Under to over: neck, hands, eyes, hat, head, held (unknown keys last, ties by key).
-        var items = AccessoryFit.InDrawOrder(new[] { look.First, look.Second }.OfType<WornAccessory>());
+        var items = AccessoryFit.InDrawOrder(look.Items);
         var names = new[] { look.Shape, look.Face, look.Aura }.Concat(items.Select(Name)).Concat(items.Select(i => i.Style));
         if (!PlynlingLook.IsToken(look.Shape) || !PlynlingLook.IsToken(look.Face)
             || names.Any(n => n is not null && !PlynlingLook.IsToken(n)))

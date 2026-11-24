@@ -1330,6 +1330,12 @@ namespace ProjectSYNCS.Migrations
                     b.Property<string>("Accessory2Style")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Accessory3Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Accessory3Style")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("AccessoryKey")
                         .HasColumnType("TEXT");
 

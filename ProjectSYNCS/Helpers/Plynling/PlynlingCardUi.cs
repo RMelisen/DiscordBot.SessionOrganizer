@@ -45,9 +45,10 @@ public static class PlynlingCardUi
         // The gender sign sits on the species line, not in the heading: a "## " line renders
         // ♂/♀ at heading size, far too big beside the name.
         var title = worn.Title is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
-        var accessory = worn.Accessory is { } a
-            ? $"\nPorte {a.Emoji} {a.Name}" + (worn.Accessory2 is { } a2 ? $" et {a2.Emoji} {a2.Name}" : "")
-            : "";
+        // « Porte A », « Porte A et B », « Porte A, B et C ».
+        var items = worn.Items.Select(i => $"{i.Item.Emoji} {i.Item.Name}").ToList();
+        var accessory = items.Count == 0 ? ""
+            : "\nPorte " + (items.Count == 1 ? items[0] : string.Join(", ", items.Take(items.Count - 1)) + " et " + items[^1]);
         accessory += worn.Aura is { } au
             ? $"\n{au.Emoji} {p.Gender.Agree("Entouré", "Entourée")} de {au.Name.ToLower(System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))}"
             : "";

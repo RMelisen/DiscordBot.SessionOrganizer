@@ -150,18 +150,26 @@ public static class CosmeticCards
 
         container.AddComponent(new TextDisplayBuilder(
             $"**{CosmeticCatalog.SlotLabel(slot)}** · {owned.Count} à toi. Choisis : c'est porté tout de suite."));
-        // The accessory slot has two pickers, each followed by its own style selects; every other slot one.
+        // The accessory slot has one picker per accessory worn plus one for the next, each followed by
+        // its own style selects; every other slot one.
         if (slot != CosmeticSlot.Accessory)
         {
             Picker(container, owned, slot, worn, $"cosm:pick:{CosmeticTab.Wardrobe}", CosmeticCatalog.SlotLabel(slot), p);
             return;
         }
-        Picker(container, owned, slot, outfit.Accessory, $"cosm:pick:{CosmeticTab.Wardrobe}", "Premier accessoire", p);
-        StyleSelects(container, outfit.Accessory, outfit.AccessoryStyle);
-        if (outfit.Accessory is null) return;       // a second one needs a first
-        Picker(container, owned, slot, outfit.Accessory2, "cosm:pick2", "Second accessoire", p);
-        StyleSelects(container, outfit.Accessory2, outfit.Accessory2Style);
+        var items = outfit.Items;
+        for (var i = 0; i < AccessoryFit.MaxWorn && i <= items.Count; i++)     // the next one needs the ones before
+        {
+            var item = i < items.Count ? items[i].Item : null;
+            var style = i < items.Count ? items[i].Style : null;
+            Picker(container, owned, slot, item, AccessoryPickerIds[i], AccessoryPickerLabels[i], p);
+            StyleSelects(container, item, style);
+        }
     }
+
+    // One custom-id verb per accessory picker (CosmeticComponentHandler): cosm:pick:Wardrobe, cosm:pick2, cosm:pick3.
+    public static readonly string[] AccessoryPickerIds = [$"cosm:pick:{CosmeticTab.Wardrobe}", "cosm:pick2", "cosm:pick3"];
+    private static readonly string[] AccessoryPickerLabels = ["Premier accessoire", "Deuxième accessoire", "Troisième accessoire"];
 
     // « Aucun » then everything owned, 25 to a select (a slot can hold more than one select's worth:
     // titles and cadres do). The last segment numbers the selects; the handler ignores it here.
@@ -317,9 +325,8 @@ public static class CosmeticCards
             ? $"À toi, et {PlynlingCardUi.SafeName(p.Name)} le porte."
             : "Déjà à toi.";
 
-    // Worn in its slot — an accessory in either of its two.
-    private static bool Wears(Outfit outfit, CosmeticInfo c) =>
-        outfit.In(c.Slot)?.Key == c.Key || (c.Slot == CosmeticSlot.Accessory && outfit.Accessory2?.Key == c.Key);
+    // Worn in its slot — an accessory in any of its slots.
+    private static bool Wears(Outfit outfit, CosmeticInfo c) => outfit.Wears(c);
 
     private static void AddWear(ActionRowBuilder row, CosmeticTab tab, CosmeticInfo c, CosmeticScreenData data)
     {

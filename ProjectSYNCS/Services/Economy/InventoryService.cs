@@ -53,7 +53,7 @@ public class InventoryService
         {
             var wearer = db.Plynlings.Local.FirstOrDefault(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null)
                          ?? await db.Plynlings.FirstOrDefaultAsync(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null);
-            if (wearer is not null && cosmetic.Slot == CosmeticSlot.Accessory) CosmeticSlots.TakeOff(wearer, key);   // either slot; the second moves up
+            if (wearer is not null && cosmetic.Slot == CosmeticSlot.Accessory) CosmeticSlots.TakeOff(wearer, key);   // any slot; the later ones move up
             else if (wearer is not null && CosmeticSlots.Get(wearer, cosmetic.Slot) == key)
                 CosmeticSlots.Set(wearer, cosmetic.Slot, null);
         }

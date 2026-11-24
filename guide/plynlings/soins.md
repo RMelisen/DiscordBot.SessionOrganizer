@@ -164,7 +164,7 @@ Les boutons ⏮ ◀ ▶ ⏭ tournent les pages. Le journal d'un Plynling disparu
 
 ## L'habiller
 
-**`/plynling wardrobe`** ouvre ta **garde-robe** : thème de carte, titre, accessoire (dessiné sur son portrait), aura, cadre de tombe. Choisis un article pour l'**essayer** sur sa carte avant de payer. C'est le même écran que `/inventory cosmetics`, avec la boutique et la fabrication : tout est sur [Cailloux et objets](../cailloux.md).
+**`/plynling wardrobe`** ouvre ta **garde-robe** : thème de carte, titre, jusqu'à trois accessoires (dessinés sur son portrait), aura, cadre de tombe. Choisis un article pour l'**essayer** sur sa carte avant de payer. C'est le même écran que `/inventory cosmetics`, avec la boutique et la fabrication : tout est sur [Cailloux et objets](../cailloux.md).
 
 Les cosmétiques sont **à toi**, pas à lui : ils servent à tous tes Plynlings.
 

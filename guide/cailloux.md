@@ -220,7 +220,7 @@ Un écran **visible par toi uniquement**, en trois onglets :
 - **Boutique** : ce qui est en vente. Une partie change **chaque lundi** (la même pour tout le monde), et certains articles ne sont là qu'à une saison.
 - **Fabrication** : des cosmétiques qu'on ne peut pas acheter, à fabriquer avec des objets trouvés et quelques cailloux. Les **Ouvrages** sont à portée de quelques fouilles ; les **Chefs-d'œuvre** demandent une vraie chasse. Chaque recette ne se fabrique qu'**une fois** par personne.
 
-Il y a cinq sortes de cosmétiques : **Thème**, **Titre**, **Accessoire**, **Aura** et **Cadre** (celui-ci se voit sur sa tombe). Dans la boutique et la fabrication, choisir un article te le fait **essayer** sur ton Plynling avant de payer ; ensuite **Acheter** (ou **Fabriquer**), ou **Acheter et porter** d'un coup. Certains accessoires ont une couleur ou une place à choisir, gratuitement, dans la garde-robe.
+Il y a cinq sortes de cosmétiques : **Thème**, **Titre**, **Accessoire**, **Aura** et **Cadre** (celui-ci se voit sur sa tombe). Dans la boutique et la fabrication, choisir un article te le fait **essayer** sur ton Plynling avant de payer ; ensuite **Acheter** (ou **Fabriquer**), ou **Acheter et porter** d'un coup. Ton Plynling peut porter jusqu'à **trois accessoires** à la fois, s'ils ne vont pas au même endroit : un nouveau chapeau remplace l'ancien, et il n'a que deux mains pour tenir des choses. Certains accessoires ont une couleur ou une place à choisir, gratuitement, dans la garde-robe.
 
 <div class="syncs-art-row" markdown>
 <figure markdown="span">
