@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.13.1 — 2026-11-24
+
+- On start, the bot deletes its own outdated icon emojis (earlier drawings, retired items), so its
+  emoji list holds only the icons in use.
+
 ## 8.13.0 — 2026-11-24
 
 - `/quiz leaderboard` now shows each player's average time to a winning answer ("moy.") on every

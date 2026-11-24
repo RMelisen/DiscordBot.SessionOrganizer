@@ -3961,6 +3961,17 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         foreach (var s in ItemCatalog.Sets.Where(s => revised.Contains(ItemEmojis.SetKey(s.Key))))
         foreach (var t in Enum.GetValues<CollectionTier>().Skip(1))
             if (!revised.Contains(ItemEmojis.BadgeKey(s.Key, t))) Fail($"{s.Key}: set redrawn but {ItemEmojis.BadgeKey(s.Key, t)} not revised");
+
+        // Stale emojis, deleted on start: the bot's own names that no shipped sprite claims, never
+        // a current one, never one outside its prefixes, and nothing at all without sprites.
+        var mushroomDir = Path.Combine(Path.GetDirectoryName(iconDir)!, "Mushrooms");
+        var all = ItemEmojis.Sources(mushroomDir, iconDir).ToList();
+        var inUse = all.Select(s => s.EmojiName).OfType<string>().ToList();
+        string[] old = { "tr_shy", "tr2_shy", "c_abeille", "b_generous", "ac_sac_a_dos", "shroom_nope" };
+        string[] foreign = { "syncs_happy", "pepe", "trophy", "c", "tr2" };
+        var stale = ItemEmojis.StaleNames(inUse.Concat(old).Concat(foreign), all);
+        if (!stale.ToHashSet().SetEquals(old)) Fail($"stale emojis: got [{string.Join(", ", stale)}], expected [{string.Join(", ", old)}]");
+        if (ItemEmojis.StaleNames(old, Array.Empty<IconSource>()).Count != 0) Fail("stale emojis: sprites missing must delete nothing");
     }
 
     // GetFactsAsync against a real SQLite: the navigations, the Plynling join and the projection must

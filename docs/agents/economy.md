@@ -308,8 +308,15 @@ they work in any server), and **the bot uploads them itself**.
 - **An existing emoji is reused by name, never replaced** — to change a picture, delete the emoji in
   the developer portal and restart. To redraw a few icons, add their keys to `ItemEmojis.Revisions`
   (name + `_v2`, bumped on each redraw); to redraw a whole family, change its prefix instead (traits:
-  `tr_` → `tr2_`). Either way the new names upload on their own and the old emojis sit unused until
-  deleted in the portal. The checks verify every revised key is a shipped sprite with a valid name.
+  `tr_` → `tr2_`) **and add the old one to `ItemEmojis.RetiredPrefixes`**. Either way the new names
+  upload on their own. The checks verify every revised key is a shipped sprite with a valid name.
+- **Stale emojis are deleted on start**, right after the sync: `ItemEmojis.StaleNames` is every
+  application emoji named with one of the bot's prefixes (today's, `shroom_`, or retired) that no
+  shipped sprite claims — earlier revisions, old family prefixes, retired items. A name outside
+  those prefixes is never touched, so **don't upload a hand-made application emoji whose name
+  starts with one** (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr_`, `tr2_`, `b_`, `shroom_`).
+  Nothing is deleted when a sprite folder is missing or yields no sprite, so a broken publish can't
+  wipe the list. Messages already posted with a deleted emoji show its `:name:` instead.
 - **Emoji properties are computed**: `ItemInfo.Emoji`, `CollectionSet.Emoji`, `CosmeticInfo.Emoji`,
   `TraitInfo.Emoji`, a thème's `Banner` and a cadre's `GraveLeft`/`GraveRight` use the uploaded
   icon, else the stored `DefaultEmoji` — so nothing breaks before or without the upload.
