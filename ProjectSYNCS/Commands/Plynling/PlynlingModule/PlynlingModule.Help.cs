@@ -132,8 +132,8 @@ public abstract partial class PlynlingModule : SyncsModuleBase
             .AddField("La mort",
                 "Tu reçois un **message privé** environ 3 h avant qu'il meure de faim (à 23 h la veille si ça tombe la nuit). " +
                 "S'il meurt, tout le serveur l'apprend et il rejoint le cimetière.\n" +
-                "**`/plynling graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Plus il a vécu, " +
-                "plus sa tombe est belle.")
+                "**`/plynling graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Mieux on s'en " +
+                "occupe, plus sa tombe est belle.")
             .AddField("L'abandonner",
                 "**`/plynling abandon`** — Il part pour toujours : pas de tombe, pas de retour. Tu devras taper son nom " +
                 "pour confirmer. Tout le serveur l'apprendra, ça se verra sur `/shame`, et tu devras attendre 30 min " +

@@ -60,7 +60,7 @@ public static class PlynlingJournalCards
         page = Math.Clamp(page, 0, pages - 1);
         var picture = p.DiedAt is null
             ? PlynlingArt.SpriteOf(p, now)
-            : PlynlingArt.Memorial(p.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(p, now)));
+            : PlynlingArt.Memorial(p.Species, PlynlingCatalog.MemorialTier(p));
 
         return new ComponentBuilderV2()
             .AddComponent(new ContainerBuilder()

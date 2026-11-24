@@ -70,6 +70,8 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingMark> PlynlingMarks => Set<PlynlingMark>();
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
+    public DbSet<PlynlingScoreDay> PlynlingScoreDays => Set<PlynlingScoreDay>();
+    public DbSet<PlynlingOwnerScore> PlynlingOwnerScores => Set<PlynlingOwnerScore>();
     public DbSet<VisitStoryRecord> VisitStoryRecords => Set<VisitStoryRecord>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<CollectionCompletion> CollectionCompletions => Set<CollectionCompletion>();
@@ -434,6 +436,25 @@ public class AppDbContext : DbContext
             e.HasIndex(x => new { x.PlynlingAId, x.PlynlingBId }).IsUnique();
             e.HasIndex(x => x.PlynlingBId);
             e.Property(x => x.Version).IsConcurrencyToken();
+        });
+
+        // The score's daily buckets (totals on Plynling.Score): one row per Plynling per day, gone with an
+        // abandoned one, kept on a dead one so the hall of fame's windows stay right. The windows filter
+        // by (guild, day) in SQL.
+        modelBuilder.Entity<PlynlingScoreDay>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.HasIndex(x => new { x.PlynlingId, x.Day }).IsUnique();
+            e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        // A person's Plynling score across every Plynling they had: no foreign key, it outlives them all.
+        modelBuilder.Entity<PlynlingOwnerScore>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
         });
 
         modelBuilder.Entity<VisitStoryRecord>(e =>

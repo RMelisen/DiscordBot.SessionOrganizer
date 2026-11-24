@@ -277,4 +277,9 @@ var host = Host.CreateDefaultBuilder(args)
         await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
     }
 
+    // The Plynling score's one-off rebuild of the history kept before it shipped: after the migrations, before
+    // the bot connects, so no live action lands in between. A no-op once every row is rebuilt.
+    await PlynlingScoreRebuild.RunAsync(host.Services,
+        host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("PlynlingScoreRebuild"), DateTimeOffset.UtcNow);
+
     await host.RunAsync();

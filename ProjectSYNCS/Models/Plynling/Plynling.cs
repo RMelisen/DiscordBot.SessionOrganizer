@@ -177,9 +177,27 @@ public class Plynling
     // whenever the accessory changes (CosmeticSlots.Set); picked, free, in the Garde-robe.
     public string? AccessoryStyle { get; set; }
 
+    // The hidden score (Helpers/Plynling/PlynlingScore): every point it ever earned, all time. Ranked on
+    // /leaderboard's Plynlings view and what picks its tombstone. On the row, so the Version token guards it
+    // and a retried unit adds it once. The 7/30-day windows read PlynlingScoreDay instead.
+    public long Score { get; set; }
+
+    // The plainest tombstone it may get (0 = none): set by the rebuild on Plynlings already dead when the
+    // score shipped, to the tier their age gave them, so a partly estimated history never demotes a grave.
+    public int TombstoneFloor { get; set; }
+
+    // Whether its score already counts its history. Rows that predate the score read false (the column's
+    // default) and are rebuilt once at startup (PlynlingScoreRebuildService); a new one starts at zero, true.
+    public bool ScoreRebuilt { get; set; } = true;
+
     // Moments a Settle produced (fell sick, recovered) that the journal still has to record.
     // Settle is pure, so whoever saves the row writes them (PlynlingService.FlushMomentsAsync).
     // Never stored.
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public List<(Helpers.JournalKind Kind, DateTimeOffset At)> PendingMoments { get; } = new();
+
+    // Score a Settle earned (a good morning), with the instant it was earned, for the same writer.
+    // Never stored.
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public List<(int Points, DateTimeOffset At)> PendingScore { get; } = new();
 }

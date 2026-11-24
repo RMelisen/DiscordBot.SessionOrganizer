@@ -1484,6 +1484,12 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("RpgXp")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("Score")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ScoreRebuilt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("SickNotified")
                         .HasColumnType("INTEGER");
 
@@ -1510,6 +1516,9 @@ namespace ProjectSYNCS.Migrations
 
                     b.Property<string>("TitleKey")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("TombstoneFloor")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
@@ -1724,6 +1733,29 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("PlynlingMemories");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingOwnerScore", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Points")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("PlynlingOwnerScores");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.PlynlingRelation", b =>
                 {
                     b.Property<int>("Id")
@@ -1751,6 +1783,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<int>("PlynlingBId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ScoredBonds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTimeOffset>("Since")
                         .HasColumnType("TEXT");
 
@@ -1766,6 +1801,34 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("PlynlingRelations");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingScoreDay", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PlynlingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Points")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day");
+
+                    b.HasIndex("PlynlingId", "Day")
+                        .IsUnique();
+
+                    b.ToTable("PlynlingScoreDays");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.PlynlingTrait", b =>
@@ -2541,6 +2604,15 @@ namespace ProjectSYNCS.Migrations
                     b.HasOne("ProjectSYNCS.Models.Plynling", null)
                         .WithMany()
                         .HasForeignKey("PlynlingBId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingScoreDay", b =>
+                {
+                    b.HasOne("ProjectSYNCS.Models.Plynling", null)
+                        .WithMany()
+                        .HasForeignKey("PlynlingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -28,6 +28,10 @@ public class PlynlingRelation
     // PlynlingBonds.RefusalCooldown after it. Stored, so a restart does not lift the wait.
     public DateTimeOffset? LastRefusalAt { get; set; }
 
+    // The bonds this pair has already scored for (PlynlingScore), one bit per PlynlingBond value: each
+    // bond scores once per pair, so drifting across a band edge or making up after a breakup adds nothing.
+    public int ScoredBonds { get; set; }
+
     // Concurrency token, bumped on every save of the row (AppDbContext): a visit and an event moving
     // the same pair at once must not overwrite each other's affinity.
     public int Version { get; set; }

@@ -21,7 +21,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/giveaway create · list · delete` | Prize draws | staff (`delete`: organiser or staff) |
 | `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
 | `/recap [user]` | Your recap over 7 days, 30 days or all time | everyone |
-| `/leaderboard` | Server ranking — five views, three windows | everyone |
+| `/leaderboard` | Server ranking — six views (Plynlings included), three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
@@ -331,9 +331,10 @@ Vocal leaderboard stays honest about time actually spent.
   sessions joined and attended, `/tonight` answers, quiz wins, the current Plynling and its graves,
   cailloux, and the wall of shame — then one line from her about what the numbers say.
 - **`/leaderboard`** — the ranked list, five per page, every row carrying that
-  person's real avatar. Five buttons switch what it ranks — **Niveaux** (XP),
+  person's real avatar. Six buttons switch what it ranks — **Niveaux** (XP),
   **Réactions** (reactions added), **Vocal** (eligible time in voice), **Collections** (sets
-  completed, turn-ins included), **Mécènes** (cailloux given to the jar) — and three more
+  completed, turn-ins included), **Mécènes** (cailloux given to the jar), **Plynlings** (the
+  Plynlings themselves by their hidden score, each shown as itself, or its memorial once gone) — and three more
   switch the window: **all time** (default), **30 days**, **7 days**. In a window the
   XP view ranks by XP earned in that window and drops the level, which is a lifetime
   figure and can't be recomputed for a week. A `/level` card's "Voir le classement"
@@ -553,8 +554,15 @@ looks after her.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours
-  before (at 11 pm the evening before, if that would fall at night). `/plynling graveyard` lists every grave, newest or longest-lived first — and the longer a
-  Plynling lived, the grander its memorial, from a simple cairn to a statue in its likeness.
+  before (at 11 pm the evening before, if that would fall at night). `/plynling graveyard` lists every grave, newest or longest-lived first — and the better a
+  Plynling was looked after over its life, the grander its memorial, from a simple cairn to a statue
+  in its likeness.
+- **A hidden score** grows with everything a Plynling does and has done for it: meals (finer
+  food counts more), pets, baths, games, visits, forage, training and its levels, events it saw
+  through, collections and cosmetics, badges, growing up, the bonds it forms (rivals included) and
+  mornings it starts well kept. Never shown on its card, it is what picks its memorial, and
+  `/leaderboard`'s **Plynlings** view ranks every Plynling by it — the departed too, under their
+  memorial.
 - **Abandoning** (`/plynling abandon`) — you type its name to confirm, and it leaves for
   good: no grave, no coming back. The whole server hears about it, it counts towards
   *L'Indigne* on `/shame`, and you wait 30 minutes before adopting again.

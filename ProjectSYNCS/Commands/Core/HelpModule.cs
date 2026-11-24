@@ -100,8 +100,8 @@ public class HelpModule : SyncsModuleBase
             .AddField("Commandes — Niveaux & statistiques",
                 "**`/level [user]`** — Ta carte : niveau, progression, rang et succès.\n" +
                 "**`/recap [user]`** — Ton récap : XP, vocal, soirées, quiz et bêtises, sur 7 jours, 30 jours ou depuis toujours.\n" +
-                "**`/leaderboard`** — Le classement, 5 par page. Cinq vues (**Niveaux**, **Réactions**, " +
-                "**Vocal**, **Collections**, **Mécènes**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
+                "**`/leaderboard`** — Le classement, 5 par page. Six vues (**Niveaux**, **Réactions**, " +
+                "**Vocal**, **Collections**, **Mécènes**, **Plynlings**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
                 "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +
                 "**`/yesno [question]`** — Tu hésites ? Je tranche. Pile ou face, mais avec du caractère.\n" +
                 "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Réagir à un de mes " +

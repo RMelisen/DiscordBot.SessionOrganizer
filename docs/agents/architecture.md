@@ -18,7 +18,8 @@ services: `MessageReceived`, `MessageUpdated`, `MessageDeleted`, `MessagesBulkDe
 Totals + daily buckets instances (the rule is in `CLAUDE.md`): `EmoteStat`/`EmoteDailyStat`,
 `BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`, `ShameRecord`/`ShameDailyStat`,
 `QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`,
-`CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`.
+`CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`,
+`Plynling.Score`/`PlynlingScoreDay` (per Plynling, not per person; see `plynling.md`, *Score*).
 
 Buckets alone, with no totals, on purpose (see admin): `MemberFlowDailyStat` (joins/leaves),
 `ActivityHourStat`, `ChannelDailyStat`, `CommandDailyStat`, `CommandMemberDailyStat`,
@@ -39,6 +40,12 @@ taken off, `economy.md`). Before writing another:
   rows that also carry facts like `ReactionsUsed`.
 - A data migration's `Down` cannot restore anything, so it is for one-off corrections only.
 - Never generate a SQL script from a migration that computes "now" in C#.
+
+**One startup backfill that is not a migration**: `PlynlingScoreRebuild` (Program.cs, after
+`MigrateAsync`, before the host runs) rebuilds the Plynling score of every row that predates it
+(`Plynling.ScoreRebuilt` false). It needs the badge catalog, stage ages, RPG curve and event catalog,
+which SQL can't reach, and it runs before the bot connects so no live action is counted twice.
+Idempotent through the flag, one unit per Plynling in its own `try`. See `plynling.md`, *Score*.
 
 ## Background loops
 

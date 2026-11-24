@@ -43,6 +43,8 @@ public partial class PlynlingService
 
         var result = PlynlingRpg.Drill(p, traits, drill, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActTrain, 1, now);
+        await PlynlingScore.AddAsync(_db_context, p,
+            PlynlingScore.Drill + (result.LevelAfter - result.LevelBefore) * PlynlingScore.LevelUp, now);
         await _db_context.SaveChangesAsync();
         return new TrainResult(TrainOutcome.Done, p, result, max);
     }

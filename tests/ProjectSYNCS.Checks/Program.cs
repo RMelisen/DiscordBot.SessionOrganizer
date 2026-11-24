@@ -5612,5 +5612,11 @@ PlynlingPlayChecks.Run(Fail);
 // 67. /arcade guess: rules, the payout's average, the card: ArcadeGuessChecks.cs.
 ArcadeGuessChecks.Run(Fail);
 
+// 68. The Plynling score: the hooks, once per pair, the mornings, the rebuild, the tombstone, the leaderboard
+// view (ScoreChecks.cs), and the tombstone calibration against the old ages (ScoreCalibrationChecks.cs,
+// `-- score-sim` prints the days).
+await ScoreChecks.Run(Fail);
+ScoreCalibrationChecks.Run(Fail, args);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

@@ -58,12 +58,18 @@ grant no XP.
 `/goodbot` stay paged embeds — they rank things with no avatar or level.
 
 **`PageSize` is 5 because of the 40-component cap.** A row with an avatar costs three (Section +
-TextDisplay + Thumbnail), and every button counts too. A page of 5 with the three button rows (five
-views, three periods, two arrows) uses 33 of 40; 10 rows would be 48. Row 0 (the views) is full at
-five: a sixth view needs a second row, which would bring the card to 35 or more. `LevelModule.BuildPage`
-is static so checks section 52 builds every view and window at its fullest and holds it to the cap.
+TextDisplay + Thumbnail), and every button counts too. A page of 5 with the four button rows (six
+views over two rows of three, three periods, two arrows) uses 35 of 40; 10 rows would be 50. The views
+sit in rows of `ViewsPerRow` (3) since the sixth: a seventh fits the second row, a tenth needs a third
+row (+1). `LevelModule.BuildPage` and `BuildPlynlingPage` are static, so checks sections 52 and 68 build
+every view and window at its fullest and hold it to the cap. Both draw through `LevelModule.Frame`
+(title, rows, footer, view rows, period row, pager), so the two cannot drift.
 
-**`/leaderboard` is five views** (`LeaderboardView`: XP, reactions, voice, collections, mécènes) — only
+**`/leaderboard` is six views** (`LeaderboardView`: XP, reactions, voice, collections, mécènes,
+Plynlings). **Plynlings ranks Plynlings, not people** — the hidden score, `PlynlingService.GetScoreRankingAsync`
+(`Plynling.Score` all-time, `PlynlingScoreDay` buckets in a window), each row the Plynling's picture or its
+memorial once dead (the dead stay: a hall of fame), its name, a 🕯️ if dead, its owner and its points; the
+footer is the viewer's best-placed Plynling. See `plynling.md`, *Score*. In the other five only
 the ordering and each row's second line change. XP, reactions, voice and **Mécènes** (`CaillouxSpent`,
 cailloux given to the jar, see `economy.md` *Patronage*) read `MemberXp`/`MemberDailyStat`;
 **Collections** reads `InventoryService.GetCollectorRankingAsync` (sets completed: the

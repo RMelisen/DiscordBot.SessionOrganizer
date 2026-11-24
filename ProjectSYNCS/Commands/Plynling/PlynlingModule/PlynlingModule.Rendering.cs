@@ -119,7 +119,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         var worn = outfit ?? Outfit.Of(plynling);
         var picture = plynling.DiedAt is null
             ? PlynlingArt.SpriteOf(plynling, now, outfit: worn)       // the accessory drawn on it, tried on or worn
-            : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now)));
+            : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(plynling));
 
         var container = new ContainerBuilder()
             .WithAccentColor(new Color(worn.Theme?.Accent ?? info.Accent));

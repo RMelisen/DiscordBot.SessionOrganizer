@@ -46,7 +46,7 @@ public static class PlynlingGraveyardCards
 
         foreach (var plynling in ordered.Skip(page * PageSize).Take(PageSize))
         {
-            var tier = PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now));
+            var tier = PlynlingCatalog.MemorialTier(plynling);
             container.AddComponent(new SectionBuilder()
                 .WithAccessory(new ThumbnailBuilder()
                     .WithMedia(new UnfurledMediaItemProperties(PlynlingArt.Memorial(plynling.Species, tier)))

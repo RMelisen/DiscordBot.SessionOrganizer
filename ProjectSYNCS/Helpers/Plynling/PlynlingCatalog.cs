@@ -87,7 +87,20 @@ public static class PlynlingCatalog
     public static PlynlingGender RollGender() =>
         Random.Shared.Next(2) == 0 ? PlynlingGender.Male : PlynlingGender.Female;
 
-    // By time actually lived. 4 weeks = 28 days; a month is taken as 30 days.
+    // The tombstone a Plynling gets: by its score (PlynlingScore), never below its floor — the tier its age
+    // gave a Plynling already dead when the score shipped, so a partly estimated history never demotes a
+    // grave. Every picture and line of a grave reads this one.
+    public static int MemorialTier(Plynling p) => Math.Max(MemorialTierForScore(p.Score), p.TombstoneFloor);
+
+    // The score each tombstone takes, from the petite stèle up. Set so a well-cared Plynling reaches each one at
+    // about the age the old rule used (7, 28, 90, 180 days): measured by the checks' calibration (section
+    // « score »), never tuned by feel.
+    public static readonly IReadOnlyList<long> MemorialScores = new long[] { 180, 780, 2400, 4700 };
+
+    public static int MemorialTierForScore(long score) => 1 + MemorialScores.Count(t => score >= t);
+
+    // The old rule, by time actually lived (4 weeks = 28 days; a month taken as 30): the floor of a Plynling
+    // already dead when the score shipped, and the checks' yardstick.
     public static int MemorialTier(TimeSpan lived) => lived.TotalDays switch
     {
         < 7 => 1,

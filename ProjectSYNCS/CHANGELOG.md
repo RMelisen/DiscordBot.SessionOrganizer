@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.12.0 — 2026-11-24
+
+- Plynlings now earn a hidden score from everything they do and everything done for them: meals
+  (finer food counts more), pets, baths, games, visits, forage, training and its levels, events seen
+  through, collections, cosmetics, badges, growing up, bonds formed (rivals included) and mornings
+  started well kept.
+- `/leaderboard` gains a **Plynlings** view ranking every Plynling by that score, each shown as
+  itself, or under its memorial once gone; the view buttons now sit on two rows.
+- A Plynling's memorial now follows how well it was looked after over its life rather than its age
+  alone. Plynlings already in the graveyard get a score rebuilt from their history and never a
+  plainer memorial than before.
+
 ## 8.11.0 — 2026-11-24
 
 - New owner tool `/debug affinity`: a Plynling's raw affinity with each Plynling it has met, its

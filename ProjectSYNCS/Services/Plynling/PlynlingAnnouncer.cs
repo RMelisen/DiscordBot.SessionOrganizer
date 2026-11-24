@@ -51,7 +51,7 @@ public sealed class PlynlingAnnouncer
     public Task AnnounceDeathAsync(Plynling plynling, DateTimeOffset now)
     {
         var lived = PlynlingLife.Age(plynling, now);
-        var tier = PlynlingCatalog.MemorialTier(lived);
+        var tier = PlynlingCatalog.MemorialTier(plynling);
         var pool = plynling.DeathCause == DeathCause.Illness ? BotResponses.PlynlingIllnessDeathLines : BotResponses.PlynlingDeathLines;
         var line = string.Format(_picker.Pick(pool.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>",

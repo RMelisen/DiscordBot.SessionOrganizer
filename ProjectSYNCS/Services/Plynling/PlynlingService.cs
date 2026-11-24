@@ -203,6 +203,7 @@ public partial class PlynlingService
             await EconomyLog.AddAsync(_db_context, plynling.GuildId, isOwner ? EconomyLog.SpendMeal : EconomyLog.SpendMealOther, price, now);
         }
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMeal, 1, now);
+        await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Meal(food), now);
         PlynlingLife.Feed(plynling, info, now);
         await RelieveAsync(plynling, CareAct.Meal, now);
         plynling.Meals++;
@@ -232,6 +233,7 @@ public partial class PlynlingService
         await RelieveAsync(plynling, CareAct.Pet, now);
         plynling.Pets++;
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActPet, 1, now);
+        await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Pet, now);
         var badges = await AwardAsync(plynling, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, badges);
@@ -271,6 +273,7 @@ public partial class PlynlingService
         PlynlingLife.Bath(plynling, now);
         await RelieveAsync(plynling, CareAct.Bath, now);
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActBath, 1, now);
+        await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Bath, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, soap, useSoap);
     }
@@ -317,6 +320,7 @@ public partial class PlynlingService
         }
         plynling.LastMedicineAt = now;
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMedicine, 1, now);
+        await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Medicine, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, fromPantry, fromPantry ? 0 : ItemCatalog.MedicinePrice, wallet.Balance);
     }
@@ -332,7 +336,7 @@ public partial class PlynlingService
         if (p.DiedAt is not null) return (CureOutcome.Dead, p);
         if (!PlynlingLife.IsSick(p)) return (CureOutcome.NotSick, p);
         PlynlingLife.Cure(p);
-        await AddMomentAsync(p, JournalKind.Recovered, null, now);
+        await AddMomentAsync(p, JournalKind.Recovered, null, now, scored: false);   // staff's doing, not a recovery earned
         await _db_context.SaveChangesAsync();
         return (CureOutcome.Cured, p);
     }
@@ -360,7 +364,7 @@ public partial class PlynlingService
         if (p is null || p.DiedAt is not null) return null;
         var wasSick = PlynlingLife.IsSick(p);
         PlynlingLife.DebugHeal(p, now);
-        if (wasSick) await AddMomentAsync(p, JournalKind.Recovered, null, now);
+        if (wasSick) await AddMomentAsync(p, JournalKind.Recovered, null, now, scored: false);   // the owner's tool scores nothing
         await _db_context.SaveChangesAsync();
         return p;
     }

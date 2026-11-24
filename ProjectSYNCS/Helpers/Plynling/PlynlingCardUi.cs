@@ -69,7 +69,7 @@ public static class PlynlingCardUi
         if (p.DiedAt is { } died)
         {
             var lived = PlynlingLife.Age(p, now);
-            var memorial = PlynlingCatalog.MemorialName(PlynlingCatalog.MemorialTier(lived));
+            var memorial = PlynlingCatalog.MemorialName(PlynlingCatalog.MemorialTier(p));
             var cause = p.DeathCause == DeathCause.Illness ? " de maladie" : "";
             return $"🪦 {p.Gender.Agree("Mort", "Morte")}{cause} <t:{died.ToUnixTimeSeconds()}:R>, après {LevelCardUi.Duration((long)lived.TotalMinutes)} de vie. " +
                    $"{p.Gender.Agree("Il", "Elle")} repose sous {memorial}.";
