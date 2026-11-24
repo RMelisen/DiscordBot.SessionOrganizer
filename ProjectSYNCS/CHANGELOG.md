@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.16.1 — 2026-11-24
+
+- Event cards and the end of a visit show Plynlings wearing their accessories and aura.
+
 ## 8.16.0 — 2026-11-24
 
 - A Plynling can wear a third accessory. Held items still take one hand each: with both hands full,

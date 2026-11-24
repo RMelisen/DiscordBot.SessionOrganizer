@@ -121,8 +121,8 @@ public static class PlynlingVisitCards
         return new ComponentBuilderV2()
             .AddComponent(Frame(host, scene, visitor, host)
                 .AddComponent(new MediaGalleryBuilder()
-                    .AddItem(PlynlingArt.VisitSprite(visitor.Species, PlynlingLife.Stage(visitor, now), visitorFace), PlynlingCardUi.SafeName(visitor.Name), false)
-                    .AddItem(PlynlingArt.VisitSprite(host.Species, PlynlingLife.Stage(host, now), hostFace), PlynlingCardUi.SafeName(host.Name), false))
+                    .AddItem(PlynlingArt.VisitSpriteOf(visitor, now, visitorFace), PlynlingCardUi.SafeName(visitor.Name), false)
+                    .AddItem(PlynlingArt.VisitSpriteOf(host, now, hostFace), PlynlingCardUi.SafeName(host.Name), false))
                 .AddComponent(new SeparatorBuilder())
                 .AddComponent(new TextDisplayBuilder(text)))
             .Build();

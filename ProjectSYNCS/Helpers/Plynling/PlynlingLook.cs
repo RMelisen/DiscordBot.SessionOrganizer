@@ -8,16 +8,17 @@ public sealed record WornAccessory(string Key, string? Style);
 /// <summary>
 /// Everything a dressed Plynling picture depends on, and the attachment name it travels under.
 /// <see cref="Shape"/> is the art key with « _baby » for a baby (« amanite_baby »), <see cref="Face"/>
-/// the lowercase mood, <see cref="Aura"/> the aura key without « cos.aura. ». The record is the
-/// painter's cache key (<see cref="PlynlingPainter"/>).
+/// the lowercase mood, <see cref="Aura"/> the aura key without « cos.aura. ». <see cref="Visit"/> puts
+/// the picture on the larger visit canvas (<see cref="PlynlingArt.VisitSprite"/>), for the side-by-side
+/// galleries. The record is the painter's cache key (<see cref="PlynlingPainter"/>).
 /// </summary>
 public sealed record PlynlingLook(string Shape, string Face, bool Dirty, WornAccessory? First, WornAccessory? Second, string? Aura,
-    WornAccessory? Third = null)
+    WornAccessory? Third = null, bool Visit = false)
 {
-    private const string Prefix = "pl", Extension = ".webp", AccessoryPrefix = "cos.accessory.", AuraTag = "aura-";
+    private const string Prefix = "pl", Extension = ".webp", AccessoryPrefix = "cos.accessory.", AuraTag = "aura-", VisitTag = "visit";
 
     /// <summary>
-    /// The attachment name: « pl__amanite_baby__content__dirty__noeud-rose_droite__ballon-rouge__aura-bulles.webp ».
+    /// The attachment name: « pl__amanite_baby__content__dirty__visit__noeud-rose_droite__ballon-rouge__aura-bulles.webp ».
     /// Segments are joined by « __ »; each item is its key without « cos.accessory. », then « -style »
     /// when it has one, in draw order. A look with a gap (a second item and no first) isn't canonical:
     /// it names the items as if the gap were closed.
@@ -28,6 +29,7 @@ public sealed record PlynlingLook(string Shape, string Face, bool Dirty, WornAcc
         {
             var parts = new List<string> { Prefix, Shape, Face };
             if (Dirty) parts.Add("dirty");
+            if (Visit) parts.Add(VisitTag);
             foreach (var item in Items) parts.Add(ItemSegment(item));
             if (Aura is not null) parts.Add(AuraTag + Aura);
             return string.Join("__", parts) + Extension;
@@ -58,6 +60,8 @@ public sealed record PlynlingLook(string Shape, string Face, bool Dirty, WornAcc
         var i = 3;
         var dirty = i < parts.Length && parts[i] == "dirty";
         if (dirty) i++;
+        var visit = i < parts.Length && parts[i] == VisitTag;
+        if (visit) i++;
         string? aura = null;
         if (parts[^1].StartsWith(AuraTag, StringComparison.Ordinal))
         {
@@ -75,7 +79,7 @@ public sealed record PlynlingLook(string Shape, string Face, bool Dirty, WornAcc
             items.Add(new WornAccessory(AccessoryPrefix + key, style));
         }
         if (items.Count > AccessoryFit.MaxWorn) return null;
-        var look = new PlynlingLook(parts[1], parts[2], dirty, items.ElementAtOrDefault(0), items.ElementAtOrDefault(1), aura, items.ElementAtOrDefault(2));
+        var look = new PlynlingLook(parts[1], parts[2], dirty, items.ElementAtOrDefault(0), items.ElementAtOrDefault(1), aura, items.ElementAtOrDefault(2), visit);
         // Only the canonical spelling: anything else (an aura before an item, a stray segment) is not a look.
         return look.FileName == fileName ? look : null;
     }

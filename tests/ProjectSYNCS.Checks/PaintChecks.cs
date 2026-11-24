@@ -12,7 +12,8 @@ using Image = SixLabors.ImageSharp.Image;
 // 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): look names round-trip, every
 // single-accessory picture (and with an aura) drawn from ProjectSYNCS/Assets/Plynlings is pixel-exact,
 // tick for tick, against today's pre-rendered file in assets/plynlings/, the marks repaint changes
-// nothing on its own, missing art is null, the cache hits, and FilesFor finds a card's pictures.
+// nothing on its own, missing art is null, the cache hits, the visit canvas lines up with today's
+// _visit files, and FilesFor finds a card's pictures.
 //
 //     dotnet run --project tests/ProjectSYNCS.Checks -- art
 //
@@ -52,7 +53,36 @@ public static class PaintChecks
         MarksBlendShows();
         MissingArtIsNull();
         CacheHits();
+        VisitPictures(old);
         FilesForFindsPictures();
+    }
+
+    // The visit canvas (PlynlingLook.Visit): names round-trip, a bare visit look is pixel-exact against the
+    // pre-rendered _visit file (so a dressed one sits where its partner does), and a hat fits whole.
+    private static void VisitPictures(string old)
+    {
+        var dressed = new PlynlingLook("coprin_baby", "happy", false, new("cos.accessory.couronne", null), new("cos.accessory.baguette", "droite"),
+            "bulles", new("cos.accessory.echarpe", "rouge_haut"), Visit: true);
+        Expect(PlynlingLook.Parse(dressed.FileName) == dressed, $"visit look {dressed.FileName} doesn't round-trip");
+        Expect(PlynlingLook.Parse((dressed with { Dirty = true }).FileName) == dressed with { Dirty = true }, "a dirty visit look doesn't round-trip");
+        Expect(PlynlingLook.Parse(dressed.FileName.Replace("__visit", "")) == dressed with { Visit = false }, "a card look reads as a visit look");
+
+        foreach (var (shape, face) in new[] { ("amanite", "content"), ("coprin_baby", "happy"), ("rose", "sad") })
+        {
+            var bare = PlynlingPainter.Draw(new PlynlingLook(shape, face, false, null, null, null, Visit: true));
+            var oldPath = Path.Combine(old, $"plynling_{shape}_{face}_visit_v{PlynlingArt.Version}.webp");
+            Expect(bare is not null && Differs(bare, oldPath) is null,
+                $"bare {shape} {face} on the visit canvas differs from today's file: {(bare is null ? "not drawn" : Differs(bare, oldPath))}");
+        }
+
+        // A crown on an adult (the 320 px canvas): square, every pixel of the card picture kept.
+        var hat = new PlynlingLook("amanite", "content", false, new("cos.accessory.couronne", null), null, "bulles");
+        var (cw, ch, card) = Decode(PlynlingPainter.Draw(hat)!);
+        var (vw, vh, visit) = Decode(PlynlingPainter.Draw(hat with { Visit = true })!);
+        var size = 256 * 40 / 32;
+        Expect(vw == size && vh == size, $"a hat on the visit canvas is {vw}x{vh}, not {size}x{size}");
+        Expect(card.Count == visit.Count && card.Zip(visit).All(p => p.First.Count(c => c.A != 0) == p.Second.Count(c => c.A != 0)),
+            $"a hat on the visit canvas loses pixels ({cw}x{ch} card)");
     }
 
     // Every (accessory key, style before sides existed) pair: the colour and place choices only, as the old

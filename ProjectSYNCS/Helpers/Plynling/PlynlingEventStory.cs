@@ -2,16 +2,27 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Helpers;
 
-// Who an event happened to, as the story shows them. Names are made safe here, once.
-public sealed record EventCast(string Name, PlynlingGender Gender, PlynlingSpecies Species, PlynlingStage Stage, ulong OwnerId)
+// Who an event happened to, as the story shows them. Names are made safe here, once. Dress: what it
+// wears (PlynlingArt.DressOf), null for nothing; outfits aren't stored on the event, so it is what it
+// wears now, at the stage shown.
+public sealed record EventCast(string Name, PlynlingGender Gender, PlynlingSpecies Species, PlynlingStage Stage, ulong OwnerId,
+    PlynlingLook? Dress = null)
 {
-    public static EventCast Of(Plynling p, DateTimeOffset now) =>
-        new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species, PlynlingLife.Stage(p, now), p.OwnerId);
+    public static EventCast Of(Plynling p, DateTimeOffset now)
+    {
+        var stage = PlynlingLife.Stage(p, now);
+        return new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species, stage, p.OwnerId, PlynlingArt.DressOf(p, now, stage));
+    }
 
     // As it was when its event resolved: the stored age, or an estimate for older rows.
-    public static EventCast Then(Plynling p, long? ageSeconds, DateTimeOffset resolvedAt, DateTimeOffset now) =>
-        new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species,
-            PlynlingLife.StageAt(ageSeconds is { } s ? TimeSpan.FromSeconds(s) : PlynlingLife.AgeAt(p, resolvedAt, now)), p.OwnerId);
+    public static EventCast Then(Plynling p, long? ageSeconds, DateTimeOffset resolvedAt, DateTimeOffset now)
+    {
+        var stage = PlynlingLife.StageAt(ageSeconds is { } s ? TimeSpan.FromSeconds(s) : PlynlingLife.AgeAt(p, resolvedAt, now));
+        return new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species, stage, p.OwnerId, PlynlingArt.DressOf(p, now, stage));
+    }
+
+    // Its picture with that face: card-sized, or on the visit canvas for a side-by-side gallery.
+    public string Sprite(PlynlingMood face, bool visit) => PlynlingArt.DressedSprite(Species, Stage, Dress, face, visit);
 }
 
 // Where the answer to an ask stands: still awaited, given, or lost for good (cancelled — the other

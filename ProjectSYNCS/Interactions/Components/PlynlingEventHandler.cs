@@ -77,7 +77,7 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
         var target = inst.TargetPlynlingId is { } tid ? await _plynlings.GetByIdAsync(tid, now) : null;
         var card = PlynlingEventCards.BuildChoice(inst, def, await _plynlings.GetEventContextAsync(p, now, target, inst),
             EventCast.Of(p, now), target is null ? null : EventCast.Of(target, now), cardId);
-        await FollowupAsync(components: card, ephemeral: true, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.FollowupCardAsync(card, ephemeral: true);     // with its drawn picture, when dressed
     }
 
     [ComponentInteraction("plev:choose:*:*:*", ignoreGroupNames: true)]
@@ -168,11 +168,6 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             return;
         }
         var card = PlynlingEventCards.BuildStory(story, to((story, page)));
-        await ModifyOriginalResponseAsync(m =>
-        {
-            m.Components = card;
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        await Context.Interaction.ModifyCardAsync(card);
     }
 }

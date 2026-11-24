@@ -171,18 +171,55 @@ public static class PlynlingPainter
         var marks = items.Any(RightHand) ? Layer("marks", shapeFace) : null;
         if (marks is not null && !File.Exists(marks)) marks = null;
         string? Aura(bool tall) => look.Aura is null ? null : Layer("aura", $"{shapeFace}_{look.Aura}{(tall ? "_tall" : "")}");
-        return Compose(Layer("base", shapeFace + (look.Dirty ? "_dirty" : "")), accessories, marks, Aura);
+        var picture = Compose(Layer("base", shapeFace + (look.Dirty ? "_dirty" : "")), accessories, marks, Aura);
+        if (look.Visit) picture = OnVisitCanvas(picture);
+        return Encode(picture.W, picture.H, picture.Frames, picture.Delays);
+    }
+
+    // The visit canvas, in sprite cells: the 32-cell sprite centred on 40 (VISIT_CANVAS in
+    // tools/plynling-art/export.py), so a dressed visit picture sits where the bare one does.
+    private const int SpriteCells = 32, VisitCells = 40;
+
+    /// <summary>
+    /// The picture moved onto the square visit canvas: centred across, its foot where the bare
+    /// sprite's is. A hat that would poke out of the top pushes the whole picture down just enough.
+    /// </summary>
+    private static Picture OnVisitCanvas(Picture p)
+    {
+        var size = p.BareW * VisitCells / SpriteCells;
+        if (p.W > size) throw new InvalidOperationException($"a {p.W} px picture is wider than the {size} px visit canvas");
+        var top = p.H;
+        foreach (var f in p.Frames)
+            for (var i = 0; i < f.Length && i / p.W < top; i++)
+                if (f[i].A != 0) top = i / p.W;
+        var foot = Math.Max(size - (size - p.BareH) / 2, p.H - top);
+        if (foot > size) throw new InvalidOperationException($"a {p.H - top} px tall picture doesn't fit the {size} px visit canvas");
+        int ox = (size - p.W) / 2, oy = foot - p.H;
+        var frames = p.Frames.Select(f =>
+        {
+            var o = new Rgba32[size * size];
+            for (var y = top; y < p.H; y++)
+                f.AsSpan(y * p.W, p.W).CopyTo(o.AsSpan((y + oy) * size + ox, p.W));
+            return o;
+        }).ToList();
+        return p with { W = size, H = size, Frames = frames };
     }
 
     /// <summary>
     /// The base with each accessory layer over it in order, the marks repainted where an accessory
     /// covered them, then the aura. Throws on a missing file. The checks use it to draw the marks alone.
     /// </summary>
-    public static byte[] Compose(string basePath, IReadOnlyList<string> accessoryPaths, string? marksPath, string? auraPath) =>
-        Compose(basePath, accessoryPaths, marksPath, _ => auraPath);
+    public static byte[] Compose(string basePath, IReadOnlyList<string> accessoryPaths, string? marksPath, string? auraPath)
+    {
+        var p = Compose(basePath, accessoryPaths, marksPath, _ => auraPath);
+        return Encode(p.W, p.H, p.Frames, p.Delays);
+    }
+
+    // The composed frames before encoding, with the bare sprite's size (the visit canvas is measured from it).
+    private sealed record Picture(int W, int H, int BareW, int BareH, List<Rgba32[]> Frames, List<int> Delays);
 
     // `aura(tall)`: the aura layer for the canvas in play (the 320 px hat canvas has its own).
-    private static byte[] Compose(string basePath, IReadOnlyList<string> accessoryPaths, string? marksPath, Func<bool, string?> aura)
+    private static Picture Compose(string basePath, IReadOnlyList<string> accessoryPaths, string? marksPath, Func<bool, string?> aura)
     {
         var bare = Load(basePath);
         var accessories = accessoryPaths.Select(Load).ToList();
@@ -224,7 +261,7 @@ public static class PlynlingPainter
             delays.Add(Tick);
             o = null;
         }
-        return Encode(w, h, frames, delays);
+        return new Picture(w, h, bare.W, bare.H, frames, delays);
     }
 
     private enum Pass { Base, Accessory, Marks, Aura }

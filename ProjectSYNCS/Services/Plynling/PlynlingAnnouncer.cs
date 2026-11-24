@@ -105,7 +105,7 @@ public sealed class PlynlingAnnouncer
                 _logger.LogInformation("Event story in guild {GuildId} not posted: no game channel there.", guildId);
                 return;
             }
-            await channel.SendMessageAsync(components: story, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+            await channel.SendCardAsync(story);      // with the drawn pictures, when dressed
         }
         catch (Exception ex)
         {

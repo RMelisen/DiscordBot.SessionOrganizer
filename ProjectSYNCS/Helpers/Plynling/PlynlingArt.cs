@@ -108,8 +108,45 @@ public static class PlynlingArt
     /// (see VISIT_CANVAS in tools/plynling-art/export.py). Any other mood shows the content face.
     /// </summary>
     public static string VisitSprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood) =>
-        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_" +
-        $"{(mood is PlynlingMood.Happy or PlynlingMood.Sad or PlynlingMood.Angry ? mood : PlynlingMood.Content).ToString().ToLowerInvariant()}_visit_v{Version}.webp";
+        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{VisitFace(mood).ToString().ToLowerInvariant()}_visit_v{Version}.webp";
+
+    private static PlynlingMood VisitFace(PlynlingMood mood) =>
+        mood is PlynlingMood.Happy or PlynlingMood.Sad or PlynlingMood.Angry ? mood : PlynlingMood.Content;
+
+    /// <summary>
+    /// What <paramref name="p"/> wears, as a clean look at <paramref name="stage"/> (its stage now if
+    /// not given), for <see cref="DressedSprite"/> to put a face on; null when it wears nothing drawn.
+    /// Captured once (<see cref="EventCast"/>) so a card's pictures are built without the Plynling.
+    /// </summary>
+    public static PlynlingLook? DressOf(Plynling p, DateTimeOffset now, PlynlingStage? stage = null) =>
+        LookOf(p, now, PlynlingMood.Content) is { } look
+            ? look with { Shape = Key(p.Species) + StageSegment(p.Species, stage ?? PlynlingLife.Stage(p, now)), Dirty = false }
+            : null;
+
+    /// <summary>
+    /// A clean picture with the face <paramref name="mood"/>: <paramref name="dress"/> (<see cref="DressOf"/>)
+    /// drawn, card-sized or, with <paramref name="visit"/>, on the visit canvas; else, or when it can't be
+    /// drawn, the bare <see cref="Sprite"/> / <see cref="VisitSprite"/> link. Angry is never dressed, and
+    /// on a face without an aura (<see cref="AuraMoods"/>) the aura is left off.
+    /// </summary>
+    public static string DressedSprite(PlynlingSpecies species, PlynlingStage stage, PlynlingLook? dress, PlynlingMood mood, bool visit)
+    {
+        var face = visit ? VisitFace(mood) : mood;
+        if (dress is not null && face != PlynlingMood.Angry)
+        {
+            var look = dress with { Face = face.ToString().ToLowerInvariant(), Visit = visit, Aura = AuraMoods.Contains(face) ? dress.Aura : null };
+            if (look.Items.Count + (look.Aura is null ? 0 : 1) > 0 && PlynlingPainter.Draw(look) is not null)
+                return "attachment://" + look.FileName;
+        }
+        return visit ? VisitSprite(species, stage, face) : Sprite(species, stage, face);
+    }
+
+    /// <summary>The visit-sized picture of <paramref name="p"/> as it is now, dressed.</summary>
+    public static string VisitSpriteOf(Plynling p, DateTimeOffset now, PlynlingMood mood)
+    {
+        var stage = PlynlingLife.Stage(p, now);
+        return DressedSprite(p.Species, stage, DressOf(p, now, stage), mood, visit: true);
+    }
 
     private static string StageSegment(PlynlingSpecies species, PlynlingStage stage) =>
         stage == PlynlingStage.Baby && StagedSpecies.Contains(species) ? "_baby" : "";

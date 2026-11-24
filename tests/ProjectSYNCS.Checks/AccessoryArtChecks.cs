@@ -252,8 +252,8 @@ public static class AccessoryArtChecks
         finally { foreach (var f in files) f.Dispose(); }
     }
 
-    // The game, the journal (both pages), the visit's choice, knock and ending, and the announcements
-    // for a dressed Plynling: whatever picture each shows by attachment://, FilesFor attaches it.
+    // The game, the journal (both pages), the visit's choice, knock and ending, an event's story and
+    // choice, and the announcements for a dressed Plynling: whatever picture each shows by attachment://, FilesFor attaches it.
     private static void GamesJournalVisitsAndPostsAttachTheirPicture()
     {
         var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
@@ -284,7 +284,14 @@ public static class AccessoryArtChecks
             var outcome = new ProjectSYNCS.Services.VisitOutcome(p, host, Array.Empty<BadgeInfo>(), Array.Empty<BadgeInfo>(), true,
                 PlynlingBond.Acquaintances, PlynlingBond.Friends, Confession.None, 1.0);
             AttachesCheck($"a visit's ending ({tag})",
-                PlynlingVisitCards.BuildEnding(scene, scene.Options[0], scene.Reactions[0], outcome, now), expectFile: false);
+                PlynlingVisitCards.BuildEnding(scene, scene.Options[0], scene.Reactions[0], outcome, now), expectFile);
+
+            // An event: its story (both pages, the dressed one beside a bare other) and the choice's thumbnail.
+            var story = new EventStory(1, p.Id, "x", new[] { "a", "b" }, EventCast.Of(p, now), EventCast.Of(host, now), 0, PlynlingMood.Happy);
+            foreach (var page in new[] { 0, 1 })
+                AttachesCheck($"an event story page {page} ({tag})", PlynlingEventCards.BuildStory(story, page), expectFile);
+            AttachesCheck($"an event choice's picture ({tag})",
+                ProjectSYNCS.Services.PlynlingAnnouncer.BuildPost("x", EventCast.Of(p, now).Sprite(PlynlingMood.Content, visit: false)), expectFile);
 
             AttachesCheck($"a resurrection post ({tag})",
                 ProjectSYNCS.Services.PlynlingAnnouncer.BuildPost("x", PlynlingArt.SpriteOf(p, now)), expectFile);

@@ -37,8 +37,7 @@ public static class PlynlingEventCards
             .AddComponent(new ContainerBuilder()
                 .WithAccentColor(new Color(PlynlingCatalog.Info(self.Species).Accent))
                 .AddComponent(new SectionBuilder()
-                    .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(
-                        PlynlingArt.Sprite(self.Species, self.Stage, PlynlingMood.Content))))
+                    .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(self.Sprite(PlynlingMood.Content, visit: false))))
                     .AddComponent(new TextDisplayBuilder($"## ✨ {def.Title}\n{X(PlynlingEventStory.SceneText(def, ctx))}")))
                 .AddComponent(new SeparatorBuilder())
                 .AddComponent(new TextDisplayBuilder(string.Join("\n", lines) +
@@ -81,9 +80,9 @@ public static class PlynlingEventCards
         page = Math.Clamp(page, 0, story.Pages.Count - 1);
         var last = page == story.Pages.Count - 1 && story.Pages.Count > 1;
         var gallery = new MediaGalleryBuilder()
-            .AddItem(PlynlingArt.VisitSprite(story.Self.Species, story.Self.Stage, last ? story.SelfFace : PlynlingMood.Content), story.Self.Name, false);
+            .AddItem(story.Self.Sprite(last ? story.SelfFace : PlynlingMood.Content, visit: true), story.Self.Name, false);
         if (story.Target is { } target)
-            gallery.AddItem(PlynlingArt.VisitSprite(target.Species, target.Stage, last ? story.TargetFace : PlynlingMood.Content), target.Name, false);
+            gallery.AddItem(target.Sprite(last ? story.TargetFace : PlynlingMood.Content, visit: true), target.Name, false);
         var container = new ContainerBuilder()
             .WithAccentColor(new Color(story.Accent))
             .AddComponent(new TextDisplayBuilder($"## {story.Heading}"))
