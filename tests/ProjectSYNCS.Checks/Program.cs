@@ -18,6 +18,8 @@ using ProjectSYNCS.Services;
 // PlynlingEvents.All, whose first read loads them.
 StoryCatalog.Folder = Path.Combine(StoryChecks.RepoRoot(), "ProjectSYNCS", "Stories");
 VisitCatalog.Folder = VisitChecks.ShippedFolder;
+// Likewise the painter's layers: every card built with a dressed Plynling draws from them.
+PlynlingPainter.AssetsRoot = AccessoryArtChecks.LayersRoot;
 var asm = typeof(ChatFacts).Assembly;
 var br = asm.GetType("ProjectSYNCS.Services.BotResponses")!;
 var cues = asm.GetType("ProjectSYNCS.Services.MessageCues")!;

@@ -78,8 +78,8 @@ public static class AccessoryFitChecks
         var both = Outfit.Of(Row(P + "noeud", "rose", P + "ballon", null));
         Expect(both.Accessory?.Key == P + "noeud" && both.Accessory2?.Key == P + "ballon", "two accessories read in order");
         var two = Row(P + "noeud", "rose", P + "ballon");
-        var shown = PlynlingArt.SpriteOf(two, new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero), PlynlingMood.Content, Outfit.Of(two));
-        Expect(shown.Contains("_with_noeud_rose_"), "an old style without a side still draws the default: " + shown);
+        var shown = PlynlingArt.LookOf(two, new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero), PlynlingMood.Content, Outfit.Of(two));
+        Expect(shown?.First == new WornAccessory(P + "noeud", "rose_gauche"), "an old style without a side still draws the default: " + shown?.FileName);
 
         var saved = new Dictionary<string, string> { [P + "ballon"] = "bleu_droite" };
         var tried = Outfit.Of(Row(P + "noeud", "rose_gauche")).TryOn(CosmeticCatalog.ByKey(P + "ballon")!, saved);

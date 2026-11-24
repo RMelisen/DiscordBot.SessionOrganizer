@@ -128,8 +128,7 @@ public sealed class PlynlingShortcutService
         }
         var line = await PlynlingModule.ViewLineAsync(plynlings, _picker, plynling, message.Author.Id, now);
         var card = await PlynlingModule.BuildCardAsync(plynlings, plynling, now, line);
-        await message.Channel.SendMessageAsync(components: card, flags: MessageFlags.ComponentsV2,
-            allowedMentions: AllowedMentions.None, messageReference: ReplyTo(message));
+        await message.Channel.SendCardAsync(card, ReplyTo(message));
     }
 
     private async Task VisitAsync(SocketUserMessage message, IServiceProvider services, PlynlingService plynlings,
@@ -157,8 +156,7 @@ public sealed class PlynlingShortcutService
 
         // Mentions off, unlike /plynling visit: the person's own « ;pl visit @x » already pinged the
         // host, and a second ping for one visit is one too many.
-        await message.Channel.SendMessageAsync(components: opening.Card, flags: MessageFlags.ComponentsV2,
-            allowedMentions: AllowedMentions.None, messageReference: ReplyTo(message));
+        await message.Channel.SendCardAsync(opening.Card, ReplyTo(message));
     }
 
     private Task AnswerAsync(SocketUserMessage message, (string Text, bool Refused) reply) =>

@@ -181,7 +181,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
 
         // The one message of the visit, and the one send that pings: the invited owner only. At her home
         // nobody is invited, so nobody is pinged.
-        await RespondAsync(components: opening.Card, flags: MessageFlags.ComponentsV2,
+        await Context.Interaction.RespondCardAsync(opening.Card,
             allowedMentions: opening.Pings ? new AllowedMentions { UserIds = new List<ulong> { user.Id } } : AllowedMentions.None);
     }
 
@@ -469,8 +469,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         await DeferAsync(ephemeral: true);
         var now = DateTimeOffset.UtcNow;
         var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
-        await FollowupAsync(components: CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe), data, now, null),
-            flags: MessageFlags.ComponentsV2, ephemeral: true, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.FollowupCardAsync(CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe), data, now, null), ephemeral: true);
     }
 
     // Free text, like a Tomodachi Life word: it only ever appears through generic story

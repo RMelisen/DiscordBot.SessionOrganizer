@@ -7,7 +7,8 @@ using ProjectSYNCS.Services;
 
 // 64. Auras, the fifth slot: the three entries and the slot order, worn with an accessory (each
 // try-on and take-off keeps the other), the shop's existing weekly draw unchanged by the new slot,
-// and losing the last copy takes it off.
+// losing the last copy takes it off, and the bot's looks carry the aura on the aura faces only, with
+// every aura layer they read under Assets/Plynlings.
 public static class AuraChecks
 {
     private static Action<string> _fail = _ => { };
@@ -28,7 +29,7 @@ public static class AuraChecks
         SpriteOfReadsTheAura();
         Screens();
         IconsUpload();
-        EveryAuraHasItsFiles(Path.Combine(StoryChecks.RepoRoot(), "assets", "plynlings"));
+        EveryAuraHasItsFiles();
     }
 
     private static IEnumerable<Discord.IMessageComponent> Flat(IEnumerable<Discord.IMessageComponent> components)
@@ -111,67 +112,71 @@ public static class AuraChecks
     private static readonly PlynlingMood[] AuraMoods =
         { PlynlingMood.Happy, PlynlingMood.Content, PlynlingMood.Sad, PlynlingMood.Hungry, PlynlingMood.Starving, PlynlingMood.Sleeping };
 
-    private static string FileOf(string url) => url[PlynlingArt.BaseUrl.Length..];
-
-    // Every species, stage, card face, dirt, accessory look (or none) and aura: on an aura face the file
-    // exists; on any other face the URL is exactly the one without the aura.
-    private static void EveryAuraHasItsFiles(string assets)
+    // Every shape with art, card face, dirt, accessory look (none, or one worn with every style and
+    // side, as an adult in a hat is drawn tall) and aura: on an aura face the look carries the aura and
+    // every layer it reads exists; on any other face it carries none (no look at all without an accessory).
+    private static void EveryAuraHasItsFiles()
     {
-        var missing = new List<string>();
-        var checkedFiles = 0;
-        var looks = new List<(string? Key, string? Style)> { (null, null) };
+        var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
+        var accessories = new List<(CosmeticInfo? Accessory, string? Style)> { (null, null) };
         foreach (var acc in CosmeticCatalog.InSlot(CosmeticSlot.Accessory))
         {
             IEnumerable<string?> styles = new string?[] { null };
-            foreach (var (label, options) in AccessoryStyles.Choices(acc.Key))       // the old pictures have no sides
-            {
-                if (label is "Côté" or "Main") continue;
+            foreach (var (_, options) in AccessoryStyles.Choices(acc.Key))
                 styles = styles.SelectMany(s => options.Select(o => (string?)(s is null ? o.Key : s + "_" + o.Key)));
-            }
-            looks.AddRange(styles.Select(s => ((string?)acc.Key, s)));
+            accessories.AddRange(styles.Select(s => ((CosmeticInfo?)acc, s)));
         }
-        foreach (var species in Enum.GetValues<PlynlingSpecies>())
-        foreach (var stage in new[] { PlynlingStage.Baby, PlynlingStage.Adult })
-        foreach (var mood in Enum.GetValues<PlynlingMood>())
+        var wanted = new HashSet<string>();
+        var looks = 0;
+        foreach (var species in PlynlingArt.StagedSpecies)
+        foreach (var baby in new[] { false, true })
         foreach (var dirty in new[] { false, true })
         {
-            if (!File.Exists(Path.Combine(assets, FileOf(PlynlingArt.Sprite(species, stage, mood, dirty))))) continue;   // no art
-            if (dirty && FileOf(PlynlingArt.Sprite(species, stage, mood, true)) == FileOf(PlynlingArt.Sprite(species, stage, mood))) continue;
-            if (stage == PlynlingStage.Baby && !PlynlingArt.StagedSpecies.Contains(species)) continue;
-            foreach (var (acc, style) in looks)
+            var p = AccessoryArtChecks.Shaped(species, baby, dirty, now);
+            foreach (var mood in Enum.GetValues<PlynlingMood>())
+            foreach (var (acc, style) in accessories)
             foreach (var aura in CosmeticCatalog.InSlot(CosmeticSlot.Aura))
             {
-                var url = PlynlingArt.Sprite(species, stage, mood, dirty, acc, style, aura.Key);
+                var look = PlynlingArt.LookOf(p, now, mood, new Outfit(null, null, acc, null, aura, style));
+                var name = aura.Key["cos.aura.".Length..];
                 if (!AuraMoods.Contains(mood))
                 {
-                    var bare = PlynlingArt.Sprite(species, stage, mood, dirty, acc, style);
-                    if (url != bare) { Expect(false, $"{mood} wearing {aura.Key} names {FileOf(url)}, not {FileOf(bare)}"); return; }
+                    if (look?.Aura is not null) { Expect(false, $"{mood} wearing {aura.Key} draws it: {look.FileName}"); return; }
+                    if (acc is null && look is not null) { Expect(false, $"{mood} wearing only {aura.Key} builds a look: {look.FileName}"); return; }
                     continue;
                 }
-                checkedFiles++;
-                if (!File.Exists(Path.Combine(assets, FileOf(url)))) missing.Add(FileOf(url));
+                if (look?.Aura != name) { Expect(false, $"{mood} wearing {aura.Key} with {acc?.Key ?? "nothing"}: {look?.FileName ?? "no look"}"); return; }
+                looks++;
+                wanted.UnionWith(AccessoryArtChecks.LayersOf(look));
             }
         }
-        Expect(checkedFiles == 21672, $"{checkedFiles} aura pictures named, expected 21 672");
-        Expect(missing.Count == 0, $"{missing.Count} aura picture(s) missing, e.g. {string.Join(", ", missing.Take(3))}");
+        var missing = wanted.Where(f => f.StartsWith("aura", StringComparison.Ordinal) && !File.Exists(Path.Combine(AccessoryArtChecks.LayersRoot, f)))
+            .OrderBy(f => f).ToList();
+        var auraLayers = wanted.Count(f => f.StartsWith("aura", StringComparison.Ordinal));
+        // 7 shapes × 2 stages × 6 faces × 3 auras, and the adults' tall twins.
+        Expect(auraLayers == 7 * 6 * 3 * 3, $"{auraLayers} aura layers named, expected {7 * 6 * 3 * 3}");
+        Expect(looks > 20_000, $"only {looks} aura looks were built");
+        Expect(missing.Count == 0, $"{missing.Count} aura layer(s) missing, e.g. {string.Join(", ", missing.Take(3))}");
     }
 
     private static void SpriteOfReadsTheAura()
     {
         var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
-        string Of(Plynling p, PlynlingMood mood = PlynlingMood.Content, Outfit? outfit = null) => PlynlingArt.SpriteOf(p, now, mood, outfit);
-        var v = $"_v{PlynlingArt.Version}.webp";
+        PlynlingLook? Of(Plynling p, PlynlingMood mood = PlynlingMood.Content, Outfit? outfit = null) => PlynlingArt.LookOf(p, now, mood, outfit);
 
-        Expect(Of(Living(aura: "cos.aura.bulles")).EndsWith("_content_aura_bulles" + v), "bulles: " + Of(Living(aura: "cos.aura.bulles")));
-        Expect(Of(Living("cos.accessory.noeud", "bleu", "cos.aura.bulles")).EndsWith("_with_noeud_bleu_aura_bulles" + v),
-            "bulles with the nœud bleu: " + Of(Living("cos.accessory.noeud", "bleu", "cos.aura.bulles")));
-        Expect(!Of(Living(aura: "cos.aura.nope")).Contains("_aura_"), "unknown aura: " + Of(Living(aura: "cos.aura.nope")));
-        Expect(!Of(Living(aura: "cos.accessory.couronne")).Contains("_aura_"), "an accessory key in AuraKey: " + Of(Living(aura: "cos.accessory.couronne")));
-        foreach (var mood in new[] { PlynlingMood.Sick, PlynlingMood.Frozen, PlynlingMood.Angry })
-            Expect(!Of(Living("cos.accessory.couronne", aura: "cos.aura.scintillements"), mood).Contains("_aura_"), $"{mood} shows the aura");
+        Expect(Of(Living(aura: "cos.aura.bulles")) is { Aura: "bulles", First: null, Face: "content" }, "bulles: " + Of(Living(aura: "cos.aura.bulles"))?.FileName);
+        Expect(Of(Living("cos.accessory.noeud", "bleu", "cos.aura.bulles")) is { Aura: "bulles", First: { Key: "cos.accessory.noeud", Style: "bleu_gauche" } },
+            "bulles with the nœud bleu: " + Of(Living("cos.accessory.noeud", "bleu", "cos.aura.bulles"))?.FileName);
+        Expect(Of(Living(aura: "cos.aura.nope")) is null, "unknown aura: " + Of(Living(aura: "cos.aura.nope"))?.FileName);
+        Expect(Of(Living(aura: "cos.accessory.couronne")) is null, "an accessory key in AuraKey: " + Of(Living(aura: "cos.accessory.couronne"))?.FileName);
+        foreach (var mood in new[] { PlynlingMood.Sick, PlynlingMood.Frozen })
+            Expect(Of(Living("cos.accessory.couronne", aura: "cos.aura.scintillements"), mood) is { Aura: null }, $"{mood} shows the aura");
+        Expect(Of(Living("cos.accessory.couronne", aura: "cos.aura.scintillements"), PlynlingMood.Angry) is null, "angry builds a look");
         var p = Living(aura: "cos.aura.bulles");
-        Expect(Of(p, outfit: Outfit.Of(p).With(CosmeticCatalog.ByKey("cos.aura.petales")!)).Contains("_aura_petales_"), "try-on of Pétales");
-        Expect(!Of(p, outfit: Outfit.Of(p).Without(CosmeticSlot.Aura)).Contains("_aura_"), "try-on without the aura still shows it");
+        Expect(Of(p, outfit: Outfit.Of(p).With(CosmeticCatalog.ByKey("cos.aura.petales")!))?.Aura == "petales", "try-on of Pétales");
+        Expect(Of(p, outfit: Outfit.Of(p).Without(CosmeticSlot.Aura)) is null, "try-on without the aura still shows it");
+        Expect(PlynlingArt.SpriteOf(p, now, PlynlingMood.Content).StartsWith("attachment://pl__", StringComparison.Ordinal),
+            "an aura alone is not drawn: " + PlynlingArt.SpriteOf(p, now, PlynlingMood.Content));
     }
 
     private static Plynling Living(string? accessory = null, string? style = null, string? aura = null)

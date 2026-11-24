@@ -264,6 +264,9 @@ var host = Host.CreateDefaultBuilder(args)
 
     // BotChat is static; the one thing it needs from DI is the sticker gate.
     BotChat.FollowUp = host.Services.GetRequiredService<StickerService>().TryFollowUp;
+    // The painter is static too: a dressed picture it can't draw (the card falls back to the link) is logged here.
+    var painterLog = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("PlynlingPainter");
+    PlynlingPainter.Log = m => painterLog.LogWarning("{Message}", m);
 
     using (var scope = host.Services.CreateScope())
     {

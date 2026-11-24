@@ -603,12 +603,6 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        await ModifyOriginalResponseAsync(m =>
-        {
-            m.Components = reply.Card;
-            // Re-asserted on every edit: an update without it is rejected on a V2 message.
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        await Context.Interaction.ModifyCardAsync(reply.Card);     // flag, mentions and the drawn picture
     }
 }

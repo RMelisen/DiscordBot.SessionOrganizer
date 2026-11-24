@@ -193,11 +193,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         var now = DateTimeOffset.UtcNow;
         var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
         var card = CosmeticCards.Build(view, data, now, notice);
-        await ModifyOriginalResponseAsync(m =>
-        {
-            m.Components = card;
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        // The try-on's picture is attached afresh each time, and dropped when nothing is drawn.
+        await Context.Interaction.ModifyCardAsync(card);
     }
 }
