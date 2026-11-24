@@ -288,7 +288,8 @@ paid again. Every completion — discovery or turn-in — goes through `PayCompl
 **The pictures are application emojis** (owned by the bot's application, so unlike reaction emotes
 they work in any server), and **the bot uploads them itself**.
 
-- Mushroom sprites ship in `ProjectSYNCS/Assets/Mushrooms/<slug>.png` (128 px, ×8 from the pack's
+- Mushroom sprites ship in `ProjectSYNCS/Assets/Mushrooms/<slug>.png`, from the free *Mushroom
+  Pack* by [Atelier Pixerelia](https://pixerelia.itch.io/) (128 px, ×8 from the pack's
   16 px without smoothing; copied to output and publish by the csproj). File names are the item keys
   (`col.<file name>`) — the harness checks both ways. `CREDITS.txt` is the pack's list with Latin
   names.

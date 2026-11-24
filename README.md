@@ -1013,3 +1013,10 @@ Only `/data` is persisted by the add-on, so the SQLite file lives there in
 production. Never commit a real token: `appsettings.json` and `config.yaml` ship
 placeholders, and real credentials belong in user secrets (dev) or the add-on
 options (prod).
+
+## Credits
+
+The mushroom item icons come from the free *Mushroom Pack* by
+[Atelier Pixerelia](https://pixerelia.itch.io/) (`ProjectSYNCS/Assets/Mushrooms/`).
+The other item icons are drawn in the same style and palette
+(`tools/item-art/`).
