@@ -60,9 +60,9 @@ Une **taxe de 10 %** (arrondie au-dessus) s'ajoute, **à ta charge** : la person
 
 J'efface **un** de tes points sur le [mur de la honte](honte.md).
 
-- **`category`** : dans quel titre (Malfaisant, Perfide, Hystérique ou Indigne).
+- **`category`** : dans quel titre (Malfaisant, Banni, Perfide, Hystérique ou Indigne).
 
-Les votes du Banni ne sont pas à vendre. S'il n'y a rien à effacer dans ce titre, je refuse et tu ne paies rien.
+Pour le Banni, j'efface un vote du staff. S'il n'y a rien à effacer dans ce titre, je refuse et tu ne paies rien.
 
 !!! warning "Le prix des pots-de-vin"
     Un pot-de-vin coûte **100 cailloux**, et le prix **double** à chaque pot-de-vin que tu as déjà payé cette semaine (du lundi au dimanche), les deux sortes confondues : 100, puis 200, puis 400… Lundi, on repart à 100.

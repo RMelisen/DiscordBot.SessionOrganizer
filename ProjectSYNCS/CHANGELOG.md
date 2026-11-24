@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.14.0 — 2026-11-24
+
+- `/bribe shame` can now erase a « Le Banni » ban vote too. A vote bought back today frees one of
+  today's two vote slots against that person.
+
 ## 8.13.3 — 2026-11-24
 
 - The Plynling starvation warning DM now comes 12 hours before death instead of 3 (still at

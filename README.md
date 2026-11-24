@@ -628,7 +628,7 @@ looks after her.
   else) count toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
 - **Bribes:** `/bribe favourite` makes you her chouchou for 24 h (warm answers when you tag or reply to
   her, warm reactions; an insult still gets roasted); `/bribe shame` erases one of your `/shame` hits
-  (not ban votes). A bribe costs 100 cailloux, doubled by every bribe you already paid this week.
+  (ban votes included). A bribe costs 100 cailloux, doubled by every bribe you already paid this week.
 - **Dedications:** `/shoutout bid amount` bids for a dedication in tomorrow's morning hello (from
   50, each bid at least 10 more; bids close at 20:00, and later ones go to the day after). The winner gets a ping and a big-up:
   either a dedication line instead of the usual greeting, or the usual greeting ending on a credit to them; outbid bids are refunded at once. On her birthday or a quiet

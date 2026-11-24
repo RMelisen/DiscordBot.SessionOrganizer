@@ -67,9 +67,9 @@ Un point chaque fois que tu abandonnes ton Plynling avec `/plynling abandon` (vo
 
 ## Effacer un point
 
-Avec des cailloux, je peux oublier un point : `/bribe shame` efface **un** de tes points dans le titre de ton choix (Malfaisant, Perfide, Hystérique ou Indigne). Le prix et les règles sont sur la page [cailloux](cailloux.md#bribe-shame).
+Avec des cailloux, je peux oublier un point : `/bribe shame` efface **un** de tes points dans le titre de ton choix (Malfaisant, Banni, Perfide, Hystérique ou Indigne). Le prix et les règles sont sur la page [cailloux](cailloux.md#bribe-shame).
 
-Les votes du **Banni** ne s'achètent pas : c'est le staff qui les donne.
+Même les votes du **Banni** s'achètent : le staff vote, moi j'oublie. Un vote effacé aujourd'hui libère une place dans la limite du jour, donc le staff peut revoter.
 
 !!! syncs bargain ""
     Je suis incorruptible. Sauf contre des cailloux. Mais à part ça, incorruptible ♡

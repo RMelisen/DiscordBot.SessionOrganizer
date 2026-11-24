@@ -167,7 +167,7 @@ public class HelpModule : SyncsModuleBase
                 "elle disparaît, personne ne la touche.")
             .AddField("Commandes — Ce que les cailloux m'achètent",
                 "**`/bribe favourite`** — 24 h comme mon chouchou : je suis gentille avec toi. Pour une fois.\n" +
-                "**`/bribe shame`** — J'efface un de tes points de `/shame` (pas les votes). Un pot-de-vin coûte 100 cailloux, " +
+                "**`/bribe shame`** — J'efface un de tes points de `/shame`, votes du Banni compris. Un pot-de-vin coûte 100 cailloux, " +
                 "doublé à chaque pot-de-vin de la semaine.\n" +
                 "**`/shoutout bid`** — Enchéris (dès 50) pour une dédicace dans mon bonjour de demain, jusqu'à 20 h. " +
                 "Si on te dépasse, ta mise te revient. `/shoutout status` montre où en sont les enchères.\n" +
