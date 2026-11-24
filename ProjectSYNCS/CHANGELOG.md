@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.14.1 — 2026-11-24
+
+- The help cards of `/plynling`, `/minecraft` and `/report` now link to their page of the online guide.
+
 ## 8.14.0 — 2026-11-24
 
 - `/bribe shame` can now erase a « Le Banni » ban vote too. A vote bought back today frees one of

@@ -48,6 +48,15 @@ public class HelpModule : SyncsModuleBase
     // It has room for what these capped embeds can't explain.
     public const string GuideUrl = "https://rmelisen.github.io/DiscordBot.SessionOrganizer/";
 
+    // One page of the guide, for the subsystem help cards (/plynling, /minecraft, /report help). The
+    // path is the page's URL under the site ("plynlings/", "staff/#report"): renaming a page breaks it.
+    public static string GuideUrlFor(string path) => GuideUrl + path;
+
+    // The « 📖 Guide complet » link button every help card carries, pointing at its own page.
+    // A link button has a url instead of a custom-id, so it never collides with a card's own buttons.
+    public static ButtonBuilder GuideButton(string path) =>
+        ButtonBuilder.CreateLinkButton("Guide complet", GuideUrlFor(path), new Emoji("📖"));
+
     // Read by HelpComponentHandler: each button carries its own page, so no two share an id.
     // The guide is a link button, which carries a url instead of a custom-id.
     public static MessageComponent BuildButtons(int page) =>
@@ -55,7 +64,7 @@ public class HelpModule : SyncsModuleBase
             .WithButton("Commandes", $"help:page:{CommandsPage}", ButtonStyle.Secondary, disabled: page == CommandsPage)
             .WithButton("Cailloux & objets", $"help:page:{EconomyPage}", ButtonStyle.Secondary, disabled: page == EconomyPage)
             .WithButton("Mode d'emploi", $"help:page:{GuidePage}", ButtonStyle.Secondary, disabled: page == GuidePage)
-            .WithButton("Guide complet", style: ButtonStyle.Link, url: GuideUrl, emote: new Emoji("📖"))
+            .WithButton(GuideButton(""))
             .Build();
 
     // Every command, in one list.

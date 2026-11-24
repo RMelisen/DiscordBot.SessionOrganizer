@@ -36,7 +36,7 @@ public class ReportModule : SyncsModuleBase
     // What each report shows (StaffHelpCards). Private, unlike the reports themselves.
     [SlashCommand("help", "Ce que montre chacun de mes rapports")]
     public Task HelpAsync() => SessionPermissions.IsStaff(Context.User)
-        ? RespondAsync(embed: StaffHelpCards.BuildReportHelp(), ephemeral: true)
+        ? RespondAsync(embed: StaffHelpCards.BuildReportHelp(), components: StaffHelpCards.BuildReportHelpButtons(), ephemeral: true)
         : RespondAsync(Refusal, ephemeral: true);
 
     [SlashCommand("incidents","Ce qui a coincé : échecs, réponses trop lentes, journal, redémarrages")]

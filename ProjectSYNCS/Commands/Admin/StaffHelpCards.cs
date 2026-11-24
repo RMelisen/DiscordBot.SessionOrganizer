@@ -13,6 +13,10 @@ public static class StaffHelpCards
 {
     public const string Refusal = "Ce mode d'emploi est réservé aux administrateurs et aux modérateurs (˶ᵔ ᵕ ᵔ˶)";
 
+    // Its page of the online guide (the /report section of staff.md).
+    public static MessageComponent BuildReportHelpButtons() =>
+        new ComponentBuilder().WithButton(HelpModule.GuideButton("staff/#report")).Build();
+
     public static Embed BuildReportHelp() =>
         new EmbedBuilder()
             .WithTitle("📊 Mes rapports — mode d'emploi")

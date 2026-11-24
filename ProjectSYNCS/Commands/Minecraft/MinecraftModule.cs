@@ -201,9 +201,11 @@ public class MinecraftModule : SyncsModuleBase
         return embed.Build();
     }
 
+    // Also MinecraftHelpHandler's on every page swap, so the guide link stays.
     public static MessageComponent BuildHelpButtons(int page) =>
         new ComponentBuilder()
             .WithButton("◀", $"minecraft:help:{page - 1}", ButtonStyle.Secondary, disabled: page <= 0)
             .WithButton("▶", $"minecraft:help:{page + 1}", ButtonStyle.Secondary, disabled: page >= HelpPages - 1)
+            .WithButton(HelpModule.GuideButton("minecraft/"))
             .Build();
 }

@@ -22,10 +22,12 @@ public abstract partial class PlynlingModule : SyncsModuleBase
     // both under Discord's 6000-character cap. Each page is measured by the harness.
     public static Embed BuildHelpEmbed(int page = 0) => page == 1 ? BuildPersonalityHelp() : BuildCareHelp();
 
+    // Also PlynlingHelpHandler's on every page swap, so the guide link stays.
     public static MessageComponent BuildHelpButtons(int page) =>
         new ComponentBuilder()
             .WithButton("Le Plynling", "plyn:help:0", ButtonStyle.Secondary, new Emoji("🍄"), disabled: page == 0)
             .WithButton("Personnalité & événements", "plyn:help:1", ButtonStyle.Secondary, new Emoji("✨"), disabled: page == 1)
+            .WithButton(HelpModule.GuideButton("plynlings/"))
             .Build();
 
     private static Embed BuildPersonalityHelp() =>
