@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.10.2 — 2026-11-24
+
+- The « Vivants » / « Disparus » tabs on `/plynling relations` lose their emoji.
+
 ## 8.10.1 — 2026-11-24
 
 - `/inventory collection` breathes more: space between sets, a completed set keeps a progress bar

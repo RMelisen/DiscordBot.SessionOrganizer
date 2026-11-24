@@ -136,9 +136,9 @@ public static class PlynlingJournalCards
         var lost = relations.Count(r => r.Other.DiedAt is not null);
         if (lost == 0 && !dead) return null;
         return new ComponentBuilder()
-            .WithButton($"💞 Vivants ({relations.Count - lost})", $"plyn:rel:{p.Id}:alive",
+            .WithButton($"Vivants ({relations.Count - lost})", $"plyn:rel:{p.Id}:alive",
                 dead ? ButtonStyle.Secondary : ButtonStyle.Primary, disabled: !dead)
-            .WithButton($"🪦 Disparus ({lost})", $"plyn:rel:{p.Id}:dead",
+            .WithButton($"Disparus ({lost})", $"plyn:rel:{p.Id}:dead",
                 dead ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: dead)
             .Build();
     }
