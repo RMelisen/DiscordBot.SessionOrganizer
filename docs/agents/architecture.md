@@ -29,11 +29,11 @@ recent day holding a hit, so the windows move (see shame).
 
 ## Data migrations
 
-Migrations are schema-only except six deliberate data migrations riding apply-on-startup:
+Migrations are schema-only except seven deliberate data migrations riding apply-on-startup:
 `ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill),
 `PrepareProdLaunch` (one-guild launch prep), `SwapLaunchPairGenders` (those three are detailed in
-`plynling.md`) and `RetireBackpackAndHeadphones` (two accessories refunded and taken off,
-`economy.md`). Before writing another:
+`plynling.md`), `RetireBackpackAndHeadphones` and `RetirePumpkinGraveFrame` (cosmetics refunded and
+taken off, `economy.md`). Before writing another:
 
 - A wipe **resets the reward and keeps the record** (`UPDATE … SET TotalXp = 0`), never deleting
   rows that also carry facts like `ReactionsUsed`.

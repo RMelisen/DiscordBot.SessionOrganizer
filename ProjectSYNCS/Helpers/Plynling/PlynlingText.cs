@@ -210,6 +210,24 @@ public static class PlynlingText
     public static string VisitFind(string name, ulong ownerId, ItemInfo item) =>
         $"**{name}** rapporte {ItemLabel(item)} pour <@{ownerId}> !";
 
+    // /plynling train's refusals (the shared ones — none, dead, frozen, asleep — come from the care set).
+    public static string TrainTooYoung(PlynlingGender g) =>
+        $"{g.Agree("Il", "Elle")} est encore bébé : l'entraînement, c'est à partir de l'adolescence.";
+
+    public static string TrainSick(PlynlingGender g) =>
+        $"Malade, {g.Agree("il", "elle")} reste au chaud : pas d'entraînement avant d'être {g.Agree("guéri", "guérie")}.";
+
+    public const string TrainMascot = "Ping-Qilin ne s'entraîne pas. Elle a déjà un emploi du temps très chargé (dormir).";
+
+    public const string TrainUnknown = "Cet entraînement n'existe pas.";
+
+    public static string TrainNoEnergy(PlynlingGender g, int energy, int max, DateTimeOffset enough) =>
+        $"{g.Agree("Il", "Elle")} est à plat (⚡ {energy}/{max}). Assez d'énergie pour un entraînement <t:{enough.ToUnixTimeSeconds()}:R>.";
+
+    public const string PointNotYours = "Ces points ne sont pas les tiens.";
+
+    public const string PointNoneLeft = "Plus de point à placer pour l'instant.";
+
     public static string ForageTooSoon(PlynlingGender g, DateTimeOffset ready) =>
         $"{g.Agree("Il", "Elle")} se remet de sa dernière balade. Prochaine sortie <t:{ready.ToUnixTimeSeconds()}:R>.";
 

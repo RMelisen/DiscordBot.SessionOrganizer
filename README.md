@@ -38,7 +38,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · puissance4 · morpion · lottery` | Her games, mostly for cailloux | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
-| `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
+| `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · train · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
 | `/inventory view · collection · shop · cosmetics · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance · /pay` | Earn cailloux; see your balance (and switch on a DM for when `/work` is ready); give cailloux to someone (10 % tax) | everyone |
 | `/daily` | A daily reward that grows with each day in a row (up to 100 cailloux, sometimes an item); a missed day starts over | everyone |
@@ -526,6 +526,12 @@ looks after her.
   Timide, Gourmand…). Its traits and its passion shape five stats (Diplomatie, Intendance, Sagesse,
   Ruse, Courage) and a little title (« Piquante et intrépide »). The card shows them; « 📜 Personnalité »
   details them privately.
+- **Training and levels:** from *ado* on, a Plynling also has five body stats — Force, Agilité,
+  Endurance, Intelligence, Vitesse — from a die, a lean of its species and its traits.
+  `/plynling train drill:` works one of them: it costs **Énergie** ⚡ (refills in 24 h; a Plynling
+  born sturdier has more) and gives XP, and rarely the stat grows for good. Each **level** (up to
+  100, about a year of steady play) gives a point its owner places in a body stat, for good. The
+  drill's answer is private; only a new level is announced. The card shows « Niv. · ⚡ ».
 - **Events:** about once a day, something happens to each Plynling — a little scene with two or three
   choices, some needing a trait or a stat, some a challenge with its odds shown. Its owner chooses
   privately from « ✨ Événement » on the card; after 24 h it decides on its own, in character, at no
@@ -580,7 +586,7 @@ looks after her.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
-- **Cosmetics:** 98 things a Plynling can wear, one per slot — a **thème** that recolours its
+- **Cosmetics:** 97 things a Plynling can wear, one per slot — a **thème** that recolours its
   card and adds a banner, a **titre** under its name (in its gender), an **accessoire**
   (« porte 🧣 une écharpe »), drawn on the Plynling's picture — some in a colour or a place you pick
   for free in the wardrobe — an **aura** worn with it, animated around the Plynling (twinkling

@@ -17,6 +17,7 @@ spans subsystems; write the rule and its reason, not the story — git keeps the
 | Pop quiz, `QuizBank`, `/quiz leaderboard` | `docs/agents/quiz.md` |
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
+| Plynling RPG: body stats, levels and points, Énergie, `/plynling train` | `docs/agents/plynling-rpg.md` |
 | Plynling storylines: story engine, story files, `StoryParser`, `StoryValidator`, walk checks, path report | `docs/agents/plynling-storylines.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
 | Plynling storylines, or anything set in the village (Humeval) | `docs/village-lore.md` |
@@ -121,7 +122,7 @@ pinned for the process lifetime. All in-memory state resets on restart **by desi
   older history lives only in the totals. Instances, removal rules and bucket-only tables:
   `architecture.md`.
 - **No `HasMaxLength`** (SQLite ignores it): cap at the input (below).
-- **Migrations are schema-only** except six deliberate data migrations; read `architecture.md`
+- **Migrations are schema-only** except seven deliberate data migrations; read `architecture.md`
   before writing one.
 
 ### Time and culture

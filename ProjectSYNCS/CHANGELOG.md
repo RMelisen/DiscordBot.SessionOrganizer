@@ -3,19 +3,25 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 8.7.0 — 2026-11-24
+## 8.9.0 — 2026-11-24
 
 - A rare easter egg on her commands.
-
-## 8.6.2 — 2026-11-24
-
 - The Monday « Grosse tête de la semaine » announcement is posted in the bots channel instead of the
   quiz channel.
-
-## 8.6.1 — 2026-11-24
-
 - SYNCS reacts to chat messages with an emote half as often, and joins in on other people's reactions
   half as often.
+
+## 8.8.0 — 2026-11-23
+
+- The Citrouilles grave frame is gone from the game. Each copy owned is refunded 2 400 cailloux, and
+  graves that wore it no longer have a frame.
+
+## 8.7.0 — 2026-11-23
+
+- Plynlings have five body stats from the ado stage on: Force, Agilité, Endurance, Intelligence and Vitesse.
+- New `/plynling train`: a quick drill that spends Énergie (refills over 24 h) for XP, and rarely a permanent +1.
+- Plynlings level up to 100; each level gives a point their owner places in a body stat. A new level is announced in the channel.
+- The Plynling card shows its level and Énergie, and « Personnalité » breaks down the body stats and offers the owner the buttons to place points.
 
 ## 8.6.0 — 2026-11-23
 

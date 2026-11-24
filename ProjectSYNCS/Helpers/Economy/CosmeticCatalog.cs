@@ -367,7 +367,7 @@ public static class CosmeticCatalog
         Grave("bulles_savon", "🫧", "Bulles de savon", Rot, U);
         Grave("coeurs", "💕", "Cœurs", Rot, U);
         Grave("notes_musique", "🎶", "Notes de musique", Rot, R);
-        Grave("citrouilles", "🎃", "Citrouilles", S, season: Season.Autumn);
+        // cos.grave.citrouilles (autumn) was retired in 8.8.0 (RetirePumpkinGraveFrame): never reuse the key.
         Grave("bonhomme_neige", "⛄", "Bonhomme de neige", S, season: Season.Winter);
         // Moss on the river stones; reeds of the marsh.
         Grave("mousse", "🌿", "Mousse", Cr, craftPrice: 100,

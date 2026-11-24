@@ -55,6 +55,7 @@ public static class EconomyLog
     public const string ActGive = "act.give";
     public const string ActBath = "act.bath";
     public const string ActMedicine = "act.medicine";
+    public const string ActTrain = "act.train";      // /plynling train (the RPG's drill)
 
     // What they found and bought.
     public const string ItemFound = "item.found";
@@ -64,7 +65,7 @@ public static class EconomyLog
 
     public static readonly IReadOnlyList<string> Earnings = new[] { EarnWork, EarnPassive, EarnGame, EarnGift, EarnBadge, EarnCollection, EarnSale, EarnAdmin, EarnEvent, EarnQuiz, EarnArcade, EarnDaily, EarnLottery, EarnGiveaway };
     public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin, SpendMedicine, SpendArcade, SpendTax, SpendPack, SpendBribe, SpendShoutout, SpendJar, SpendLottery };
-    public static readonly IReadOnlyList<string> Activities = new[] { ActMeal, ActPet, ActGame, ActVisit, ActForage, ActTrade, ActGive, ActBath, ActMedicine };
+    public static readonly IReadOnlyList<string> Activities = new[] { ActMeal, ActPet, ActGame, ActVisit, ActForage, ActTrade, ActGive, ActBath, ActMedicine, ActTrain };
     public static readonly IReadOnlyList<string> Findings = new[] { ItemFound, ItemSet, CosBought, CosCrafted };
 
     /// <summary>Adds <paramref name="amount"/> to today's counter. Not saved: the caller's save carries it.</summary>

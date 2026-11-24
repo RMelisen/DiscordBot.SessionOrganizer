@@ -1,6 +1,10 @@
 # Plynling Expeditions — the RPG engine
 
 Design agreed with the owner on 2026-10-28 (brainstorm, then a grilling pass). Not implemented yet.
+
+**Superseded where they differ by `2026-11-23-plynling-rpg-design.md`** (levels and XP, training,
+fights, and expeditions before Plynling-vs-Plynling fights). Read that one first.
+
 Decisions are the owner's unless marked *builder's call* (proposed during the session, not
 contested, but never explicitly chosen).
 

@@ -119,7 +119,10 @@ public static class PlynlingEventEngine
         var against = challenge.VsTarget && ctx.OtherStats is { } theirs
             ? theirs.Single(l => l.Stat == challenge.Stat).Total
             : challenge.Difficulty;
-        return Math.Clamp(50 + 5 * (ctx.Stat(challenge.Stat) - against), 5, 95);
+        // A body stat (the RPG's) climbs with levels, so its test is a ratio: an edge, never a sure win.
+        return PlynlingStats.IsBody(challenge.Stat)
+            ? PlynlingRpg.BodyChance(ctx.Stat(challenge.Stat), against)
+            : Math.Clamp(50 + 5 * (ctx.Stat(challenge.Stat) - against), 5, 95);
     }
 
     public static bool Succeeds(int instanceId, int chance) =>
@@ -247,7 +250,9 @@ public static class PlynlingEventEngine
         var dot = length == 0
             ? 0
             : trait.Axes.Sum(kv => kv.Value * (ado.Leaning.GetValueOrDefault(kv.Key) - ado.Count * AdoLeaningBaseline[kv.Key])) / length;
-        var raised = trait.Stats.Where(kv => kv.Value > 0).ToList();
+        // Mind stats only: the ado years grow those, and a trait's body-stat bonus (the RPG's, added later)
+        // must not dilute its pull or every adulte draw would shift.
+        var raised = trait.Stats.Where(kv => kv.Value > 0 && !PlynlingStats.IsBody(kv.Key)).ToList();
         var fromGrowth = raised.Count == 0
             ? 0
             : GrowthPull * raised.Sum(kv => kv.Value * (ado.Growth.GetValueOrDefault(kv.Key) - ado.Count * AdoGrowthBaseline[kv.Key]))

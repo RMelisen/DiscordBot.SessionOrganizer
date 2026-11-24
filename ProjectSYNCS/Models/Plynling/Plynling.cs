@@ -101,6 +101,28 @@ public class Plynling
     public int GrowthLearning { get; set; }
     public int GrowthIntrigue { get; set; }
     public int GrowthCourage { get; set; }
+    // The body stats' growth (docs/agents/plynling-rpg.md): a drill's rare permanent +1, and events or
+    // expeditions that grow one for good.
+    public int GrowthForce { get; set; }
+    public int GrowthAgility { get; set; }
+    public int GrowthEndurance { get; set; }
+    public int GrowthIntelligence { get; set; }
+    public int GrowthSpeed { get; set; }
+
+    // The RPG (Helpers/Plynling/PlynlingRpg). Its level and how many points are left to place are derived
+    // from RpgXp and these five — never stored. A point placed is for good (no respec).
+    public int PointsForce { get; set; }
+    public int PointsAgility { get; set; }
+    public int PointsEndurance { get; set; }
+    public int PointsIntelligence { get; set; }
+    public int PointsSpeed { get; set; }
+    public long RpgXp { get; set; }
+    // Énergie as of EnergyAsOf, refilled with elapsed time like the needs; every spend rebases. A row
+    // that never spent any has EnergyAsOf at year 1, which reads as full.
+    public double Energy { get; set; }
+    public DateTimeOffset EnergyAsOf { get; set; }
+    // Drills done (/plynling train): also what a drill's hashed roll is keyed on.
+    public long Drills { get; set; }
 
     // CK3's stress, 0..400 (Helpers/Plynling/PlynlingStress). Only the owner's choices raise it; care and the
     // mornings lower it. Every change rebases the needs, since its level changes how fast happiness drains.

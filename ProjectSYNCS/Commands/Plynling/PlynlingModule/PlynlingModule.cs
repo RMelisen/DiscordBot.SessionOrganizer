@@ -401,6 +401,40 @@ public abstract partial class PlynlingModule : SyncsModuleBase
             await RespondAsync(text, allowedMentions: AllowedMentions.None);
     }
 
+    // The RPG's drill (docs/agents/plynling-rpg.md). Answered privately — about six a day each would flood the
+    // channel — except a level-up, which gets one public line. No ; shortcut: a typed one answers publicly.
+    [SlashCommand("train", "Entraîner ton Plynling : de l'expérience, et parfois un vrai progrès")]
+    public async Task TrainAsync(
+        [Summary("drill", "Ce qu'il travaille")]
+        [Choice("💪 Force", (int)PlynlingStat.Force)]
+        [Choice("🤸 Agilité", (int)PlynlingStat.Agility)]
+        [Choice("❤️ Endurance", (int)PlynlingStat.Endurance)]
+        [Choice("🧠 Intelligence", (int)PlynlingStat.Intelligence)]
+        [Choice("💨 Vitesse", (int)PlynlingStat.Speed)]
+        int drill)
+    {
+        // It reads and saves before it can answer: defer first (the Pi can outrun Discord's 3 s).
+        await DeferAsync(ephemeral: true);
+        var now = DateTimeOffset.UtcNow;
+        var stat = (PlynlingStat)drill;
+        var result = await _plynlings.TrainAsync(Context.Guild.Id, Context.User.Id, stat, now);
+        var (text, buttons) = PlynlingTrainCards.Reply(result, stat, _picker.Pick);
+        await FollowupAsync(text, components: buttons, ephemeral: true, allowedMentions: AllowedMentions.None);
+
+        if (result is { Outcome: TrainOutcome.Done, Plynling: { } p, Drill: { } d } && d.LevelAfter > d.LevelBefore)
+        {
+            try
+            {
+                await Context.Channel.SendMessageAsync(PlynlingTrainCards.LevelUpLine(p, d.LevelAfter, _picker.Pick),
+                    allowedMentions: AllowedMentions.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to announce the level-up of Plynling {Id}.", p.Id);
+            }
+        }
+    }
+
     // What /plynling forage answers, shared with the ;forage shortcut. A refusal is shown privately —
     // or as a passing reply, from the shortcut.
     public static (string Text, bool Refused) ForageReply(ForageResult result, ulong userId, ResponsePicker picker)

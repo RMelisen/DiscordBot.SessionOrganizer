@@ -72,8 +72,9 @@ public static class PlynlingPersonality
     }
 
     // « 📜 Personnalité », answered privately: the title, each trait with what it does, and each stat
-    // with where it comes from — CK3's tooltip, in an embed. The name is hostile input.
-    public static Embed DetailEmbed(Plynling p, IReadOnlyList<TraitInfo> traits, StoryRecord? story = null)
+    // with where it comes from — CK3's tooltip, in an embed. The name is hostile input. The body stats
+    // show only where the RPG applies (ado and older, never the mascot: PlynlingRpg.CanTrain).
+    public static Embed DetailEmbed(Plynling p, IReadOnlyList<TraitInfo> traits, DateTimeOffset now, StoryRecord? story = null)
     {
         var text = new StringBuilder();
         if (Title(traits, p.Gender) is { } title) text.AppendLine($"*« {title} »*").AppendLine();
@@ -82,7 +83,8 @@ public static class PlynlingPersonality
         foreach (var t in Ordered(traits))
             text.AppendLine($"{t.Emoji} **{t.Name(p.Gender)}** — {t.Description}{Effects(t)}");
 
-        var stats = string.Join("\n", PlynlingStats.Compute(p, traits).Select(StatText));
+        var rpg = PlynlingRpg.CanTrain(p, now);
+        var stats = string.Join("\n", PlynlingStats.Compute(p, traits).Where(l => rpg || !PlynlingStats.IsBody(l.Stat)).Select(StatText));
         var embed = new EmbedBuilder()
             .WithTitle($"📜 Personnalité de {PlynlingCardUi.SafeName(p.Name)}")
             .WithColor(new Color(PlynlingCatalog.Info(p.Species).Accent))
@@ -182,8 +184,10 @@ public static class PlynlingPersonality
     {
         var parts = new List<string> { $"base {l.Base}" };
         if (l.Passion != 0) parts.Add($"passion {Signed(l.Passion)}");
+        if (l.Species != 0) parts.Add($"espèce {Signed(l.Species)}");
         if (l.Traits != 0) parts.Add($"traits {Signed(l.Traits)}");
         if (l.Growth != 0) parts.Add($"progrès {Signed(l.Growth)}");
+        if (l.Points != 0) parts.Add($"points {Signed(l.Points)}");
         if (l.State != 0) parts.Add($"état {Signed(l.State)}");
         return $"{PlynlingStats.Emoji(l.Stat)} **{PlynlingStats.Name(l.Stat)} {l.Total}** · {string.Join(" · ", parts)}";
     }

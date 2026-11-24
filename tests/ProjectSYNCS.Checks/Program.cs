@@ -5603,5 +5603,8 @@ EventFaceChecks.Run(Fail);
 // 64. Auras, the fifth slot: catalogue, worn with an accessory, the picture, the screens: AuraChecks.cs.
 await AuraChecks.Run(Fail);
 
+// 65. The RPG foundation (body stats, levels, Énergie, the drill): RpgChecks.cs.
+await RpgChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;
