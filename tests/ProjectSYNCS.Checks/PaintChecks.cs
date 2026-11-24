@@ -16,7 +16,7 @@ using Image = SixLabors.ImageSharp.Image;
 //
 //     dotnet run --project tests/ProjectSYNCS.Checks -- art
 //
-// sweeps all 14 shapes instead of the default sample (adult amanite, baby coprin).
+// compares every face, look and aura on all 14 shapes; the default run a sample of them (InSample).
 public static class PaintChecks
 {
     private static Action<string> _fail = _ => { };
@@ -47,8 +47,9 @@ public static class PaintChecks
         var old = Path.Combine(root, "assets", "plynlings");
         LookNamesRoundTrip();
         var art = args.Length > 0 && args[0] == "art";
-        SinglesMatchToday(old, art ? AllShapes() : new[] { "amanite", "coprin_baby" }, art);
+        SinglesMatchToday(old, art ? AllShapes() : Sample, art);
         MarksRepaintIsInvisible();
+        MarksBlendShows();
         MissingArtIsNull();
         CacheHits();
         FilesForFindsPictures();
@@ -162,7 +163,15 @@ public static class PaintChecks
         return off == 0 ? null : $"{off} px off";
     }
 
-    private static void SinglesMatchToday(string old, string[] shapes, bool report)
+    private static readonly string[] Sample = { "amanite", "coprin_baby" };
+
+    // The default run's share of the sweep, on the sample shapes: every look on content (clean and
+    // dirty), and every aura on every aura face with no accessory, a hat (the 320 px canvas and its
+    // `_tall` aura) or a held item. `-- art` compares everything on all 14 shapes.
+    private static bool InSample(string face, string? key, string? aura) =>
+        aura is null ? face == "content" : key is null or "cos.accessory.couronne" or "cos.accessory.baguette";
+
+    private static void SinglesMatchToday(string old, string[] shapes, bool everything)
     {
         var jobs = new List<(PlynlingLook Look, string Old)>();
         var missingOld = new List<string>();
@@ -178,6 +187,7 @@ public static class PaintChecks
                 var with = l is { } y ? $"_with_{y.Key[AccessoryPrefix.Length..]}{(y.Style is null ? "" : "_" + y.Style)}" : "";
                 foreach (var aura in AuraFaces.Contains(face) ? Auras().Select(a => (string?)a).Prepend(null) : new string?[] { null })
                 {
+                    if (!everything && !InSample(face, l?.Key, aura)) continue;
                     var file = Path.Combine(old, $"{head}{with}{(aura is null ? "" : "_aura_" + aura)}_v{PlynlingArt.Version}.webp");
                     if (!File.Exists(file)) { missingOld.Add(Path.GetFileName(file)); continue; }
                     jobs.Add((new PlynlingLook(shape, face, dirty, worn, null, aura), file));
@@ -201,7 +211,7 @@ public static class PaintChecks
         });
         Expect(failures.IsEmpty, $"{failures.Count}/{jobs.Count} drawn picture(s) differ from today's, e.g. " +
                                  string.Join("; ", failures.OrderBy(f => f).Take(5)));
-        if (report)
+        if (everything)
             Console.WriteLine($"art: {jobs.Count} pictures over {shapes.Length} shapes compared, {failures.Count} differ, " +
                               $"{sw.Elapsed.TotalSeconds:0}s");
     }
@@ -225,6 +235,61 @@ public static class PaintChecks
         Expect(bad.IsEmpty, $"{bad.Count} marks repaint(s) show on the bare base, e.g. {string.Join("; ", bad.Take(3))}");
         var right = new PlynlingLook("amanite", "sleeping", false, new("cos.accessory.baguette", "droite"), null, null);
         Expect(PlynlingPainter.Draw(right) is not null, "amanite sleeping with a right-hand baguette is not drawn");
+    }
+
+    private static (int W, int H, List<Rgba32[]> Ticks) Decode(byte[] bytes)
+    {
+        using var img = Image.Load<Rgba32>(bytes);
+        return Ticks(img);
+    }
+
+    private static (int W, int H, List<Rgba32[]> Ticks) Decode(string path) => Decode(File.ReadAllBytes(path));
+
+    // A layer's tick (a still: its one frame).
+    private static Rgba32[] At(List<Rgba32[]> ticks, int t) => ticks[ticks.Count == 1 ? 0 : t];
+
+    // The repaint itself shows: base + a right-hand item with the marks pass differs from the same
+    // without it somewhere, for each sample shape, and only where the marks layer and the item are
+    // both drawn. Every marked face and every held item on its right side.
+    private static void MarksBlendShows()
+    {
+        string Layer(string folder, string name) => Path.Combine(PlynlingPainter.AssetsRoot, folder, name + ".webp");
+        // Each held look on its right side, as its layer is named: « ballon_rouge_droite », « baguette_droite ».
+        var held = TodaysLooks().Select(l => (Name: l.Key[AccessoryPrefix.Length..], l.Style)).Where(l => Held.Contains(l.Name))
+            .Select(l => $"{l.Name}_{(l.Style is null ? "" : l.Style + "_")}droite").ToList();
+        Expect(held.Count >= 8, $"only {held.Count} held items found");
+        foreach (var shape in Sample)
+        {
+            var shown = 0;
+            var bad = new ConcurrentQueue<string>();
+            var faces = Faces.Where(f => File.Exists(Layer("marks", $"{shape}_{f}"))).ToList();
+            Expect(faces.Contains("happy"), $"{shape}: no marks file for happy");
+            Parallel.ForEach(faces.SelectMany(f => held.Select(h => (Face: f, Item: h))), job =>
+            {
+                var name = $"{shape}_{job.Face}";
+                var (basePath, acc, marks) = (Layer("base", name), Layer("acc", $"{name}_{job.Item}"), Layer("marks", name));
+                var (w, h, with) = Decode(PlynlingPainter.Compose(basePath, new[] { acc }, marks, null));
+                var (_, _, without) = Decode(PlynlingPainter.Compose(basePath, new[] { acc }, null, null));
+                var (aw, ah, accTicks) = Decode(acc);
+                var (mw, mh, markTicks) = Decode(marks);
+                if (aw != w || ah != h || mw != w || mh != h) { bad.Enqueue($"{name} {job.Item}: canvas sizes differ"); return; }
+                var changed = 0;
+                for (var t = 0; t < with.Count; t++)
+                for (var i = 0; i < with[t].Length; i++)
+                {
+                    if (with[t][i] == without[t][i]) continue;
+                    changed++;
+                    if (At(accTicks, t)[i].A == 0 || At(markTicks, t)[i].A == 0)
+                    {
+                        bad.Enqueue($"{name} {job.Item}: tick {t} pixel {i % w},{i / w} changed outside item ∩ marks");
+                        return;
+                    }
+                }
+                if (changed > 0) Interlocked.Increment(ref shown);
+            });
+            Expect(bad.IsEmpty, $"{bad.Count} marks repaint(s) reach past the item and the marks, e.g. {string.Join("; ", bad.Take(3))}");
+            Expect(shown > 0, $"{shape}: no right-hand item on any marked face shows the marks repaint");
+        }
     }
 
     private static void MissingArtIsNull()

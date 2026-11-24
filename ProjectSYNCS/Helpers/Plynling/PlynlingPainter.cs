@@ -177,20 +177,33 @@ public static class PlynlingPainter
         if (all.Any(l => l.W > w || l.H > h))
             throw new InvalidOperationException("a layer is larger than the canvas");
 
-        var output = new List<Rgba32[]>(length);
+        // Identical consecutive ticks become one frame (as Pillow does): a tick that repeats the last
+        // frame only lengthens it, and its canvas is reused for the next tick, as is `covered`.
+        var frames = new List<Rgba32[]>();
+        var delays = new List<int>();
+        var covered = marks is null ? null : new bool[w * h];
+        Rgba32[]? o = null;
         for (var t = 0; t < length; t++)
         {
-            var o = new Rgba32[w * h];
-            var covered = marks is null ? null : new bool[w * h];
+            if (o is null) o = new Rgba32[w * h];
+            else Array.Clear(o);                       // the base may not fill a hat canvas
+            if (covered is not null) Array.Clear(covered);
             Place(bare, t, w, o, covered, Pass.Base);
             foreach (var layer in accessories) Place(layer, t, w, o, covered, Pass.Accessory);
             if (marks is not null) Place(marks, t, w, o, covered, Pass.Marks);
             if (particles is not null) Place(particles, t, w, o, covered, Pass.Aura);
             for (var i = 0; i < o.Length; i++)
                 if (o[i].A == 0) o[i] = default;
-            output.Add(o);
+            if (frames.Count > 0 && o.AsSpan().SequenceEqual(frames[^1]))
+            {
+                delays[^1] += Tick;
+                continue;
+            }
+            frames.Add(o);
+            delays.Add(Tick);
+            o = null;
         }
-        return Encode(w, h, output);
+        return Encode(w, h, frames, delays);
     }
 
     private enum Pass { Base, Accessory, Marks, Aura }
@@ -262,17 +275,9 @@ public static class PlynlingPainter
         return new Frames(img.Width, img.Height, ticks);
     }
 
-    // Identical consecutive ticks become one frame (as Pillow does), lossless, looping forever.
-    private static byte[] Encode(int w, int h, List<Rgba32[]> ticks)
+    // The frames with their delays, lossless, looping forever.
+    private static byte[] Encode(int w, int h, List<Rgba32[]> frames, List<int> delays)
     {
-        var frames = new List<Rgba32[]>();
-        var delays = new List<int>();
-        foreach (var t in ticks)
-        {
-            if (frames.Count > 0 && t.AsSpan().SequenceEqual(frames[^1])) { delays[^1] += Tick; continue; }
-            frames.Add(t);
-            delays.Add(Tick);
-        }
         using var image = Image.LoadPixelData<Rgba32>(frames[0], w, h);
         for (var f = 1; f < frames.Count; f++) image.Frames.AddFrame(frames[f]);
         for (var f = 0; f < frames.Count; f++)
