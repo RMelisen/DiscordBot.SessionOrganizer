@@ -15,8 +15,10 @@ theme:
   name: material
   language: fr
   # Her own palette and faces: guide/stylesheets/syncs.css (« sa chambre »).
-  # Template overrides (the 404 page) live in guide-theme/, outside docs_dir.
+  # Template overrides live in guide-theme/, outside docs_dir: the 404 page, link previews
+  # (main.html), the seasonal logo (partials/logo.html), the glossary (glossaire.md).
   custom_dir: guide-theme
+  # Fallback only: partials/logo.html swaps in her seasonal avatar.
   logo: assets/syncs/smug.png
   favicon: assets/syncs/happy.png
   font:
@@ -30,6 +32,7 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
+    - content.tooltips
     - toc.follow
   palette:
     - media: "(prefers-color-scheme: light)"
@@ -49,8 +52,16 @@ theme:
 
 extra_css:
   - stylesheets/syncs.css
+  - stylesheets/discord.css
 
 markdown_extensions:
+  - abbr
+  # The glossary: every page gets guide-theme/glossaire.md appended, so its terms show a
+  # definition on hover wherever they appear.
+  - pymdownx.snippets:
+      auto_append:
+        - guide-theme/glossaire.md
+      check_paths: true
   - admonition
   - attr_list
   - def_list

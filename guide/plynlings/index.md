@@ -16,6 +16,37 @@ Un Plynling, c'est un petit champignon qui vit avec toi sur le serveur. Tu l'ado
 - Il arrive avec **70 %** de faim et de bonheur, et tout propre.
 - Il naît avec une **passion** (la cuisine, la musique, les étoiles, les siestes…), affichée sur sa carte.
 
+<div class="syncs-art-row" markdown>
+<figure markdown="span">
+  ![Un Plynling Amanite](../assets/plynlings/plynling_amanite_happy_v5.webp){ .syncs-art width="64" }
+  <figcaption>Amanite</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un Plynling Cèpe](../assets/plynlings/plynling_cepe_happy_v5.webp){ .syncs-art width="64" }
+  <figcaption>Cèpe</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un Plynling Rosé des prés](../assets/plynlings/plynling_rose_happy_v5.webp){ .syncs-art width="64" }
+  <figcaption>Rosé des prés</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un Plynling Russule verte](../assets/plynlings/plynling_russule_happy_v5.webp){ .syncs-art width="64" }
+  <figcaption>Russule verte</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un Plynling Mycène](../assets/plynlings/plynling_mystique_happy_v5.webp){ .syncs-art width="64" }
+  <figcaption>Mycène</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un Plynling Coprin](../assets/plynlings/plynling_coprin_happy_v5.webp){ .syncs-art width="64" }
+  <figcaption>Coprin</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un Plynling Girolle](../assets/plynlings/plynling_dore_happy_v5.webp){ .syncs-art width="64" }
+  <figcaption>Girolle</figcaption>
+</figure>
+</div>
+
 !!! syncs jenote ""
     Gratuit, oui. Sans engagement, non. Je note qui adopte, et je note qui oublie.
 
@@ -54,6 +85,33 @@ Quelques règles :
 ## Sa carte
 
 **`/plynling view`** affiche la carte de ton Plynling ; ajoute l'option `user` pour voir celui de quelqu'un d'autre. C'est de là qu'on s'en occupe.
+
+Par exemple, Bouton, le Cèpe de Kiwi. Bien nourri, bien caressé : je valide.
+
+<div class="dc">
+<div class="dc-msg">
+  <div class="dc-reply"><span class="dc-mini dc-c2">K</span><b>Kiwi</b> a utilisé <span class="dc-cmd">/plynling view</span></div>
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 19:08</span></div>
+    <div class="dc-v2" style="--dc-accent: #98623a">
+      <div class="dc-section">
+        <div class="dc-grow">
+          <div class="dc-h2">Bouton</div>
+          <div>♂ Cèpe<br>À <span class="dc-mention">@Kiwi</span> · adulte · âgé de 21 j 6 h<br><b>Passion</b> : la cuisine</div>
+        </div>
+        <img class="dc-thumb" src="../assets/plynlings/plynling_cepe_happy_v5.webp" alt="Cèpe">
+      </div>
+      <div class="dc-sep"></div>
+      <div><span class="dc-code">Faim    ████████████████░░░░</span> 82 %<br><span class="dc-code">Bonheur ██████████████████░░</span> 90 %<br><span class="dc-code">Hygiène █████████████░░░░░░░</span> 65 %<br><span class="dc-code">Humeur  heureux</span><br>Niv. 4 · ⚡ 85/120</div>
+      <div>🎭 <i>Loyal et tendre</i> · 🔍 🫡 ⏳ 🍯</div>
+    </div>
+    <div class="dc-row"><span class="dc-btn dc-primary">Caresser</span><span class="dc-btn dc-secondary">Laver</span></div>
+    <div class="dc-row"><span class="dc-select">Nourrir…</span></div>
+    <div class="dc-row"><span class="dc-btn dc-secondary">Personnalité</span></div>
+  </div>
+</div>
+</div>
 
 **En haut**, son portrait (animé, selon son humeur du moment) et :
 

@@ -258,13 +258,15 @@ user-facing command or rule updates all three — except owner-only commands. Ea
 
 **`guide/`** is the French user guide, built by MkDocs Material (`mkdocs.yml`, `strict`) and
 published to GitHub Pages by `.github/workflows/guide.yml`; `/help` links to it
-(`HelpModule.GuideUrl`). Pages are for members: how to use things, no internals. A page added
-goes in `mkdocs.yml`'s `nav`. Checks section 69 fails on any command whose full path
+(`HelpModule.GuideUrl`), and the `/plynling`, `/minecraft` and `/report` help cards to their
+own page (`HelpModule.GuideButton`): renaming or moving a page breaks those links. Pages are for
+members: how to use things, no internals. A page added goes in `mkdocs.yml`'s `nav`. Checks section 69 fails on any command whose full path
 (`/admin xp add`) appears in no page. The guide is written by her, in her voice
 (`docs/syncs-voice.md`): steps, tables and numbers stay plain; her personality goes in the opening
 face card (`<div class="syncs-hello" markdown>`) and her asides (`!!! syncs <mood> ""`, the mood
 picks a face from `guide/assets/syncs/`). Look and 404 page: `guide/stylesheets/syncs.css`,
-`guide-theme/`.
+`guide-theme/`. A new piece of server jargon gets a hover definition in
+`guide-theme/glossaire.md` (appended to every page; terms match exactly, case included).
 
 **A notes file under `docs/` stays under ~40 KB**; past that it becomes an index plus a folder of
 topic files of the same name — read the index, then only the topic you need.

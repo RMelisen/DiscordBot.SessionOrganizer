@@ -130,15 +130,15 @@ Ton inventaire, **visible par toi uniquement** : ton garde-manger, tes objets tr
 
 La boutique, **visible par toi uniquement**. Choisis un article dans le menu, puis **×1**, **×5** ou **×10** (les boutons sont grisés si tu n'as pas assez). **−10 % dès 5** du même article.
 
-| Article | Prix |
-|---|---|
-| Champignon | 15 |
-| Shiitake | 30 |
-| Morille | 40 |
-| Truffe | 80 |
-| Savon | 20 |
-| Médicament | 30 |
-| **Sachet** de 3 objets de collection au hasard | 150 (×1 ou ×5) |
+| | Article | Prix |
+|:-:|---|---|
+| ![Un champignon](assets/plynlings/food_mushroom_v5.png){ .syncs-art width="32" } | Champignon | 15 |
+| ![Un shiitake](assets/plynlings/food_shiitake_v5.png){ .syncs-art width="32" } | Shiitake | 30 |
+| ![Une morille](assets/plynlings/food_morel_v5.png){ .syncs-art width="32" } | Morille | 40 |
+| ![Une truffe](assets/plynlings/food_truffle_v5.png){ .syncs-art width="32" } | Truffe | 80 |
+| | Savon | 20 |
+| | Médicament | 30 |
+| | **Sachet** de 3 objets de collection au hasard | 150 (×1 ou ×5) |
 
 La nourriture et les soins vont dans ton **garde-manger** : quand tu nourris ou soignes un Plynling, je pioche d'abord dedans, et je ne prends des cailloux que s'il manque quelque chose. Un sachet s'ouvre tout de suite, et s'il complète une collection, sa récompense tombe aussitôt.
 
@@ -183,14 +183,14 @@ La première page résume toutes les collections ; le menu ouvre chacune d'elles
 
 Une collection est **complétée** dès que tu as trouvé chacun de ses objets au moins une fois : pas besoin de les avoir tous en même temps. Un objet échangé ou revendu reste « trouvé » (il s'affiche « ×0 »).
 
-| Collection | Objets | Récompense |
-|---|---|---|
-| Cailloux | 8 | 100 |
-| Nature | 8 | 150 |
-| Trésors | 8 | 200 |
-| Insectes | 8 | 250 |
-| Saisons | 8 | 300 |
-| Champignons | 30 | 1 000 |
+| | Collection | Objets | Récompense |
+|:-:|---|---|---|
+| ![Collection Cailloux](assets/icons/set.cailloux.png){ .syncs-art width="32" } | Cailloux | 8 | 100 |
+| ![Collection Nature](assets/icons/set.nature.png){ .syncs-art width="32" } | Nature | 8 | 150 |
+| ![Collection Trésors](assets/icons/set.tresors.png){ .syncs-art width="32" } | Trésors | 8 | 200 |
+| ![Collection Insectes](assets/icons/set.insectes.png){ .syncs-art width="32" } | Insectes | 8 | 250 |
+| ![Collection Saisons](assets/icons/set.saisons.png){ .syncs-art width="32" } | Saisons | 8 | 300 |
+| ![Collection Champignons](assets/icons/set.champignons.png){ .syncs-art width="32" } | Champignons | 30 | 1 000 |
 
 Les champignons se trouvent surtout en fouillant avec ton Plynling, et certains objets n'apparaissent qu'à une saison.
 
@@ -200,13 +200,13 @@ Une fois une collection complétée, tu peux la **déposer** : le bouton **Dépo
 
 Chaque complétion fait monter la collection d'un rang, avec son badge sur ta carte `/level` :
 
-| Rang | Complétions |
-|---|---|
-| Bronze | 1 (la première fois) |
-| Argent | 2 |
-| Or | 3 |
-| Platine | 5 |
-| Diamant | 10 |
+| | Rang | Complétions |
+|:-:|---|---|
+| ![Badge Champignons, rang Bronze](assets/icons/badge.champignons_bronze.png){ .syncs-art width="44" } | Bronze | 1 (la première fois) |
+| ![Badge Champignons, rang Argent](assets/icons/badge.champignons_silver.png){ .syncs-art width="44" } | Argent | 2 |
+| ![Badge Champignons, rang Or](assets/icons/badge.champignons_gold.png){ .syncs-art width="44" } | Or | 3 |
+| ![Badge Champignons, rang Platine](assets/icons/badge.champignons_platinum.png){ .syncs-art width="44" } | Platine | 5 |
+| ![Badge Champignons, rang Diamant](assets/icons/badge.champignons_diamond.png){ .syncs-art width="44" } | Diamant | 10 |
 
 Je l'annonce dans le salon quand tu passes un rang. Tes complétions comptent dans la vue **Collections** de [`/leaderboard`](niveaux.md#leaderboard).
 
@@ -221,6 +221,29 @@ Un écran **visible par toi uniquement**, en trois onglets :
 - **Fabrication** : des cosmétiques qu'on ne peut pas acheter, à fabriquer avec des objets trouvés et quelques cailloux. Les **Ouvrages** sont à portée de quelques fouilles ; les **Chefs-d'œuvre** demandent une vraie chasse. Chaque recette ne se fabrique qu'**une fois** par personne.
 
 Il y a cinq sortes de cosmétiques : **Thème**, **Titre**, **Accessoire**, **Aura** et **Cadre** (celui-ci se voit sur sa tombe). Dans la boutique et la fabrication, choisir un article te le fait **essayer** sur ton Plynling avant de payer ; ensuite **Acheter** (ou **Fabriquer**), ou **Acheter et porter** d'un coup. Certains accessoires ont une couleur ou une place à choisir, gratuitement, dans la garde-robe.
+
+<div class="syncs-art-row" markdown>
+<figure markdown="span">
+  ![Un thème](assets/icons/cos.theme.foret.png){ .syncs-art width="64" }
+  <figcaption>Thème</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un titre](assets/icons/cos.title.curieux.png){ .syncs-art width="64" }
+  <figcaption>Titre</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un accessoire](assets/icons/cos.accessory.noeud.png){ .syncs-art width="64" }
+  <figcaption>Accessoire</figcaption>
+</figure>
+<figure markdown="span">
+  ![Une aura](assets/icons/cos.aura.bulles.png){ .syncs-art width="64" }
+  <figcaption>Aura</figcaption>
+</figure>
+<figure markdown="span">
+  ![Un cadre](assets/icons/cos.grave.bougies.png){ .syncs-art width="64" }
+  <figcaption>Cadre</figcaption>
+</figure>
+</div>
 
 `/plynling wardrobe` ouvre le même écran directement sur la garde-robe.
 

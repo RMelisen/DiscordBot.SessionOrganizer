@@ -90,6 +90,29 @@ Une fusée décolle et son multiplicateur grimpe. Encaisse avant qu'elle explose
 - **Si la fusée explose** avant que tu encaisses, ta mise est perdue. Une fois sur dix, elle ne décolle même pas.
 - Une seule fusée à la fois par serveur.
 
+La fusée en plein vol. Plume a encaissé, les deux autres tentent leur chance. Je regarde.
+
+<div class="dc">
+<div class="dc-msg">
+  <div class="dc-reply"><span class="dc-mini dc-c2">K</span><b>Kiwi</b> a utilisé <span class="dc-cmd">/arcade crash</span></div>
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 21:14</span></div>
+    <div class="dc-embed" style="--dc-accent: #e67e22">
+      <div class="dc-embed-main">
+        <div class="dc-embed-title">🚀 ×2.41</div>
+        <div>La fusée monte… <b>Encaisse</b> avant qu'elle explose !</div>
+        <div class="dc-fields">
+          <div class="dc-field dc-inline"><div class="dc-field-name">Encaissé</div><span class="dc-mention">@Plume</span> ×1.80 → 45 cailloux</div>
+          <div class="dc-field dc-inline"><div class="dc-field-name">Encore à bord</div><span class="dc-mention">@Kiwi</span><br><span class="dc-mention">@Nox</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="dc-row"><span class="dc-btn dc-success">Encaisser</span></div>
+  </div>
+</div>
+</div>
+
 ## Blackjack — `/arcade blackjack`
 
 Une main de blackjack contre moi. Ici, je ne triche pas : je taquine, c'est tout.

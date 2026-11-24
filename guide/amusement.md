@@ -58,6 +58,25 @@ Un dilemme, deux boutons, et tout le monde vote.
 
 Tu peux changer ton vote tant que le dilemme est ouvert. Pendant ce temps, la carte n'affiche que le **nombre** de votants, pas qui a choisi quoi. Au bout de **10 minutes**, je révèle les résultats : la part de chaque option, qui a voté quoi… et mon propre choix.
 
+Un dilemme ouvert, tel que je le pose. Deux boutons, aucune échappatoire.
+
+<div class="dc">
+<div class="dc-msg">
+  <div class="dc-reply"><span class="dc-mini dc-c1">N</span><b>Nox</b> a utilisé <span class="dc-cmd">/wouldyourather</span></div>
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 22:03</span></div>
+    <div class="dc-embed" style="--dc-accent: #1abc9c">
+      <div class="dc-embed-main">
+        <div class="dc-embed-title">Tu préfères…</div>
+        <div>Un dilemme. Choisissez. Je compterai, et je jugerai.<br><br>🅰️ <b>Ne jamais rater un tir</b><br><i>ou</i><br>🅱️ <b>Ne jamais rater une blague</b><br><br><span class="dc-sub">3 vote(s) · résultats <span class="dc-ts">dans 8 minutes</span></span></div>
+      </div>
+    </div>
+    <div class="dc-row"><span class="dc-btn dc-primary dc-emoji">🅰️</span><span class="dc-btn dc-primary dc-emoji">🅱️</span></div>
+  </div>
+</div>
+</div>
+
 !!! note
     Si je redémarre pendant un dilemme, il est perdu : ses boutons répondent qu'il a expiré.
 

@@ -1,0 +1,12 @@
+{#- Her logo follows the seasons, like her Discord avatar (ItemCatalog.SeasonAt: Paris months
+    3-5 spring, 6-8 summer, 9-11 autumn, else winter). The script runs right after the <img>,
+    while the page is still parsing, so the picture swaps before it is painted. Without
+    JavaScript, the theme's logo (mkdocs.yml) stays. -#}
+<img src="{{ config.theme.logo | url }}" alt="S.Y.N.C.S." class="syncs-logo">
+<script>
+  (function (img) {
+    var m = +new Intl.DateTimeFormat("fr-FR", { month: "numeric", timeZone: "Europe/Paris" }).format(new Date());
+    var s = m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "autumn" : "winter";
+    img.src = "{{ 'assets/syncs/seasons/' | url }}" + s + ".png";
+  })(document.currentScript.previousElementSibling);
+</script>

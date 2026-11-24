@@ -294,3 +294,48 @@
   width: 8rem;
   height: 8rem;
 }
+
+/* ---- Seasonal logo: her round avatar (guide-theme/partials/logo.html) ---- */
+.md-header__button.md-logo img.syncs-logo,
+.md-nav__button.md-logo img.syncs-logo {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--syncs-cap);
+}
+
+/* ---- Glossary terms (guide-theme/glossaire.md): a soft dotted underline ---- */
+.md-typeset abbr {
+  text-decoration: underline dotted var(--syncs-cap);
+  text-underline-offset: 0.2em;
+  border-bottom: none;
+  cursor: help;
+}
+
+/* ---- Art: her pixel-art sprites and icons, inline: ![…](…){ .syncs-art width="48" } ---- */
+.md-typeset img.syncs-art {
+  vertical-align: middle;
+  image-rendering: pixelated;
+  max-width: none;
+}
+/* A row of pictures with their names under them (species, tombs). */
+.md-typeset .syncs-art-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin: 1em 0;
+}
+.md-typeset .syncs-art-row figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.md-typeset .syncs-art-row figure br {
+  display: none;
+}
+.md-typeset .syncs-art-row figcaption {
+  margin: 0.2rem 0 0;
+  max-width: none;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}

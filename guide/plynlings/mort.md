@@ -47,6 +47,29 @@ Chaque Plynling repose sous une tombe, de la plus simple à la plus belle :
 4. une urne
 5. une statue
 
+<div class="syncs-art-row" markdown>
+<figure markdown="span">
+  ![Un cairn](../assets/plynlings/memorial_amanite_1_v5.png){ .syncs-art width="64" }
+  <figcaption>1</figcaption>
+</figure>
+<figure markdown="span">
+  ![Une petite stèle](../assets/plynlings/memorial_amanite_2_v5.png){ .syncs-art width="64" }
+  <figcaption>2</figcaption>
+</figure>
+<figure markdown="span">
+  ![Une stèle gravée](../assets/plynlings/memorial_amanite_3_v5.png){ .syncs-art width="64" }
+  <figcaption>3</figcaption>
+</figure>
+<figure markdown="span">
+  ![Une urne](../assets/plynlings/memorial_amanite_4_v5.png){ .syncs-art width="64" }
+  <figcaption>4</figcaption>
+</figure>
+<figure markdown="span">
+  ![Une statue](../assets/plynlings/memorial_amanite_5_v5.png){ .syncs-art width="64" }
+  <figcaption>5</figcaption>
+</figure>
+</div>
+
 **Mieux on s'est occupé de lui, tout au long de sa vie, plus sa tombe est belle.** Si tu lui as mis un **cadre de tombe** (un cosmétique, voir [Cailloux et objets](../cailloux.md)), il encadre son nom au cimetière.
 
 ## Le cimetière

@@ -53,6 +53,32 @@ Si une autre session tombe au même moment, l'aperçu te prévient. Et je retien
 
 La carte affiche le titre, la date, la durée, le salon vocal, l'organisateur, et la liste de qui vient. Son **ID** est écrit en bas de la carte.
 
+Voilà à quoi elle ressemble dans le salon. Propre, lisible, à l'heure. Comme moi.
+
+<div class="dc">
+<div class="dc-msg">
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 18:02</span></div>
+    <div class="dc-v2" style="--dc-accent: #2ecc71">
+      <div class="dc-section">
+        <div class="dc-grow">
+          <div class="dc-h3">🎮 Soirée Valorant</div>
+          <div class="dc-sub">Jeu · par <span class="dc-mention">@Kiwi</span></div>
+        </div>
+        <span class="dc-thumb dc-c2">K</span>
+      </div>
+      <div class="dc-sep"></div>
+      <div>📅 <span class="dc-ts">samedi 28 novembre 2026 21:00</span> · <span class="dc-ts">dans 4 jours</span><br>Durée : 2 h · 🔊 <span class="dc-mention">🔊 Vocal</span></div>
+      <div class="dc-sep"></div>
+      <div><b>Inscrits 3/5</b>&nbsp; <span class="dc-code">▰▰▰▰▰▰▱▱▱▱</span><br><span class="dc-mention">@Kiwi</span>, <span class="dc-mention">@Plume</span>, <span class="dc-mention">@Nox</span><br><b>Peut-être (1)</b> : <span class="dc-mention">@Lune</span><br><span class="dc-sub">ID de la session : 12</span></div>
+    </div>
+    <div class="dc-row"><span class="dc-btn dc-success">✅ Rejoindre</span><span class="dc-btn dc-secondary">Peut-être</span><span class="dc-btn dc-danger">✖️ Refuser</span></div>
+    <div class="dc-row"><span class="dc-btn dc-secondary">⚙️ Gérer</span><span class="dc-btn dc-secondary">📅 Événement Discord</span></div>
+  </div>
+</div>
+</div>
+
 | Bouton | Pour qui | Ce qu'il fait |
 |---|---|---|
 | ✅ **Rejoindre** | Tout le monde | Tu t'inscris. |
@@ -91,6 +117,19 @@ L'événement créé par le bouton 📅 suit la session : nom, heure, fin, salon
 
 !!! syncs jenote ""
     Jamais leurs noms dans le salon, c'est promis. Dans mes logs, c'est une autre histoire 👁👄👁️
+
+Et voici le rappel qui t'attend dans tes messages privés. Pas d'excuse, tu as été prévenu·e.
+
+<div class="dc">
+<div class="dc-where">Message privé</div>
+<div class="dc-msg">
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 20:30</span></div>
+    <div class="dc-text">Kilou kilou <span class="dc-mention">@Kiwi</span>! 👋👋👋 (˶&gt;⩊&lt;˶)<br>Rappel: 🎮 <b>Soirée Valorant</b> va commencer <span class="dc-ts">dans 30 minutes</span> (<span class="dc-ts">21:00</span>) dans <span class="dc-mention">🔊 Vocal</span>. Tiens toi prêt ! UwU<br><span class="dc-link-text">https://discord.com/channels/…</span></div>
+  </div>
+</div>
+</div>
 
 ## Les sessions hebdomadaires
 

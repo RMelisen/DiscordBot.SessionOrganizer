@@ -36,12 +36,12 @@ Et **« sale »** s'ajoute quand son hygiène passe sous 33 % : ça se voit auss
 
 Le menu **Nourrir…** de sa carte. **Tout le monde** peut nourrir **n'importe quel** Plynling.
 
-| Plat | Prix (le tien) | Effet |
-|---|---|---|
-| Champignon | 15 cailloux | +25 % de faim |
-| Shiitake | 30 cailloux | +60 % de faim |
-| Morille | 40 cailloux | +40 % de bonheur (pas de faim) |
-| Truffe | 80 cailloux | +100 % de faim, +30 % de bonheur |
+| | Plat | Prix (le tien) | Effet |
+|:-:|---|---|---|
+| ![Un champignon](../assets/plynlings/food_mushroom_v5.png){ .syncs-art width="48" } | Champignon | 15 cailloux | +25 % de faim |
+| ![Un shiitake](../assets/plynlings/food_shiitake_v5.png){ .syncs-art width="48" } | Shiitake | 30 cailloux | +60 % de faim |
+| ![Une morille](../assets/plynlings/food_morel_v5.png){ .syncs-art width="48" } | Morille | 40 cailloux | +40 % de bonheur (pas de faim) |
+| ![Une truffe](../assets/plynlings/food_truffle_v5.png){ .syncs-art width="48" } | Truffe | 80 cailloux | +100 % de faim, +30 % de bonheur |
 
 - Nourrir **celui d'un autre coûte le double**.
 - Si tu as ce plat dans ton **garde-manger**, il est servi de là au lieu de tes cailloux : 1 plat pour le tien, 2 pour celui d'un autre. Le menu affiche le stock de son propriétaire quand il en a. Le garde-manger se remplit à la boutique (`/inventory shop`) ou en fouillant : voir [Cailloux et objets](../cailloux.md).

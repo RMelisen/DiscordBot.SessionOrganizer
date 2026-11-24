@@ -67,6 +67,24 @@ Plus tu montes, plus chaque niveau demande d'XP. Passer du niveau *n* au suivant
 
 Quand tu passes un niveau, je poste une **carte** avec ton avatar dans le salon des niveaux (ou le salon des bots si le staff n'en a pas choisi). Si un gain te fait sauter plusieurs niveaux d'un coup, une seule carte les annonce tous.
 
+La carte, la voilà. Ton avatar à droite, ma petite phrase au milieu.
+
+<div class="dc">
+<div class="dc-msg">
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 22:47</span></div>
+    <div class="dc-embed" style="--dc-accent: #9b59b6">
+      <div class="dc-embed-main">
+        <div class="dc-embed-title">Niveau 4 → 5 !</div>
+        <div><b>Plume</b> monte au niveau <b>5</b> ! Bravo, tu l'as mérité celui-là ♡</div>
+      </div>
+      <span class="dc-embed-thumb dc-c3">P</span>
+    </div>
+  </div>
+</div>
+</div>
+
 !!! syncs love ""
     Chaque carte, je la prépare moi-même, avec ton avatar et tout. Un niveau, ça se fête. Même le tien ♡
 
@@ -93,33 +111,56 @@ Si tu as gagné quelque chose, une ligne d'icônes apparaît au bas de ta carte.
 
 **Paliers** — cinq niveaux (Bronze, Argent, Or, Platine, Diamant) sur un compteur qui ne fait que monter :
 
-| Succès | Ce qui compte | Paliers |
-|---|---|---|
-| 🎙️ Pilier du vocal | ton temps en vocal | 10 h · 50 h · 150 h · 400 h · 1 000 h |
-| 💜 Compagnie de SYNCS | ton temps en vocal avec moi | 5 h · 25 h · 75 h · 200 h · 500 h |
-| 🧠 Grosse tête | tes victoires au [quiz](quiz.md) | 1 · 10 · 25 · 50 · 100 |
-| 😀 Pluie d'emotes | tes réactions | 100 · 500 · 2 000 · 5 000 · 10 000 |
-| 🎮 Toujours là | les [sessions](sessions.md) où tu étais vraiment là | 1 · 5 · 15 · 30 · 60 |
-| 📅 Chef d'orchestre | les sessions que tu as organisées | 1 · 5 · 15 · 30 · 60 |
-| 🎁 Main chanceuse | les [tirages au sort](sondages.md) gagnés | 1 · 2 · 3 · 5 · 10 |
-| 💖 Chouchou | tes *good bot* | 10 · 50 · 150 · 400 · 1 000 |
-| 🐾 Famille Plynling | les badges gagnés par tes [Plynlings](plynlings/index.md) | 5 · 15 · 30 · 60 · 100 |
-| 🕹️ Pilier d'arcade | tes victoires à l'[arcade](arcade.md) | 5 · 25 · 75 · 200 · 500 |
-| 🤲 Nounou | les repas offerts aux Plynlings des autres | 5 · 25 · 75 · 200 · 500 |
-| 🔥 Assiduité | ta meilleure série de `/daily` | 7 · 30 · 100 · 200 · 365 jours |
-| 🪙 Mécène | les cailloux versés au bocal | 500 · 5 000 · 15 000 · 50 000 · 100 000 |
-| 🎂 Ancienneté | ton temps sur le serveur | 90 · 180 · 365 · 730 · 1 095 jours |
+| Or | Succès | Ce qui compte | Paliers |
+|:-:|---|---|---|
+| ![Pilier du vocal, palier Or](assets/icons/badge.voice_gold.png){ .syncs-art width="44" } | 🎙️ Pilier du vocal | ton temps en vocal | 10 h · 50 h · 150 h · 400 h · 1 000 h |
+| ![Compagnie de SYNCS, palier Or](assets/icons/badge.companion_gold.png){ .syncs-art width="44" } | 💜 Compagnie de SYNCS | ton temps en vocal avec moi | 5 h · 25 h · 75 h · 200 h · 500 h |
+| ![Grosse tête, palier Or](assets/icons/badge.quiz_gold.png){ .syncs-art width="44" } | 🧠 Grosse tête | tes victoires au [quiz](quiz.md) | 1 · 10 · 25 · 50 · 100 |
+| ![Pluie d'emotes, palier Or](assets/icons/badge.emotes_gold.png){ .syncs-art width="44" } | 😀 Pluie d'emotes | tes réactions | 100 · 500 · 2 000 · 5 000 · 10 000 |
+| ![Toujours là, palier Or](assets/icons/badge.attended_gold.png){ .syncs-art width="44" } | 🎮 Toujours là | les [sessions](sessions.md) où tu étais vraiment là | 1 · 5 · 15 · 30 · 60 |
+| ![Chef d'orchestre, palier Or](assets/icons/badge.organised_gold.png){ .syncs-art width="44" } | 📅 Chef d'orchestre | les sessions que tu as organisées | 1 · 5 · 15 · 30 · 60 |
+| ![Main chanceuse, palier Or](assets/icons/badge.giveaways_gold.png){ .syncs-art width="44" } | 🎁 Main chanceuse | les [tirages au sort](sondages.md) gagnés | 1 · 2 · 3 · 5 · 10 |
+| ![Chouchou, palier Or](assets/icons/badge.goodbot_gold.png){ .syncs-art width="44" } | 💖 Chouchou | tes *good bot* | 10 · 50 · 150 · 400 · 1 000 |
+| ![Famille Plynling, palier Or](assets/icons/badge.breeder_gold.png){ .syncs-art width="44" } | 🐾 Famille Plynling | les badges gagnés par tes [Plynlings](plynlings/index.md) | 5 · 15 · 30 · 60 · 100 |
+| ![Pilier d'arcade, palier Or](assets/icons/badge.arcade_gold.png){ .syncs-art width="44" } | 🕹️ Pilier d'arcade | tes victoires à l'[arcade](arcade.md) | 5 · 25 · 75 · 200 · 500 |
+| ![Nounou, palier Or](assets/icons/badge.nanny_gold.png){ .syncs-art width="44" } | 🤲 Nounou | les repas offerts aux Plynlings des autres | 5 · 25 · 75 · 200 · 500 |
+| ![Assiduité, palier Or](assets/icons/badge.daily_gold.png){ .syncs-art width="44" } | 🔥 Assiduité | ta meilleure série de `/daily` | 7 · 30 · 100 · 200 · 365 jours |
+| | 🪙 Mécène | les cailloux versés au bocal | 500 · 5 000 · 15 000 · 50 000 · 100 000 |
+| ![Ancienneté, palier Or](assets/icons/badge.seniority_gold.png){ .syncs-art width="44" } | 🎂 Ancienneté | ton temps sur le serveur | 90 · 180 · 365 · 730 · 1 095 jours |
+
+<div class="syncs-art-row" markdown>
+<figure markdown="span">
+  ![Pilier du vocal, palier Bronze](assets/icons/badge.voice_bronze.png){ .syncs-art width="44" }
+  <figcaption>Bronze</figcaption>
+</figure>
+<figure markdown="span">
+  ![Pilier du vocal, palier Argent](assets/icons/badge.voice_silver.png){ .syncs-art width="44" }
+  <figcaption>Argent</figcaption>
+</figure>
+<figure markdown="span">
+  ![Pilier du vocal, palier Or](assets/icons/badge.voice_gold.png){ .syncs-art width="44" }
+  <figcaption>Or</figcaption>
+</figure>
+<figure markdown="span">
+  ![Pilier du vocal, palier Platine](assets/icons/badge.voice_platinum.png){ .syncs-art width="44" }
+  <figcaption>Platine</figcaption>
+</figure>
+<figure markdown="span">
+  ![Pilier du vocal, palier Diamant](assets/icons/badge.voice_diamond.png){ .syncs-art width="44" }
+  <figcaption>Diamant</figcaption>
+</figure>
+</div>
 
 **Moments** — gagnés une fois pour toutes :
 
-| Succès | Comment |
-|---|---|
-| 👑 Couronne | être la grosse tête de la semaine au [quiz](quiz.md#la-grosse-tete-de-la-semaine) |
-| ⚡ Éclair | trouver une question du quiz en moins de 3 secondes |
-| 📣 Rassemblement | lancer un `/tonight` qui devient une session |
-| ⏰ Ponctualité | être en vocal avant le début d'une session |
-| 🦘 Chasse au Quokka | donner le coup gagnant quand Quokka passe |
-| 🤝 Générosité | offrir un objet avec `/inventory give` |
+| | Succès | Comment |
+|:-:|---|---|
+| ![Couronne](assets/icons/badge.crowned.png){ .syncs-art width="44" } | 👑 Couronne | être la grosse tête de la semaine au [quiz](quiz.md#la-grosse-tete-de-la-semaine) |
+| ![Éclair](assets/icons/badge.lightning.png){ .syncs-art width="44" } | ⚡ Éclair | trouver une question du quiz en moins de 3 secondes |
+| ![Rassemblement](assets/icons/badge.rallier.png){ .syncs-art width="44" } | 📣 Rassemblement | lancer un `/tonight` qui devient une session |
+| ![Ponctualité](assets/icons/badge.punctual.png){ .syncs-art width="44" } | ⏰ Ponctualité | être en vocal avant le début d'une session |
+| ![Chasse au Quokka](assets/icons/badge.quokka.png){ .syncs-art width="44" } | 🦘 Chasse au Quokka | donner le coup gagnant quand Quokka passe |
+| ![Générosité](assets/icons/badge.generous.png){ .syncs-art width="44" } | 🤝 Générosité | offrir un objet avec `/inventory give` |
 
 **Secrets** — il y en a. Je ne dirai pas lesquels, ni comment. Cherche (ᵕ • ᴗ •)
 

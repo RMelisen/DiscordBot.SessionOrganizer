@@ -56,6 +56,26 @@ Sur la carte, chaque choix a son bouton. Clique pour voter, **clique à nouveau 
 
 La carte affiche aussi l'heure de fin et l'**ID** du sondage, en bas.
 
+Un `/when` en cours, tel que je l'affiche. Je compte en direct, évidemment.
+
+<div class="dc">
+<div class="dc-msg">
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 14:12</span></div>
+    <div class="dc-v2" style="--dc-accent: #9b59b6">
+      <div><div class="dc-h3">📊 Soirée ce weekend</div><div class="dc-sub">par <span class="dc-mention">@Kiwi</span> · plusieurs choix possibles</div></div>
+      <div class="dc-sep"></div>
+      <div>▫️ <span class="dc-ts">vendredi 27 novembre 2026 21:00</span><br><span class="dc-code">▰▰▰▱▱▱▱▱▱▱</span> <b>1</b> · 33 %<br><span class="dc-mention">@Plume</span><br>🏆 <span class="dc-ts">samedi 28 novembre 2026 21:00</span><br><span class="dc-code">▰▰▰▰▰▰▰▰▰▰</span> <b>3</b> · 100 %<br><span class="dc-mention">@Kiwi</span> <span class="dc-mention">@Plume</span> <span class="dc-mention">@Nox</span><br>▫️ <span class="dc-ts">dimanche 29 novembre 2026 18:00</span><br><span class="dc-code">▱▱▱▱▱▱▱▱▱▱</span> <b>0</b> · 0 %</div>
+      <div class="dc-sep"></div>
+      <div class="dc-sub">3 votants · se termine <span class="dc-ts">dans 2 jours</span> · ID 7</div>
+    </div>
+    <div class="dc-row"><span class="dc-btn dc-secondary">Ven. 27/11 21:00</span><span class="dc-btn dc-primary">Sam. 28/11 21:00</span><span class="dc-btn dc-secondary">Dim. 29/11 18:00</span></div>
+    <div class="dc-row"><span class="dc-btn dc-secondary">🗳️ Mes votes</span><span class="dc-btn dc-secondary">⚙️ Gérer</span></div>
+  </div>
+</div>
+</div>
+
 ## Gérer son sondage
 
 ⚙️ **Gérer** ouvre un panneau privé, réservé à l'organisateur et aux administrateurs (droit Administrateur ou Gérer le serveur) :

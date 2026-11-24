@@ -27,6 +27,25 @@ Il y a deux sortes de questions.
 !!! syncs laugh ""
     Un seul clic. « J'ai glissé » ne fait pas partie des réponses acceptées, j'ai vérifié (>⩊<)
 
+Une question à choix, quand elle tombe. Lis bien avant de cliquer.
+
+<div class="dc">
+<div class="dc-msg">
+  <span class="dc-avatar dc-syncs"></span>
+  <div class="dc-body">
+    <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 16:20</span></div>
+    <div class="dc-v2" style="--dc-accent: #2ecc71">
+      <div><div class="dc-h3">🧠 Quiz · Champignons</div><div class="dc-sub">Facile · 25 cailloux au premier qui trouve</div></div>
+      <div>Petite question, comme ça, pour voir qui suit (˶ᵔ ᵕ ᵔ˶)</div>
+      <div class="dc-sep"></div>
+      <div><b>La levure du pain, c'est…</b><br><b>A.</b> Une bactérie<br><b>B.</b> Une plante<br><b>C.</b> Un champignon<br><b>D.</b> Un minéral</div>
+      <div class="dc-sub">Une seule tentative par personne · fermeture <span class="dc-ts">dans une heure</span></div>
+    </div>
+    <div class="dc-row"><span class="dc-btn dc-primary">A</span><span class="dc-btn dc-primary">B</span><span class="dc-btn dc-primary">C</span><span class="dc-btn dc-primary">D</span></div>
+  </div>
+</div>
+</div>
+
 **Question libre** — réponds directement dans le salon, en écrivant ta réponse. Tu peux réessayer autant que tu veux. Quelques règles pour que ça marche :
 
 - Majuscules, accents et ponctuation ne comptent pas.
