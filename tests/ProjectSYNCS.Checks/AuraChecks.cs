@@ -123,8 +123,11 @@ public static class AuraChecks
         foreach (var acc in CosmeticCatalog.InSlot(CosmeticSlot.Accessory))
         {
             IEnumerable<string?> styles = new string?[] { null };
-            foreach (var (_, options) in AccessoryStyles.Choices(acc.Key))
+            foreach (var (label, options) in AccessoryStyles.Choices(acc.Key))       // the old pictures have no sides
+            {
+                if (label is "Côté" or "Main") continue;
                 styles = styles.SelectMany(s => options.Select(o => (string?)(s is null ? o.Key : s + "_" + o.Key)));
+            }
             looks.AddRange(styles.Select(s => ((string?)acc.Key, s)));
         }
         foreach (var species in Enum.GetValues<PlynlingSpecies>())

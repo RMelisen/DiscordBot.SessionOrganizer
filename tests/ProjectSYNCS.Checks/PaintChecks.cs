@@ -55,37 +55,22 @@ public static class PaintChecks
         FilesForFindsPictures();
     }
 
-    // Every (accessory key, today's style) pair, with no-style accessories as a single null.
+    // Every (accessory key, style before sides existed) pair: the colour and place choices only, as the old
+    // pre-rendered files name them; no-style accessories as a single null.
     private static IEnumerable<(string Key, string? Style)> TodaysLooks()
     {
         foreach (var acc in CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Accessory))
         {
             IEnumerable<string?> styles = new string?[] { null };
-            foreach (var (_, options) in AccessoryStyles.Choices(acc.Key))
+            foreach (var (label, options) in AccessoryStyles.Choices(acc.Key))
+            {
+                if (label is "Côté" or "Main") continue;
                 styles = styles.SelectMany(s => options.Select(o => (string?)(s is null ? o.Key : s + "_" + o.Key)));
+            }
             foreach (var s in styles) yield return (acc.Key, s);
         }
     }
 
-    private static readonly HashSet<string> Held = new()
-    {
-        "ballon", "baguette", "tulipe", "glace", "plume_doree", "bocal", "canne_peche", "lanterne",
-    };
-
-    // Today's style with its default side, as the layer files name it.
-    // Task 5: AccessoryStyles.Resolve replaces this.
-    private static string? DefaultSided(string key, string? style)
-    {
-        var name = key[AccessoryPrefix.Length..];
-        return name switch
-        {
-            "noeud" => style + "_gauche",
-            "fleur" => style + "_droite",
-            "ballon" => style + "_gauche",
-            _ when Held.Contains(name) => "gauche",
-            _ => style,
-        };
-    }
 
     private static string[] Auras() => CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Aura)
         .Select(c => c.Key[AuraPrefix.Length..]).ToArray();
@@ -95,7 +80,7 @@ public static class PaintChecks
     private static void LookNamesRoundTrip()
     {
         var items = new List<WornAccessory?> { null };
-        items.AddRange(TodaysLooks().Select(l => (WornAccessory?)new WornAccessory(l.Key, DefaultSided(l.Key, l.Style))));
+        items.AddRange(TodaysLooks().Select(l => (WornAccessory?)new WornAccessory(l.Key, AccessoryStyles.Resolve(l.Key, l.Style))));
         // Both sides of a sided item, and every pair (a second only with a first).
         items.Add(new WornAccessory("cos.accessory.noeud", "rose_droite"));
         items.Add(new WornAccessory("cos.accessory.baguette", "droite"));
@@ -183,7 +168,7 @@ public static class PaintChecks
             var looks = TodaysLooks().Select(l => ((string Key, string? Style)?)l).Prepend(null);
             foreach (var l in looks)
             {
-                var worn = l is { } x ? new WornAccessory(x.Key, DefaultSided(x.Key, x.Style)) : null;
+                var worn = l is { } x ? new WornAccessory(x.Key, AccessoryStyles.Resolve(x.Key, x.Style)) : null;
                 var with = l is { } y ? $"_with_{y.Key[AccessoryPrefix.Length..]}{(y.Style is null ? "" : "_" + y.Style)}" : "";
                 foreach (var aura in AuraFaces.Contains(face) ? Auras().Select(a => (string?)a).Prepend(null) : new string?[] { null })
                 {
@@ -255,7 +240,7 @@ public static class PaintChecks
     {
         string Layer(string folder, string name) => Path.Combine(PlynlingPainter.AssetsRoot, folder, name + ".webp");
         // Each held look on its right side, as its layer is named: « ballon_rouge_droite », « baguette_droite ».
-        var held = TodaysLooks().Select(l => (Name: l.Key[AccessoryPrefix.Length..], l.Style)).Where(l => Held.Contains(l.Name))
+        var held = TodaysLooks().Select(l => (Name: l.Key[AccessoryPrefix.Length..], l.Style)).Where(l => AccessoryFit.Category(AccessoryPrefix + l.Name) == AccessoryCategory.Held)
             .Select(l => $"{l.Name}_{(l.Style is null ? "" : l.Style + "_")}droite").ToList();
         Expect(held.Count >= 8, $"only {held.Count} held items found");
         foreach (var shape in Sample)

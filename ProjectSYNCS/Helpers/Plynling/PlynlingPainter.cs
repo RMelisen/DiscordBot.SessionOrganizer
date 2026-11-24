@@ -41,13 +41,6 @@ public static class PlynlingPainter
     // Failures aren't cached (the art may appear after a redeploy); this only keeps the log quiet.
     private static readonly BoundedSet<PlynlingLook> Reported = new(CacheSize);
 
-    // Held in a hand: the only items whose right-hand side covers the mood marks.
-    // Task 5: AccessoryFit.Category(key) == AccessoryCategory.Held replaces this.
-    private static readonly HashSet<string> Held = new(StringComparer.Ordinal)
-    {
-        "ballon", "baguette", "tulipe", "glace", "plume_doree", "bocal", "canne_peche", "lanterne",
-    };
-
     /// <summary>
     /// The look as an animated WebP, from the cache or drawn now; null when a layer is missing or
     /// anything throws (logged once per look). The array is shared: never write to it.
@@ -131,13 +124,14 @@ public static class PlynlingPainter
     private static string Name(WornAccessory item) =>
         item.Key.StartsWith(AccessoryPrefix, StringComparison.Ordinal) ? item.Key[AccessoryPrefix.Length..] : item.Key;
 
+    // Held in a hand: the only items whose right-hand side covers the mood marks.
     private static bool RightHand(WornAccessory item) =>
-        Held.Contains(Name(item)) && item.Style is { } s && (s == "droite" || s.EndsWith("_droite", StringComparison.Ordinal));
+        AccessoryFit.Category(item.Key) == AccessoryCategory.Held && item.Style is { } s && (s == "droite" || s.EndsWith("_droite", StringComparison.Ordinal));
 
     private static byte[] Paint(PlynlingLook look)
     {
-        // Task 5: order by AccessoryFit.DrawRank.
-        var items = new[] { look.First, look.Second }.OfType<WornAccessory>().ToList();
+        // Under to over: neck, hands, eyes, hat, head, held (a stable sort, unknown keys last).
+        var items = new[] { look.First, look.Second }.OfType<WornAccessory>().OrderBy(i => AccessoryFit.DrawRank(i.Key)).ToList();
         var names = new[] { look.Shape, look.Face, look.Aura }.Concat(items.Select(Name)).Concat(items.Select(i => i.Style));
         if (!PlynlingLook.IsToken(look.Shape) || !PlynlingLook.IsToken(look.Face)
             || names.Any(n => n is not null && !PlynlingLook.IsToken(n)))

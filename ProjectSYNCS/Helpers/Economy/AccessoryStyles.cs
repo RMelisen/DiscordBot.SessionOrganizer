@@ -1,7 +1,8 @@
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>
-/// The styles a worn accessory comes in: zero, one or two choices (« Couleur », « Position »), each
+/// The styles a worn accessory comes in: zero to three choices (« Couleur », « Position », and for the
+/// sided ones « Côté » or « Main », always last), each
 /// with its options, the first being the default. A Plynling stores the picked options joined by
 /// « _ » in choice order (<c>Plynling.AccessoryStyle</c>, « bleue_haut »), and the picture's filename
 /// carries the same string (<see cref="PlynlingArt.Sprite"/>). Must match the styles drawn in
@@ -17,19 +18,30 @@ public static class AccessoryStyles
     private static Choice Colour(params (string Key, string Name)[] options) =>
         new("Couleur", options.Select(o => new Option(o.Key, o.Name)).ToList());
 
+    private static Choice Sides(string label, bool leftFirst)
+    {
+        var left = new Option("gauche", "À gauche");
+        var right = new Option("droite", "À droite");
+        return new Choice(label, leftFirst ? new[] { left, right } : new[] { right, left });
+    }
+
+    private static readonly Choice Hand = Sides("Main", true);
+
     private static readonly Choice Place = new("Position", new[] { new Option("haut", "En haut"), new Option("bas", "En bas") });
 
     /// <summary>The choices of an accessory (a cosmetic key); empty for one without styles.</summary>
     public static IReadOnlyList<Choice> Choices(string? accessoryKey) => accessoryKey switch
     {
-        "cos.accessory.noeud" => new[] { Colour(("rose", "Rose"), ("bleu", "Bleu"), ("dore", "Doré"), ("blanc", "Blanc")) },
-        "cos.accessory.fleur" => new[] { Colour(("blanche", "Blanche"), ("rose", "Rose"), ("bleue", "Bleue"), ("jaune", "Jaune")) },
+        "cos.accessory.noeud" => new[] { Colour(("rose", "Rose"), ("bleu", "Bleu"), ("dore", "Doré"), ("blanc", "Blanc")), Sides("Côté", true) },
+        "cos.accessory.fleur" => new[] { Colour(("blanche", "Blanche"), ("rose", "Rose"), ("bleue", "Bleue"), ("jaune", "Jaune")), Sides("Côté", false) },
         "cos.accessory.echarpe" => new[] { Colour(("rouge", "Rouge"), ("bleue", "Bleue"), ("verte", "Verte")), Place },
         "cos.accessory.casquette" => new[] { Colour(("bleue", "Bleue"), ("rouge", "Rouge"), ("verte", "Verte")) },
-        "cos.accessory.ballon" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("jaune", "Jaune")) },
+        "cos.accessory.ballon" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("jaune", "Jaune")), Hand },
         "cos.accessory.moufles" => new[] { Colour(("rouges", "Rouges"), ("bleues", "Bleues"), ("vertes", "Vertes")) },
         "cos.accessory.bonnet" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("vert", "Vert")) },
         "cos.accessory.collier_coquillages" or "cos.accessory.medaillon" => new[] { Place },
+        "cos.accessory.baguette" or "cos.accessory.tulipe" or "cos.accessory.glace" or "cos.accessory.plume_doree"
+            or "cos.accessory.bocal" or "cos.accessory.canne_peche" or "cos.accessory.lanterne" => new[] { Hand },
         _ => Array.Empty<Choice>(),
     };
 

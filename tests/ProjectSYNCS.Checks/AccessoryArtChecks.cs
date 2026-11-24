@@ -6,7 +6,8 @@ using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
 // 62. Accessories drawn on the sprite: every picture the bot can name for a worn accessory exists
-// under assets/plynlings/ (each species, stage, card face, dirty or not, accessory and style), the
+// under assets/plynlings/ (each species, stage, card face, dirty or not, accessory and style, the
+// side stripped) and as a layer under Assets/Plynlings/acc/ (every shape, face, style and side), the
 // bot's styles are exactly the drawn ones, SpriteOf reads the worn or tried-on accessory and its
 // style (an unknown one falls back), the style resets with the accessory, the retired accessories
 // are gone, and the Garde-robe offers the style picker inside the caps.
@@ -26,7 +27,7 @@ public static class AccessoryArtChecks
         _fail = fail;
         var assets = Path.Combine(StoryChecks.RepoRoot(), "assets", "plynlings");
         EveryLookHasItsFiles(assets);
-        StylesMatchTheArt(assets);
+        StylesMatchTheArt();
         SpriteOfReadsTheOutfit();
         RetiredAreGone();
         RetireMigrationRefunds();
@@ -74,15 +75,39 @@ public static class AccessoryArtChecks
         }
         Expect(checkedFiles > 0, "no accessory picture was checked (assets folder not found?)");
         Expect(missing.Count == 0, $"{missing.Count} accessory picture(s) missing, e.g. {string.Join(", ", missing.Take(3))}");
+        EveryLayerExists();
+    }
+
+    // The runtime layers the painter can ask for: every shape, every non-angry card face, every
+    // accessory with every style and side (acc/<shape>_<face>_<accessory>[_<style>].webp).
+    private static void EveryLayerExists()
+    {
+        var layers = Path.Combine(StoryChecks.RepoRoot(), "ProjectSYNCS", "Assets", "Plynlings", "acc");
+        var shapes = PlynlingArt.StagedSpecies.Select(PlynlingArt.Key).SelectMany(k => new[] { k, k + "_baby" });
+        var faces = Enum.GetValues<PlynlingMood>().Where(m => m != PlynlingMood.Angry).Select(m => m.ToString().ToLowerInvariant());
+        var missing = new List<string>();
+        var count = 0;
+        foreach (var shape in shapes)
+        foreach (var face in faces)
+        foreach (var acc in Accessories())
+        foreach (var style in StylesOf(acc.Key))
+        {
+            var name = $"{shape}_{face}_{acc.Key["cos.accessory.".Length..]}{(style is null ? "" : "_" + style)}.webp";
+            count++;
+            if (!File.Exists(Path.Combine(layers, name))) missing.Add(name);
+        }
+        Expect(count > 1000, $"only {count} accessory layers were checked (layers folder not found?)");
+        Expect(missing.Count == 0, $"{missing.Count} accessory layer(s) missing, e.g. {string.Join(", ", missing.Take(3))}");
     }
 
     // The looks drawn for the content Amanite, read back from the filenames, against the bot's.
-    private static void StylesMatchTheArt(string assets)
+    // (the layers, not the old pre-rendered pictures: those have no sides).
+    private static void StylesMatchTheArt()
     {
-        string head = "plynling_amanite_content_with_", tail = $"_v{PlynlingArt.Version}.webp";
-        var drawn = Directory.Exists(assets)
-            ? Directory.GetFiles(assets, head + "*" + tail).Select(f => Path.GetFileName(f)[head.Length..^tail.Length])
-                .Where(look => !look.Contains("_aura_", StringComparison.Ordinal)).ToHashSet()     // the auras: section 64
+        var layers = Path.Combine(StoryChecks.RepoRoot(), "ProjectSYNCS", "Assets", "Plynlings", "acc");
+        const string head = "amanite_content_";
+        var drawn = Directory.Exists(layers)
+            ? Directory.GetFiles(layers, head + "*.webp").Select(f => Path.GetFileNameWithoutExtension(f)[head.Length..]).ToHashSet()
             : new HashSet<string>();
         var bot = Accessories().SelectMany(a => StylesOf(a.Key).Select(s => a.Key["cos.accessory.".Length..] + (s is null ? "" : "_" + s))).ToHashSet();
         Expect(drawn.SetEquals(bot),

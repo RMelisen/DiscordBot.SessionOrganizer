@@ -76,6 +76,10 @@ public static class PlynlingArt
             || !worn.Key.StartsWith(AccessoryPrefix, StringComparison.Ordinal))
             return "";
         var resolved = AccessoryStyles.Resolve(worn.Key, style);
+        // The pre-rendered files have no side: a sided style links to the default-side picture
+        // (removed with the old files).
+        if (AccessoryFit.Side(worn.Key, resolved) is not null)
+            resolved = resolved!.Contains('_') ? resolved[..resolved.LastIndexOf('_')] : null;
         return $"_with_{worn.Key[AccessoryPrefix.Length..]}{(resolved is null ? "" : "_" + resolved)}";
     }
 
