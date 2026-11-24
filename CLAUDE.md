@@ -252,8 +252,15 @@ channel via `BotsChannel.ResolveAsync` — never hardcoded, never the main chann
 
 ### Docs
 
-`/help` (`HelpModule`) and `README.md` are hand-maintained: a new user-facing command updates both
-— except owner-only commands. Easter eggs (breakdown, quoicoubeh, the glitch) stay out of both.
+`/help` (`HelpModule`), `README.md` and the members' guide (`guide/`) are hand-maintained: a new
+user-facing command or rule updates all three — except owner-only commands. Easter eggs
+(breakdown, quoicoubeh, the glitch) and hidden triggers stay out of all three.
+
+**`guide/`** is the French user guide, built by MkDocs Material (`mkdocs.yml`, `strict`) and
+published to GitHub Pages by `.github/workflows/guide.yml`; `/help` links to it
+(`HelpModule.GuideUrl`). Pages are for members: how to use things, no internals. A page added
+goes in `mkdocs.yml`'s `nav`. Checks section 69 fails on any command whose full path
+(`/admin xp add`) appears in no page. Lines in her voice follow `docs/syncs-voice.md`.
 
 **A notes file under `docs/` stays under ~40 KB**; past that it becomes an index plus a folder of
 topic files of the same name — read the index, then only the topic you need.
@@ -270,7 +277,8 @@ update when it changes.
   owner commits by hand).
 - **Patch**: lines, facts, emotes, fixes, art, tweaks. **Minor** (patch reset): a new command,
   subcommand, subsystem, user-visible behaviour, or any migration. **Major**: the owner's call only.
-- **No bump** for `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`, `tests/`, `.github/`.
+- **No bump** for `docs/`, `guide/`, `mkdocs.yml`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`,
+  `tools/`, `tests/`, `.github/`.
 - Numbers don't roll over (`5.11.26` is fine). Say the new number in your summary.
 - **A bump adds an entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
   one short English bullet per user-visible change; extend the entry if already bumped). It must

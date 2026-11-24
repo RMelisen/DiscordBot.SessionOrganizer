@@ -5,6 +5,9 @@ planning gaming sessions, activities and movie nights, and letting people sign u
 in one click. It also keeps score: XP and levels, emote and verdict leaderboards, a
 wall of shame, and a pop quiz. The bot's user-facing language is French.
 
+**Members' guide (in French): <https://rmelisen.github.io/DiscordBot.SessionOrganizer/>** —
+sources in [`guide/`](guide/), linked from `/help`.
+
 - [Commands](#commands)
 - [Sessions](#sessions) · [Polls & votes](#polls--votes) · [Giveaways](#giveaways) · [Game nights & tools](#game-nights--tools)
 - [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame) · [Pop quiz](#pop-quiz) · [Plynlings](#plynlings) · [Arcade](#arcade)

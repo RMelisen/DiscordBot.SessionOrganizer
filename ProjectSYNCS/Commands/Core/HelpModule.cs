@@ -5,7 +5,7 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Commands;
 
 // The in-Discord usage guide. Hand-maintained: a new user-facing command means editing
-// this and README.md, neither of which is generated. Owner-only commands are
+// this, README.md and the online guide (guide/), none of which is generated. Owner-only commands are
 // deliberately absent; staff ones are listed, since staff still have to discover them.
 //
 // **Discord's embed caps are the reason this is one static builder rather than inline
@@ -44,12 +44,18 @@ public class HelpModule : SyncsModuleBase
         _ => BuildCommands(),
     };
 
+    // The full user guide: guide/ built by .github/workflows/guide.yml onto GitHub Pages.
+    // It has room for what these capped embeds can't explain.
+    public const string GuideUrl = "https://rmelisen.github.io/DiscordBot.SessionOrganizer/";
+
     // Read by HelpComponentHandler: each button carries its own page, so no two share an id.
+    // The guide is a link button, which carries a url instead of a custom-id.
     public static MessageComponent BuildButtons(int page) =>
         new ComponentBuilder()
             .WithButton("Commandes", $"help:page:{CommandsPage}", ButtonStyle.Secondary, disabled: page == CommandsPage)
             .WithButton("Cailloux & objets", $"help:page:{EconomyPage}", ButtonStyle.Secondary, disabled: page == EconomyPage)
             .WithButton("Mode d'emploi", $"help:page:{GuidePage}", ButtonStyle.Secondary, disabled: page == GuidePage)
+            .WithButton("Guide complet", style: ButtonStyle.Link, url: GuideUrl, emote: new Emoji("📖"))
             .Build();
 
     // Every command, in one list.

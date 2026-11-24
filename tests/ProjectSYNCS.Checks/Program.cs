@@ -5629,5 +5629,8 @@ ArcadeGuessChecks.Run(Fail);
 await ScoreChecks.Run(Fail);
 ScoreCalibrationChecks.Run(Fail, args);
 
+// 69. The online user guide names every member and staff command: GuideChecks.cs.
+GuideChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

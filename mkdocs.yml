@@ -1,0 +1,80 @@
+# The members' user guide, published to GitHub Pages by .github/workflows/guide.yml.
+# Sources are the French pages under guide/ (docs/ holds contributor notes and is not published).
+site_name: Guide de S.Y.N.C.S.
+site_description: Le mode d'emploi de SYNCS, le bot du serveur — sessions, votes, niveaux, Plynlings, arcade et le reste.
+site_url: https://rmelisen.github.io/DiscordBot.SessionOrganizer/
+repo_url: https://github.com/RMelisen/DiscordBot.SessionOrganizer
+docs_dir: guide
+strict: true
+# Broken anchors (#a-heading that no longer exists) are only INFO by default: make strict catch them.
+validation:
+  anchors: warn
+  unrecognized_links: warn
+
+theme:
+  name: material
+  language: fr
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Passer en mode sombre
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Passer en mode clair
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Commencer ici: index.md
+  - Organiser:
+      - Sessions et soirées: sessions.md
+      - Sondages, votes et tirages: sondages.md
+  - Progresser:
+      - Niveaux et classements: niveaux.md
+      - Le mur de la honte: honte.md
+      - Le quiz: quiz.md
+      - Cailloux et objets: cailloux.md
+  - Plynlings:
+      - plynlings/index.md
+      - Prendre soin de lui: plynlings/soins.md
+      - Visites et relations: plynlings/visites-et-relations.md
+      - Entraînement et combats: plynlings/entrainement.md
+      - Le village: plynlings/village.md
+      - La fin, et après: plynlings/mort.md
+  - S'amuser:
+      - L'arcade: arcade.md
+      - Petites commandes: amusement.md
+      - Minecraft: minecraft.md
+  - Staff: staff.md
+  - Questions fréquentes: faq.md
