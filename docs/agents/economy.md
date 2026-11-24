@@ -386,8 +386,9 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. The
   Citrouilles cadre (`cos.grave.citrouilles`, autumn) left in 8.8.0, the owner's call;
   `RetirePumpkinGraveFrame` refunded 2 400 (the seasonal price) the same way and cleared `GraveKey`
-  on any Plynling, dead or alive. To retire another, copy one of those migrations — and clear **both** slots (`AccessoryKey`/`AccessoryStyle` **and** `Accessory2Key`/`Accessory2Style`). A retired key still occupies its slot until then. Their keys stay
-  retired — never reuse them.
+  on any Plynling, dead or alive. To retire another, copy one of those migrations — and clear
+  **both** slots (`AccessoryKey`/`AccessoryStyle` **and** `Accessory2Key`/`Accessory2Style`). A
+  retired key still occupies its slot until then. Their keys stay retired — never reuse them.
 
 **The shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` = the basics, then
 `RotatingPerSlot` (2) per slot drawn with `new Random(week * 10 + slot)` (seeded: same for everyone,

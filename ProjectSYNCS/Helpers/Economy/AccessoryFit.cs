@@ -47,6 +47,13 @@ public static class AccessoryFit
         return AccessoryStyles.Resolve(key, style)?.Split('_')[^1];
     }
 
+    /// <summary>
+    /// Worn items in the one canonical order: by <see cref="DrawRank"/>, then by key, so two items of
+    /// the same rank (a nœud and a fleur, two held ones) come out the same whichever slot holds which.
+    /// </summary>
+    public static List<WornAccessory> InDrawOrder(IEnumerable<WornAccessory> items) =>
+        items.OrderBy(i => DrawRank(i.Key)).ThenBy(i => i.Key, StringComparer.Ordinal).ToList();
+
     /// <summary>The order pictures are drawn in, lowest first (under).</summary>
     public static int DrawRank(string key) => Category(key) switch
     {

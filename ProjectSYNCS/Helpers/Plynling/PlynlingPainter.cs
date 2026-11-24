@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Discord;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
@@ -27,6 +28,7 @@ public static class PlynlingPainter
     private const int Tick = 125;
     private const byte ShadowAlpha = 90;
     private const int CacheSize = 256;
+    private const int SlowDrawMs = 500;
     private const string AccessoryPrefix = "cos.accessory.";
 
     /// <summary>The layers' root: base/, acc/, aura/, marks/. The checks point it at the repo copy.</summary>
@@ -50,6 +52,7 @@ public static class PlynlingPainter
         lock (Gate)
             if (Cache.TryGetValue(look, out var hit)) return hit;
         byte[] bytes;
+        var timer = Stopwatch.StartNew();
         try
         {
             bytes = Paint(look);
@@ -61,6 +64,8 @@ public static class PlynlingPainter
             if (first) Log($"[PlynlingPainter] could not draw {look.FileName}: {ex.GetType().Name}: {ex.Message}");
             return null;
         }
+        // The first draw after a restart JIT-compiles the codec (no ReadyToRun on the Pi): worth a line.
+        if (timer.ElapsedMilliseconds > SlowDrawMs) Log($"[PlynlingPainter] drew {look.FileName} in {timer.ElapsedMilliseconds} ms");
         lock (Gate)
         {
             if (Cache.TryGetValue(look, out var raced)) return raced;
@@ -72,22 +77,44 @@ public static class PlynlingPainter
     }
 
     /// <summary>
+    /// One throwaway draw so the codec is compiled before the first real card (the Pi has no
+    /// ReadyToRun). Never throws: <see cref="Draw"/> reports its own failures, and anything else is logged.
+    /// </summary>
+    public static void WarmUp()
+    {
+        try
+        {
+            Draw(new PlynlingLook("amanite", "content", false, new WornAccessory(AccessoryPrefix + "couronne", null), null, null));
+        }
+        catch (Exception ex)
+        {
+            Log($"[PlynlingPainter] warm-up failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// The pictures a card shows by <c>attachment://pl__…</c> (thumbnails, galleries, files), drawn or
     /// from the cache, one per name. Fresh streams each call: the caller disposes them. A name that
     /// can't be drawn is left out (logged by <see cref="Draw"/>).
     /// </summary>
     public static IReadOnlyList<FileAttachment> FilesFor(MessageComponent components)
     {
-        const string scheme = "attachment://";
         var files = new List<FileAttachment>();
-        foreach (var url in Urls(components.Components).Distinct(StringComparer.Ordinal))
+        foreach (var name in NamesIn(components))
         {
-            if (!url.StartsWith(scheme + "pl__", StringComparison.Ordinal)) continue;
-            var name = url[scheme.Length..];
             if (PlynlingLook.Parse(name) is not { } look || Draw(look) is not { } bytes) continue;
             files.Add(new FileAttachment(new MemoryStream(bytes, writable: false), name));
         }
         return files;
+    }
+
+    /// <summary>The distinct <c>pl__…</c> picture names a card references by <c>attachment://</c>.</summary>
+    public static IReadOnlyList<string> NamesIn(MessageComponent components)
+    {
+        const string scheme = "attachment://pl__";
+        return Urls(components.Components).Distinct(StringComparer.Ordinal)
+            .Where(u => u.StartsWith(scheme, StringComparison.Ordinal))
+            .Select(u => u["attachment://".Length..]).ToList();
     }
 
     private static IEnumerable<string> Urls(IEnumerable<IMessageComponent> components)
@@ -130,8 +157,8 @@ public static class PlynlingPainter
 
     private static byte[] Paint(PlynlingLook look)
     {
-        // Under to over: neck, hands, eyes, hat, head, held (a stable sort, unknown keys last).
-        var items = new[] { look.First, look.Second }.OfType<WornAccessory>().OrderBy(i => AccessoryFit.DrawRank(i.Key)).ToList();
+        // Under to over: neck, hands, eyes, hat, head, held (unknown keys last, ties by key).
+        var items = AccessoryFit.InDrawOrder(new[] { look.First, look.Second }.OfType<WornAccessory>());
         var names = new[] { look.Shape, look.Face, look.Aura }.Concat(items.Select(Name)).Concat(items.Select(i => i.Style));
         if (!PlynlingLook.IsToken(look.Shape) || !PlynlingLook.IsToken(look.Face)
             || names.Any(n => n is not null && !PlynlingLook.IsToken(n)))

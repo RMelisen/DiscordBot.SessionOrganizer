@@ -267,6 +267,8 @@ var host = Host.CreateDefaultBuilder(args)
     // The painter is static too: a dressed picture it can't draw (the card falls back to the link) is logged here.
     var painterLog = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("PlynlingPainter");
     PlynlingPainter.Log = m => painterLog.LogWarning("{Message}", m);
+    // Compile the image codec off the startup path, so the first dressed card isn't the slow one.
+    _ = Task.Run(PlynlingPainter.WarmUp);
 
     using (var scope = host.Services.CreateScope())
     {

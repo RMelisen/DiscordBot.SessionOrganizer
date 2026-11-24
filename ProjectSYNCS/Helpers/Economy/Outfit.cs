@@ -65,6 +65,11 @@ public sealed record Outfit(CosmeticInfo? Theme, CosmeticInfo? Title, CosmeticIn
         _ => Grave,
     };
 
+    /// <summary>
+    /// Puts <paramref name="c"/> in its slot. On the accessory slot it only replaces the first
+    /// accessory (the old single-slot meaning); real wearing, with two slots, goes through
+    /// <see cref="TryOn"/> / <see cref="AccessoryFit"/>.
+    /// </summary>
     public Outfit With(CosmeticInfo c) => c.Slot switch
     {
         CosmeticSlot.Theme => this with { Theme = c },

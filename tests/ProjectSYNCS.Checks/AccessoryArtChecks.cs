@@ -173,6 +173,13 @@ public static class AccessoryArtChecks
         var two = Living("cos.accessory.ballon", "bleu_droite");
         two.Accessory2Key = "cos.accessory.noeud";
         Wears(two, "cos.accessory.noeud:rose_gauche + cos.accessory.ballon:bleu_droite", "ballon then nœud");
+        // Two of the same rank (nœud + fleur): the same file name whichever slot holds which.
+        var bowFirst = Living("cos.accessory.noeud");
+        bowFirst.Accessory2Key = "cos.accessory.fleur";
+        var flowerFirst = Living("cos.accessory.fleur");
+        flowerFirst.Accessory2Key = "cos.accessory.noeud";
+        Expect(Look(bowFirst) is { } bf && Look(flowerFirst) is { } ff && bf.FileName == ff.FileName,
+            $"same-rank items name two files: {Look(bowFirst)?.FileName} / {Look(flowerFirst)?.FileName}");
         var dirty = Living("cos.accessory.couronne");
         dirty.Hygiene = 0.1;
         Expect(Look(dirty) is { Dirty: true, Shape: "amanite", Face: "content" }, "a dirty Plynling's look: " + Look(dirty)?.FileName);

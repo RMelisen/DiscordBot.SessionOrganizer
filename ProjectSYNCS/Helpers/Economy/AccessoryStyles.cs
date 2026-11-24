@@ -1,11 +1,11 @@
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>
-/// The styles a worn accessory comes in: zero to three choices (« Couleur », « Position », and for the
-/// sided ones « Côté » or « Main », always last), each
-/// with its options, the first being the default. A Plynling stores the picked options joined by
-/// « _ » in choice order (<c>Plynling.AccessoryStyle</c>, « bleue_haut »), and the picture's filename
-/// carries the same string (<see cref="PlynlingArt.Sprite"/>). Must match the styles drawn in
+/// The styles a worn accessory comes in: zero to two choices (« Couleur » or « Position », and for the
+/// sided ones « Côté » or « Main », always last), each with its options, the first being the
+/// default. A Plynling stores the picked options joined by « _ » in choice order
+/// (<c>Plynling.AccessoryStyle</c>, « bleue_haut »), and the layer names carry the same string
+/// (<see cref="PlynlingLook"/>, <c>Assets/Plynlings/acc/…</c>). Must match the styles drawn in
 /// tools/plynling-art/accessories.py — the checks (section 62) compare them with the files on disk.
 /// Option keys are stored: append-only, never renamed, never containing « _ ».
 /// </summary>

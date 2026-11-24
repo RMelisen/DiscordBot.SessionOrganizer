@@ -66,6 +66,9 @@ public static class CardSend
         try
         {
             files = PlynlingPainter.FilesFor(card);
+            var wanted = PlynlingPainter.NamesIn(card).Count;
+            if (files.Count < wanted)
+                PlynlingPainter.Log($"[CardSend] {wanted - files.Count} of {wanted} pictures could not be attached");
         }
         catch (Exception ex)
         {

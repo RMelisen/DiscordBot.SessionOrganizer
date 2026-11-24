@@ -72,12 +72,10 @@ public static class PlynlingArt
         var face = mood ?? PlynlingLife.Mood(p, now);
         if (face == PlynlingMood.Angry) return null;
         var worn = outfit ?? Outfit.Of(p);
-        // Under to over, a stable sort: the file name names them in the order they are drawn.
-        var items = new[] { (Item: worn.Accessory, Style: worn.AccessoryStyle), (Item: worn.Accessory2, Style: worn.Accessory2Style) }
+        // Under to over (AccessoryFit.InDrawOrder): the file name names them in the order they are drawn.
+        var items = AccessoryFit.InDrawOrder(new[] { (Item: worn.Accessory, Style: worn.AccessoryStyle), (Item: worn.Accessory2, Style: worn.Accessory2Style) }
             .Where(w => w.Item is { Slot: CosmeticSlot.Accessory } c && c.Key.StartsWith(AccessoryPrefix, StringComparison.Ordinal))
-            .Select(w => new WornAccessory(w.Item!.Key, AccessoryStyles.Resolve(w.Item.Key, w.Style)))
-            .OrderBy(i => AccessoryFit.DrawRank(i.Key))
-            .ToList();
+            .Select(w => new WornAccessory(w.Item!.Key, AccessoryStyles.Resolve(w.Item.Key, w.Style))));
         var aura = AuraMoods.Contains(face) && worn.Aura is { Slot: CosmeticSlot.Aura } a && a.Key.StartsWith(AuraPrefix, StringComparison.Ordinal)
             ? a.Key[AuraPrefix.Length..]
             : null;
