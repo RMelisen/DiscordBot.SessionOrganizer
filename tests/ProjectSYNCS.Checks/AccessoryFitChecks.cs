@@ -59,6 +59,17 @@ public static class AccessoryFitChecks
             "the other slot holds the pick: swap, and the nœud goes to the other slot");
         Is(AccessoryFit.Pick(W("noeud"), W("couronne"), 0, W("fleur", "rose_gauche")), "fleur:rose_gauche", "couronne", null, null,
             "a pick that clashes with nothing takes its slot");
+        Is(AccessoryFit.Pick(W("ballon", "rouge_gauche"), W("baguette", "droite"), 0, W("baguette", "gauche")), "baguette:gauche", "ballon:rouge_droite", null, "ballon",
+            "a swap that lands two held items on one side flips the moved one");
+        Is(AccessoryFit.Pick(W("noeud", "rose_droite"), W("fleur", "blanche_gauche"), 0, W("fleur", "blanche_droite")), "fleur:blanche_droite", "noeud:rose_gauche", null, "noeud",
+            "a swap that lands two head items on one side flips the moved one");
+        Is(AccessoryFit.Pick(W("ballon", "rouge_gauche"), W("baguette", "droite"), 0, W("baguette")), "baguette:droite", "ballon:rouge_gauche", null, null,
+            "a pick naming no style keeps the worn style, swap included");
+        Is(AccessoryFit.Pick(W("noeud", "bleu_droite"), null, 1, W("noeud")), "noeud:bleu_droite", null, null, null,
+            "picking the worn item in the empty slot leaves it alone, in the first slot");
+        var retired = new WornAccessory("cos.accessory.sac_a_dos", "x");
+        Is(AccessoryFit.Pick(retired, null, 1, W("couronne")), "sac_a_dos:x", "couronne", null, null, "a retired item never clashes (Pick)");
+        Is(AccessoryFit.Pick(W("ballon", "rouge_gauche"), retired, 0, W("baguette", "gauche")), "baguette:gauche", "sac_a_dos:x", null, null, "a retired item has no side (Pick)");
         var unknown = AccessoryFit.Pick(W("noeud"), null, 1, new WornAccessory("cos.accessory.nope", null));
         Is(unknown, "noeud", null, null, null, "an unknown key changes nothing (Pick)");
     }
@@ -77,6 +88,11 @@ public static class AccessoryFitChecks
         Is(AccessoryFit.TryOn(W("noeud", "rose_gauche"), W("couronne"), W("noeud", "bleu_droite")), "noeud:bleu_droite", "couronne", null, null,
             "the same item worn takes the new style");
         Is(AccessoryFit.TryOn(W("noeud"), null, new WornAccessory("cos.accessory.nope", null)), "noeud", null, null, null, "an unknown key changes nothing (TryOn)");
+        var retired = new WornAccessory("cos.accessory.sac_a_dos", "x");
+        Is(AccessoryFit.TryOn(retired, null, W("ballon")), "sac_a_dos:x", "ballon:rouge_gauche", null, null, "a retired item never clashes (TryOn)");
+        Is(AccessoryFit.TryOn(retired, W("couronne"), W("bonnet")), "sac_a_dos:x", "bonnet:rouge", "couronne", null, "a hat still replaces the hat beside a retired item");
+        Is(AccessoryFit.TryOn(W("noeud", "rose"), null, W("fleur", "blanche_gauche")), "noeud:rose_droite", "fleur:blanche_gauche", null, "noeud",
+            "flipping an old style without a side gives rose_droite");
     }
 
     private static void Restyles()
@@ -86,7 +102,10 @@ public static class AccessoryFitChecks
         Is(AccessoryFit.Restyle(W("noeud", "rose_gauche"), W("fleur", "blanche_droite"), 0, "bleu_gauche"),
             "noeud:bleu_gauche", "fleur:blanche_droite", null, null, "a colour change moves nothing");
         Is(AccessoryFit.Restyle(W("noeud", "rose_gauche"), null, 1, "rose_droite"), "noeud:rose_gauche", null, null, null, "an empty slot changes nothing");
-        Is(AccessoryFit.Restyle(W("noeud", "rose_gauche"), null, 5, "rose_droite"), "noeud:rose_gauche", null, null, null, "a bad slot changes nothing");
+        var retired = new WornAccessory("cos.accessory.sac_a_dos", "x");
+        Is(AccessoryFit.Restyle(retired, W("fleur", "blanche_droite"), 0, "gauche"), "sac_a_dos", "fleur:blanche_droite", null, null, "a retired item restyled changes nothing else");
+        Is(AccessoryFit.Restyle(W("noeud", "rose_gauche"), retired, 0, "rose_droite"), "noeud:rose_droite", "sac_a_dos:x", null, null, "a retired neighbour has no side to flip");
+        Is(AccessoryFit.Restyle(W("noeud", "rose_gauche"), null, 5,"rose_droite"), "noeud:rose_gauche", null, null, null, "a bad slot changes nothing");
     }
 
     private static void Resolving()

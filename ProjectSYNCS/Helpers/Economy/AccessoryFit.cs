@@ -77,6 +77,8 @@ public static class AccessoryFit
         }
         var category = Category(picked.Key);
         if (category is null) return new AccessoryChange(first, second, null, null);
+        // An item already worn keeps its worn style when the pick names none.
+        if (picked.Style is null && slots.FirstOrDefault(s => s?.Key == picked.Key) is { } worn) picked = picked with { Style = worn.Style };
         picked = Resolved(picked);
         var other = slots[1 - picker];
 
@@ -84,7 +86,7 @@ public static class AccessoryFit
         {
             slots[1 - picker] = slots[picker];
             slots[picker] = picked;
-            return Done(slots, null, null);
+            return Done(slots, null, FlipIfSameSide(slots, picker));
         }
         if (other is not null && !IsSided(category) && Category(other.Key) == category)
         {
