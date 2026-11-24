@@ -223,18 +223,20 @@ public static class AccessoryArtChecks
 
     private static void StyleResets()
     {
+        // A style belongs to its accessory: another one shows its own (saved or default), and the first comes back as it was.
         var p = Living("cos.accessory.echarpe", "bleue_bas");
         CosmeticSlots.Set(p, CosmeticSlot.Accessory, "cos.accessory.echarpe");
         Expect(p.AccessoryStyle == "bleue_bas", "wearing the same accessory again lost its style");
         CosmeticSlots.Set(p, CosmeticSlot.Accessory, "cos.accessory.noeud");
-        Expect(p.AccessoryStyle is null, "wearing another accessory kept the old style: " + p.AccessoryStyle);
-        p.AccessoryStyle = "bleu";
+        Expect(p.AccessoryStyle == "rose_gauche", "wearing another accessory kept the old style: " + p.AccessoryStyle);
         CosmeticSlots.Set(p, CosmeticSlot.Accessory, null);
-        Expect(p.AccessoryStyle is null, "taking the accessory off kept its style");
+        Expect(p.AccessoryKey is null && p.AccessoryStyle is null, "taking the accessory off kept it");
+        CosmeticSlots.Set(p, CosmeticSlot.Accessory, "cos.accessory.echarpe");
+        Expect(p.AccessoryStyle == "bleue_bas", "wearing the écharpe again did not restore « bleue_bas »: " + p.AccessoryStyle);
         CosmeticSlots.Set(p, CosmeticSlot.Theme, "cos.theme.prairie");
-        p.AccessoryStyle = "bleu";
+        p.AccessoryStyle = "bleue_haut";
         CosmeticSlots.Set(p, CosmeticSlot.Theme, "cos.theme.ocean");
-        Expect(p.AccessoryStyle == "bleu", "changing the thème touched the accessory's style");
+        Expect(p.AccessoryStyle == "bleue_haut", "changing the thème touched the accessory's style");
     }
 
     // On the Accessoire slot, wearing the écharpe: one select per choice, the current option picked.

@@ -1324,6 +1324,12 @@ namespace ProjectSYNCS.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Accessory2Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Accessory2Style")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("AccessoryKey")
                         .HasColumnType("TEXT");
 
@@ -1483,6 +1489,9 @@ namespace ProjectSYNCS.Migrations
 
                     b.Property<long>("RpgXp")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("SavedAccessoryStyles")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("SickNotified")
                         .HasColumnType("INTEGER");

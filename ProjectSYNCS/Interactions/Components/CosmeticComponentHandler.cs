@@ -65,7 +65,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
                     return;
                 }
                 if (cosmetic is not null) slot = cosmetic.Slot;
-                var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, slot, cosmetic?.Key, now);
+                var (outcome, plynling, _) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, slot, cosmetic?.Key, now);
                 var notice = outcome != CosmeticOutcome.Done ? CosmeticCards.Notice(outcome, cosmetic)
                     : cosmetic is null ? CosmeticCards.TakenOff(slot)
                     : WornNotice(plynling!.Name, cosmetic);
@@ -142,7 +142,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
             await RedrawAsync(new CosmeticView(tab), PlynlingText.UnknownItem);
             return;
         }
-        var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, cosmetic.Slot, key, DateTimeOffset.UtcNow);
+        var (outcome, plynling, _) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, cosmetic.Slot, key, DateTimeOffset.UtcNow);
         var notice = outcome == CosmeticOutcome.Done ? WornNotice(plynling!.Name, cosmetic) : CosmeticCards.Notice(outcome, cosmetic);
         await RedrawAsync(new CosmeticView(tab, Picked: key), notice);
     }
@@ -154,7 +154,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         if (!int.TryParse(choiceStr, out var choice)) return;
         await DeferAsync();
         var option = selected.FirstOrDefault() ?? "";
-        var (outcome, plynling) = await _cosmetics.StyleAsync(Context.Guild.Id, Context.User.Id, key, choice, option);
+        var (outcome, plynling, _) = await _cosmetics.StyleAsync(Context.Guild.Id, Context.User.Id, key, choice, option);
         var cosmetic = CosmeticCatalog.ByKey(key);
         var notice = outcome == CosmeticOutcome.Done && cosmetic is not null
             ? $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(plynling!.Name)} change de style : {cosmetic.Emoji} {CosmeticCatalog.ShortName(cosmetic)}, " +

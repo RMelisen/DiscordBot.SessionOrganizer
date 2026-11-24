@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Models;
 
 // 67. Wearing two accessories: categories, sides, the draw order, and what a pick, a try-on or a
 // restyle does to the other slot (AccessoryFit, AccessoryStyles side choices).
@@ -37,6 +38,113 @@ public static class AccessoryFitChecks
         Resolving();
         Ranks();
         CategoriesMatchTheArt();
+        SavedStylesRoundTrip();
+        OutfitReadsBothSlots();
+        StylesAreRemembered();
+        TakingOffMovesTheSecondUp();
+    }
+
+    private static Plynling Row(string? first, string? firstStyle = null, string? second = null, string? secondStyle = null) => new()
+    {
+        Name = "Pépin", Species = PlynlingSpecies.Amanite, Hygiene = 1.0,
+        AccessoryKey = first, AccessoryStyle = firstStyle, Accessory2Key = second, Accessory2Style = secondStyle,
+    };
+
+    private static void SavedStylesRoundTrip()
+    {
+        var saved = new Dictionary<string, string> { [P + "noeud"] = "dore_droite", [P + "echarpe"] = "verte_bas" };
+        var text = SavedStyles.Format(saved);
+        Expect(text is not null, "a non-empty set formats to text");
+        var back = SavedStyles.Parse(text);
+        Expect(back.Count == 2 && back[P + "noeud"] == "dore_droite" && back[P + "echarpe"] == "verte_bas", "SavedStyles round trip: " + text);
+        Expect(SavedStyles.Format(new Dictionary<string, string>()) is null, "an empty set formats to null");
+        Expect(SavedStyles.Parse(null).Count == 0 && SavedStyles.Parse("").Count == 0 && SavedStyles.Parse("garbage;=;a=").Count == 0, "bad text parses to nothing");
+    }
+
+    private static void OutfitReadsBothSlots()
+    {
+        var onlySecond = Outfit.Of(Row(null, null, P + "noeud", "bleu_droite"));
+        Expect(onlySecond.Accessory?.Key == P + "noeud" && onlySecond.AccessoryStyle == "bleu_droite" && onlySecond.Accessory2 is null,
+            "a row with only the second slot puts it first");
+        var retiredSecond = Outfit.Of(Row(P + "noeud", "rose_gauche", P + "sac_a_dos", "x"));
+        Expect(retiredSecond.Accessory?.Key == P + "noeud" && retiredSecond.Accessory2 is null, "a retired key in slot 2 shows one accessory");
+        var retiredFirst = Outfit.Of(Row(P + "sac_a_dos", "x", P + "noeud", "rose_gauche"));
+        Expect(retiredFirst.Accessory?.Key == P + "noeud" && retiredFirst.Accessory2 is null && retiredFirst.AccessoryStyle == "rose_gauche",
+            "a retired key in slot 1 moves the second up");
+        var both = Outfit.Of(Row(P + "noeud", "rose", P + "ballon", null));
+        Expect(both.Accessory?.Key == P + "noeud" && both.Accessory2?.Key == P + "ballon", "two accessories read in order");
+        var two = Row(P + "noeud", "rose", P + "ballon");
+        var shown = PlynlingArt.SpriteOf(two, new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero), PlynlingMood.Content, Outfit.Of(two));
+        Expect(shown.Contains("_with_noeud_rose_"), "an old style without a side still draws the default: " + shown);
+
+        var saved = new Dictionary<string, string> { [P + "ballon"] = "bleu_droite" };
+        var tried = Outfit.Of(Row(P + "noeud", "rose_gauche")).TryOn(CosmeticCatalog.ByKey(P + "ballon")!, saved);
+        Expect(tried.Accessory?.Key == P + "noeud" && tried.Accessory2?.Key == P + "ballon" && tried.Accessory2Style == "bleu_droite",
+            $"Outfit.TryOn fills the second slot with the saved style (resolved): {tried.Accessory2Style}");
+        var theme = Outfit.Of(Row(P + "noeud")).TryOn(CosmeticCatalog.ByKey("cos.theme.prairie")!, saved);
+        Expect(theme.Theme?.Key == "cos.theme.prairie" && theme.Accessory?.Key == P + "noeud", "Outfit.TryOn on another slot is With");
+        Expect(Outfit.Of(Row(P + "noeud", null, P + "ballon")).Without(CosmeticSlot.Accessory) is { Accessory: null, Accessory2: null }, "Without(Accessory) clears both");
+    }
+
+    private static void StylesAreRemembered()
+    {
+        var p = Row(null);
+        Wear(p, "noeud");
+        Expect(p.AccessoryStyle == "rose_gauche", "a first nœud wears its default: " + p.AccessoryStyle);
+        CosmeticSlots.Apply(p, AccessoryFit.Restyle(Worn(p, 0), Worn(p, 1), 0, "dore_droite"));
+        Expect(p.AccessoryStyle == "dore_droite", "restyled: " + p.AccessoryStyle);
+        CosmeticSlots.Apply(p, AccessoryFit.Pick(Worn(p, 0), Worn(p, 1), 0, null));
+        Expect(p.AccessoryKey is null && p.Accessory2Key is null, "taken off");
+        Wear(p, "noeud");
+        Expect(p.AccessoryStyle == "dore_droite", "worn again, the nœud is « dore_droite »: " + p.AccessoryStyle);
+
+        Wear(p, "ballon");
+        Expect(p.Accessory2Key == P + "ballon" && p.Accessory2Style == "rouge_gauche", "a ballon fills the second slot: " + p.Accessory2Style);
+        CosmeticSlots.Apply(p, AccessoryFit.Restyle(Worn(p, 0), Worn(p, 1), 1, "bleu_droite"));
+        CosmeticSlots.Apply(p, AccessoryFit.Pick(Worn(p, 0), Worn(p, 1), 1, null));
+        Wear(p, "ballon");
+        Expect(p.Accessory2Style == "bleu_droite", "the ballon came back « bleu_droite »: " + p.Accessory2Style);
+        Expect(SavedStyles.Parse(p.SavedAccessoryStyles).GetValueOrDefault(P + "noeud") == "dore_droite", "the nœud's style is still saved");
+
+        // Set (the single-slot door): another accessory never inherits a style.
+        var q = Row(P + "echarpe", "bleue_bas");
+        CosmeticSlots.Set(q, CosmeticSlot.Accessory, P + "echarpe");
+        Expect(q.AccessoryStyle == "bleue_bas", "Set: the same accessory again kept its style");
+        CosmeticSlots.Set(q, CosmeticSlot.Accessory, P + "noeud");
+        Expect(q.AccessoryStyle == "rose_gauche", "Set: another accessory shows its own default: " + q.AccessoryStyle);
+        CosmeticSlots.Set(q, CosmeticSlot.Accessory, P + "echarpe");
+        Expect(q.AccessoryStyle == "bleue_bas", "Set: the écharpe came back « bleue_bas »: " + q.AccessoryStyle);
+        CosmeticSlots.Set(q, CosmeticSlot.Accessory, null);
+        Expect(q.AccessoryKey is null, "Set null takes it off");
+        CosmeticSlots.Set(q, CosmeticSlot.Theme, "cos.theme.prairie");
+        Expect(q.ThemeKey == "cos.theme.prairie" && q.AccessoryKey is null, "Set on the thème");
+    }
+
+    private static WornAccessory? Worn(Plynling p, int slot)
+    {
+        var (first, second) = CosmeticSlots.AccessorySlots(p);
+        return slot == 0 ? first : second;
+    }
+
+    private static void Wear(Plynling p, string name) =>
+        CosmeticSlots.Apply(p, AccessoryFit.TryOn(Worn(p, 0), Worn(p, 1),
+            new WornAccessory(P + name, SavedStyles.Parse(p.SavedAccessoryStyles).GetValueOrDefault(P + name))));
+
+    private static void TakingOffMovesTheSecondUp()
+    {
+        var p = Row(P + "noeud", "rose_gauche", P + "ballon", "rouge_gauche");
+        CosmeticSlots.TakeOff(p, P + "noeud");
+        Expect(p.AccessoryKey == P + "ballon" && p.AccessoryStyle == "rouge_gauche" && p.Accessory2Key is null && p.Accessory2Style is null,
+            $"the last nœud gone: the ballon moves up ({p.AccessoryKey}, {p.Accessory2Key})");
+        var q = Row(P + "noeud", "rose_gauche", P + "ballon", "rouge_gauche");
+        CosmeticSlots.TakeOff(q, P + "ballon");
+        Expect(q.AccessoryKey == P + "noeud" && q.Accessory2Key is null, "the second taken off");
+        var r = Row(P + "noeud");
+        CosmeticSlots.TakeOff(r, P + "ballon");
+        Expect(r.AccessoryKey == P + "noeud", "taking off what is not worn changes nothing");
+        var s = Row(null, null, P + "ballon", "rouge_gauche");     // a lone second reads as the first
+        CosmeticSlots.TakeOff(s, P + "ballon");
+        Expect(s.AccessoryKey is null && s.Accessory2Key is null, "a lone second taken off");
     }
 
     private static void Picks()
