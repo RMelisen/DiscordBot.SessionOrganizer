@@ -14,6 +14,7 @@ HAT_AT: positions are in the sprite's coordinates, offset by HAT_AT, so the aura
     python tools/plynling-art/auras.py <outdir>     # the preview sheets and animations
 """
 
+import math
 import os
 import sys
 
@@ -144,8 +145,95 @@ def petales(spray, box, f):
                     spray.put(x + s + i - 1, y + j, {"l": PETAL_L, "p": PETAL, "d": PETAL_D}[ch], 235)
 
 
+# ---- Flocons: snowflakes falling straight down, turning as they go (winter) ------------------
+
+SNOW, SNOW_ARM = (255, 255, 255), (196, 222, 255)
+DRIFT = [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, -1, -1, -1, -1, 0]
+
+
+def flocons(spray, box, f):
+    x0, y0, x1, y1 = box
+    top, fall = y0 - 3, (y1 - y0) + 4
+    # (column, phase, big): two big flakes and three small ones, at the sides like the petals
+    for sx, phase, big in ((x0 - 3, 0, True), (x1 + 2, 6, True), (x0 - 1, 10, False), (x1 + 4, 3, False), (x0 - 5, 13, False)):
+        t = (f + phase) % FRAMES
+        x, _ = spray.clamp(sx, top, margin=2)
+        x += DRIFT[(t + phase) % FRAMES]
+        y = top + (t * fall) // FRAMES
+        a = 150 if t in (0, FRAMES - 1) else 255          # faint as it appears and as it melts
+        if not big:
+            spray.put(x, y, SNOW, (a * 9) // 10)
+            continue
+        spray.put(x, y, SNOW, a)
+        # a plus, then a cross: the flake turns a quarter every two frames
+        arms = ((1, 0), (-1, 0), (0, 1), (0, -1)) if (t // 2) % 2 == 0 else ((1, 1), (-1, -1), (1, -1), (-1, 1))
+        for dx, dy in arms:
+            spray.put(x + dx, y + dy, SNOW_ARM, (a * 4) // 5)
+
+
+# ---- Feuilles mortes: autumn leaves tumbling down, swinging wide (autumn) ---------------------
+
+# (o leaf, d its dark edge, l a light vein) per leaf: orange, red, gold; the stem is brown
+LEAF_INKS = [{"o": (226, 124, 44), "d": (164, 78, 28), "l": (246, 170, 84)},
+             {"o": (196, 58, 42), "d": (134, 34, 30), "l": (232, 104, 74)},
+             {"o": (232, 182, 52), "d": (176, 122, 32), "l": (250, 216, 112)}]
+STEM = (112, 72, 40)
+SWING = [0, 1, 1, 2, 2, 2, 1, 0, 0, -1, -1, -2, -2, -2, -1, 0]
+# a leaf leaning one way, its mirror, and edge-on as it flips between them (s its stem)
+LEAF_RIGHT, LEAF_LEFT, LEAF_EDGE = [".ol", "odo", "s.."], ["lo.", "odo", "..s"], ["sodo"]
+
+
+def feuilles(spray, box, f):
+    x0, y0, x1, y1 = box
+    top, fall = y0 - 3, (y1 - y0) + 3
+    # three leaves, one of each colour, never a third of a loop apart so two don't flip together
+    for (sx, phase), ink in zip(((x0 - 3, 0), (x1 + 2, 5), (x0 - 1, 11)), LEAF_INKS):
+        t = (f + phase) % FRAMES
+        x, _ = spray.clamp(sx, top, margin=3)
+        y = top + (t * fall) // FRAMES
+        s, step = SWING[t], SWING[(t + 1) % FRAMES] - SWING[t - 1]
+        shape = LEAF_RIGHT if step > 0 else LEAF_LEFT if step < 0 else LEAF_EDGE
+        for j, row in enumerate(shape):
+            for i, ch in enumerate(row):
+                if ch != ".":
+                    spray.put(x + s + i - 1, y + j, STEM if ch == "s" else ink[ch], 240)
+
+
+# ---- Lucioles: fireflies wandering in small loops, glowing and going out (summer) -------------
+
+GLOW_CORE, GLOW, GLOW_HALO, EMBER = (255, 255, 196), (222, 246, 104), (190, 236, 80), (122, 140, 52)
+# how bright a firefly is over its loop: out, warming, lit, fading
+BLINK = [0, 0, 0, 1, 2, 3, 3, 3, 3, 2, 1, 0, 0, 0, 0, 0]
+# a little figure-of-eight, closed over the loop
+WANDER = [(round(2 * math.cos(2 * math.pi * t / FRAMES)), round(1.4 * math.sin(4 * math.pi * t / FRAMES))) for t in range(FRAMES)]
+
+
+def lucioles(spray, box, f):
+    x0, y0, x1, y1 = box
+    h = y1 - y0
+    # four, two on the left: the mood marks (heart, Zzz, sweat) live on the right
+    for (sx, sy), phase in (((x0 - 4, y0 + h // 3), 0), ((x0 - 2, y1 - 3), 9), ((x1 + 1, y0 - 1), 5), ((x1 + 3, y1 - 5), 13)):
+        t = (f + phase) % FRAMES
+        bx, by = spray.clamp(sx, sy, margin=3)
+        dx, dy = WANDER[(t + phase) % FRAMES]
+        x, y = bx + dx, by + dy
+        b = BLINK[t]
+        if b == 0:                         # out: a faint body, still there in the dark
+            spray.put(x, y, EMBER, 120)
+        elif b == 1:
+            spray.put(x, y, GLOW, 200)
+        else:
+            spray.put(x, y, GLOW_CORE)
+            for ddx, ddy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                spray.put(x + ddx, y + ddy, GLOW_HALO, 150 if b == 3 else 90)
+
+
 # key (the cosmetic key without « cos.aura. ») -> drawing, in catalogue order
-AURAS = {"scintillements": scintillements, "bulles": bulles, "petales": petales}
+AURAS = {"scintillements": scintillements, "bulles": bulles, "petales": petales,
+         "flocons": flocons, "feuilles": feuilles, "lucioles": lucioles}
+# The auras the pre-rendered « _aura_ » files exist for (export.py's full and `auras` exports, checks
+# section 70). Later ones are drawn by the bot from the layers alone: never add to this list.
+PRERENDERED_AURAS = ["scintillements", "bulles", "petales"]
 
 
 def surround(im, body, state, aura, frame, tall=False):
@@ -216,7 +304,7 @@ if __name__ == "__main__":
     shapes = [(sp, st) for sp in SPECIES for st in ("adult", "baby")]
     names = [f"{sp}{' bébé' if st == 'baby' else ''}" for sp, st in shapes]
     worn = [None, "couronne", "haut_de_forme", "echarpe", "ballon", "lunettes"]
-    for aura in AURAS:
+    for aura in sys.argv[2:] or AURAS:
         # every shape in every aura face, frame 0, plain
         cells = [[aura_loop(state, sp, aura, st)[0] for state in AURA_STATES] for sp, st in shapes]
         print(_grid(cells, names, AURA_STATES, os.path.join(out, f"aura_{aura}_faces.png")))
