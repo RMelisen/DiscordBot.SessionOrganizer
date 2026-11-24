@@ -29,6 +29,23 @@ def build(state, sp, frame=0, shadow=True, stage="adult", dirty=False):
         dirt.ACTIVE = False
 
 
+def marks(state, sp, frame=0, stage="adult"):
+    """The mood extras of one frame alone (heart, sweat, « z », frost) on a transparent picture the
+    size of the sprite, drawn exactly where build() puts them. Blank for a face without any."""
+    import species
+    from PIL import Image
+    canvas = Image.new("RGBA", (N, N), (0, 0, 0, 0))
+    originals = {name: getattr(species, name) for name in ("extras", "frost", "sweat")}
+    for name, fn in originals.items():
+        setattr(species, name, (lambda fn: lambda im, *a, **k: fn(canvas, *a, **k))(fn))
+    try:
+        build(state, sp, frame, shadow=False, stage=stage)
+    finally:
+        for name, fn in originals.items():
+            setattr(species, name, fn)
+    return canvas
+
+
 # ---- the face -------------------------------------------------------------------------
 # Eyes sit at columns 12-13 and 18-19, rows 19-21; the mouth at rows 23-25 — before the
 # (ox, oy) offset. Every species wears this face; skin / skin_out replace the stem tones

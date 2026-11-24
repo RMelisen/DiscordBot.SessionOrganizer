@@ -98,11 +98,13 @@ public static class CosmeticCards
         }
 
         var worn = Outfit.Of(p);
-        var tried = picked is null ? worn : worn.With(picked);
+        var saved = SavedStyles.Parse(p.SavedAccessoryStyles);
+        var tried = picked is null ? worn : worn.TryOn(picked, saved);       // an accessory goes where it fits, in its remembered style
         var container = PlynlingModule.CardHead(p, now, data.PartnerName, data.Epithet, tried);
-        if (picked is not null && worn.In(picked.Slot)?.Key != picked.Key)
+        if (picked is not null && !Wears(worn, picked))
             container.AddComponent(new TextDisplayBuilder(
-                $"-# Essai : {picked.Emoji} {Shown(picked, p)} — {(data.Owns(picked) ? "à toi, pas encore porté" : "pas encore à toi")}"));
+                $"-# Essai : {picked.Emoji} {Shown(picked, p)} — {(data.Owns(picked) ? "à toi, pas encore porté" : "pas encore à toi")}" +
+                (AccessoryNotices.Of(worn.AccessoryChangeFor(picked, saved), picked, preview: true) is { } displaced ? $"\n-# {displaced}" : "")));
         // An aura isn't drawn on the sick and frozen faces (PlynlingArt.AuraMoods): say so, or the
         // try-on would look like nothing changed.
         if (tried.Aura is not null && PlynlingLife.Mood(p, now) is PlynlingMood.Sick or PlynlingMood.Frozen)
@@ -137,7 +139,8 @@ public static class CosmeticCards
         container.AddComponent(slots);
 
         var owned = CosmeticCatalog.InSlot(slot).Where(data.Owns).ToList();
-        var worn = CosmeticSlots.Worn(p, slot);
+        var outfit = Outfit.Of(p);
+        var worn = outfit.In(slot);
         if (owned.Count == 0)
         {
             container.AddComponent(new TextDisplayBuilder(
@@ -147,31 +150,49 @@ public static class CosmeticCards
 
         container.AddComponent(new TextDisplayBuilder(
             $"**{CosmeticCatalog.SlotLabel(slot)}** · {owned.Count} à toi. Choisis : c'est porté tout de suite."));
-        // « Aucun » then everything owned, 25 to a select (a slot can hold more than one select's worth:
-        // titles and cadres do). The last segment numbers the selects; the handler ignores it here.
+        // The accessory slot has two pickers, each followed by its own style selects; every other slot one.
+        if (slot != CosmeticSlot.Accessory)
+        {
+            Picker(container, owned, slot, worn, $"cosm:pick:{CosmeticTab.Wardrobe}", CosmeticCatalog.SlotLabel(slot), p);
+            return;
+        }
+        Picker(container, owned, slot, outfit.Accessory, $"cosm:pick:{CosmeticTab.Wardrobe}", "Premier accessoire", p);
+        StyleSelects(container, outfit.Accessory, outfit.AccessoryStyle);
+        if (outfit.Accessory is null) return;       // a second one needs a first
+        Picker(container, owned, slot, outfit.Accessory2, "cosm:pick2", "Second accessoire", p);
+        StyleSelects(container, outfit.Accessory2, outfit.Accessory2Style);
+    }
+
+    // « Aucun » then everything owned, 25 to a select (a slot can hold more than one select's worth:
+    // titles and cadres do). The last segment numbers the selects; the handler ignores it here.
+    private static void Picker(ContainerBuilder container, List<CosmeticInfo> owned, CosmeticSlot slot, CosmeticInfo? worn, string idPrefix,
+        string label, Plynling p)
+    {
         var options = owned.Select(c => new SelectMenuOptionBuilder(Shown(c, p), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key))
             .Prepend(new SelectMenuOptionBuilder("Aucun", NonePrefix + slot, isDefault: worn is null))
             .Chunk(MaxOptions).ToList();
         for (var i = 0; i < options.Count; i++)
             container.AddComponent(new ActionRowBuilder().WithSelectMenu(new SelectMenuBuilder()
-                .WithCustomId($"cosm:pick:{CosmeticTab.Wardrobe}:{i}")
-                .WithPlaceholder($"{CosmeticCatalog.SlotLabel(slot)}…" + (options.Count > 1 ? $" ({i + 1}/{options.Count})" : ""))
+                .WithCustomId($"{idPrefix}:{i}")
+                .WithPlaceholder($"{label}…" + (options.Count > 1 ? $" ({i + 1}/{options.Count})" : ""))
                 .WithOptions(options[i].ToList())));
+    }
 
-        // The worn accessory's styles: one select per choice (« Couleur », « Position »), free, worn at once.
-        if (slot == CosmeticSlot.Accessory && worn is not null && AccessoryStyles.Resolve(worn.Key, p.AccessoryStyle) is { } style)
+    // A worn accessory's styles: one select per choice (« Couleur », « Position », « Côté »), free, worn at once.
+    // The key in the id tells the two accessories' selects apart.
+    private static void StyleSelects(ContainerBuilder container, CosmeticInfo? accessory, string? storedStyle)
+    {
+        if (accessory is null || AccessoryStyles.Resolve(accessory.Key, storedStyle) is not { } style) return;
+        var current = style.Split('_');
+        var choices = AccessoryStyles.Choices(accessory.Key);
+        for (var i = 0; i < choices.Count; i++)
         {
-            var current = style.Split('_');
-            var choices = AccessoryStyles.Choices(worn.Key);
-            for (var i = 0; i < choices.Count; i++)
-            {
-                var styles = new SelectMenuBuilder()
-                    .WithCustomId($"cosm:style:{i}:{worn.Key}")
-                    .WithPlaceholder($"{choices[i].Label}…");
-                foreach (var o in choices[i].Options)
-                    styles.AddOption($"{choices[i].Label} : {o.Name}", o.Key, isDefault: o.Key == current[i]);
-                container.AddComponent(new ActionRowBuilder().WithSelectMenu(styles));
-            }
+            var styles = new SelectMenuBuilder()
+                .WithCustomId($"cosm:style:{i}:{accessory.Key}")
+                .WithPlaceholder($"{choices[i].Label}…");
+            foreach (var o in choices[i].Options)
+                styles.AddOption($"{choices[i].Label} : {o.Name}", o.Key, isDefault: o.Key == current[i]);
+            container.AddComponent(new ActionRowBuilder().WithSelectMenu(styles));
         }
     }
 
@@ -292,13 +313,17 @@ public static class CosmeticCards
 
     // An owned item's line in the item view: worn already, or waiting in the wardrobe.
     private static string Ownership(CosmeticInfo c, CosmeticScreenData data) =>
-        data.Plynling is { } p && CosmeticSlots.Worn(p, c.Slot)?.Key == c.Key
+        data.Plynling is { } p && Wears(Outfit.Of(p), c)
             ? $"À toi, et {PlynlingCardUi.SafeName(p.Name)} le porte."
             : "Déjà à toi.";
 
+    // Worn in its slot — an accessory in either of its two.
+    private static bool Wears(Outfit outfit, CosmeticInfo c) =>
+        outfit.In(c.Slot)?.Key == c.Key || (c.Slot == CosmeticSlot.Accessory && outfit.Accessory2?.Key == c.Key);
+
     private static void AddWear(ActionRowBuilder row, CosmeticTab tab, CosmeticInfo c, CosmeticScreenData data)
     {
-        if (data.Plynling is { } p && CosmeticSlots.Worn(p, c.Slot)?.Key != c.Key)
+        if (data.Plynling is { } p && !Wears(Outfit.Of(p), c))
             row.WithButton("Porter", $"cosm:wear:{tab}:{c.Key}", ButtonStyle.Primary);
     }
 

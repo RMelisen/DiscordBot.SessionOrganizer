@@ -150,6 +150,15 @@ public sealed class PlynlingAnnouncer
         }
     }
 
+    /// <summary>An announcement: the line beside its picture, a thumbnail the checks can read back.</summary>
+    public static MessageComponent BuildPost(string line, string imageUrl) =>
+        new ComponentBuilderV2()
+            .AddComponent(new ContainerBuilder()
+                .AddComponent(new SectionBuilder()
+                    .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(imageUrl)))
+                    .AddComponent(new TextDisplayBuilder(line))))
+            .Build();
+
     private async Task PostAsync(ulong guildId, string line, string imageUrl, string what)
     {
         try
@@ -161,14 +170,9 @@ public sealed class PlynlingAnnouncer
                 return;
             }
 
-            var components = new ComponentBuilderV2()
-                .AddComponent(new ContainerBuilder()
-                    .AddComponent(new SectionBuilder()
-                        .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(imageUrl)))
-                        .AddComponent(new TextDisplayBuilder(line))))
-                .Build();
-            await channel.SendMessageAsync(components: components, flags: MessageFlags.ComponentsV2,
-                allowedMentions: AllowedMentions.None);
+            var components = BuildPost(line, imageUrl);
+            // A dressed Plynling's picture is attachment://…, drawn and attached by SendCardAsync.
+            await channel.SendCardAsync(components);
         }
         catch (Exception ex)
         {

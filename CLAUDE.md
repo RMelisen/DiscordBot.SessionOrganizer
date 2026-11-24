@@ -57,8 +57,8 @@ since restart and the avatars on `/level`, `/leaderboard`, `/shame` fall back to
 **`tests/ProjectSYNCS.Checks`** checks how she reads chat (`MessageCues`, `Opinion`, `ShipAsk`), the
 pools that answer it, the listening pieces (streaks, facts, `/debug answers`), and parses,
 validates and walks every Plynling story file (`-- story <arc|all>` writes path reports to its
-`out/`). Run it before shipping a change to cues, pools or stories, and add a case for every
-misfire found in the wild. It is a plain console outside `ProjectSYNCS/` (whose csproj compiles
+`out/`; `-- art` runs the slow pixel-exact sweep of the dressed pictures). Run it before shipping a
+change to cues, pools or stories, and add a case for every misfire found in the wild. It is a plain console outside `ProjectSYNCS/` (whose csproj compiles
 every `.cs` under it), not in the image, no bump. CI only builds the image. Otherwise verify by
 building and, when it matters, running against the dev guild. "The harness" in other notes means
 the owner's scratch checks, not in this repo.

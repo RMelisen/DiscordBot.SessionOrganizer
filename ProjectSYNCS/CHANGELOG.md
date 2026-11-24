@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.15.0 — 2026-11-24
+
+- A Plynling can wear two accessories at once, from different categories; a clash replaces the other
+  item, and the wardrobe says what was replaced or moved.
+- Sides: the nœud and flower go on either side of the head, and held items in either hand.
+- The colour, place or side picked for an accessory is remembered per Plynling and restored when it is worn again.
+- Dressed pictures are now drawn by the bot on the card, the wardrobe, games, journal, visits, posts
+  and the Plynlings leaderboard.
+
 ## 8.14.1 — 2026-11-24
 
 - The help cards of `/plynling`, `/minecraft` and `/report` now link to their page of the online guide.

@@ -39,18 +39,14 @@ public static class PlynlingArt
         PlynlingMood.Starving, PlynlingMood.Sleeping, PlynlingMood.Sick,
     };
 
-    // The adult filename deliberately carries no stage segment: it is the file every species
-    // already had, so adding the baby invalidated nothing Discord had cached. The dirty version
-    // adds « _dirty » after the face, a worn accessory « _with_<name>[_<style>] » after that
-    // (tools/plynling-art/accessories.py) — new filenames, so no version bump. An accessory key the
-    // catalogue doesn't know (retired, mistyped) shows the plain picture; angry is a visit face and
-    // has no accessory pictures; an unknown style shows the default one (AccessoryStyles.Resolve).
-    // A worn aura adds « _aura_<name> » last (tools/plynling-art/auras.py), on the faces in AuraMoods
-    // only; elsewhere, or for a key that isn't a known aura, the picture is the same as without one.
-    public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false,
-        string? accessory = null, string? style = null, string? aura = null) =>
+    // The bare picture, as a link. The adult filename deliberately carries no stage segment: it is the
+    // file every species already had, so adding the baby invalidated nothing Discord had cached. The
+    // dirty version adds « _dirty » after the face. A dressed Plynling is drawn by the bot instead
+    // (LookOf, PlynlingPainter); the old « _with_… » and « _aura_… » files stay in assets/plynlings/
+    // because messages already posted link them.
+    public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false) =>
         $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}" +
-        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}{AccessorySegment(mood, accessory, style)}{AuraSegment(mood, aura)}_v{Version}.webp";
+        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}_v{Version}.webp";
 
     // The card faces drawn with an aura. Must match AURA_STATES in tools/plynling-art/auras.py (checks
     // section 64): the ice covers it, a sick Plynling's sparkle goes out, angry is a visit face.
@@ -61,34 +57,49 @@ public static class PlynlingArt
     };
 
     private const string AuraPrefix = "cos.aura.";
-
-    private static string AuraSegment(PlynlingMood mood, string? aura) =>
-        AuraMoods.Contains(mood) && CosmeticCatalog.ByKey(aura) is { Slot: CosmeticSlot.Aura } worn
-            && worn.Key.StartsWith(AuraPrefix, StringComparison.Ordinal)
-            ? "_aura_" + worn.Key[AuraPrefix.Length..]
-            : "";
-
     private const string AccessoryPrefix = "cos.accessory.";
 
-    private static string AccessorySegment(PlynlingMood mood, string? accessory, string? style)
+    /// <summary>
+    /// What a dressed Plynling looks like (<see cref="PlynlingPainter"/> draws it): its shape, the face
+    /// for its mood (or the one given), its dirt, the accessories <paramref name="outfit"/> (a try-on) or
+    /// it wears, each in its style resolved (<see cref="AccessoryStyles.Resolve"/>) and in draw order,
+    /// and its aura on the faces in <see cref="AuraMoods"/>. Null when there is nothing to draw on the
+    /// bare picture: no accessory and no aura showing, a key the catalogue doesn't know, or angry (a
+    /// visit face, never dressed).
+    /// </summary>
+    public static PlynlingLook? LookOf(Plynling p, DateTimeOffset now, PlynlingMood? mood = null, Outfit? outfit = null)
     {
-        if (mood == PlynlingMood.Angry || CosmeticCatalog.ByKey(accessory) is not { Slot: CosmeticSlot.Accessory } worn
-            || !worn.Key.StartsWith(AccessoryPrefix, StringComparison.Ordinal))
-            return "";
-        var resolved = AccessoryStyles.Resolve(worn.Key, style);
-        return $"_with_{worn.Key[AccessoryPrefix.Length..]}{(resolved is null ? "" : "_" + resolved)}";
+        var face = mood ?? PlynlingLife.Mood(p, now);
+        if (face == PlynlingMood.Angry) return null;
+        var worn = outfit ?? Outfit.Of(p);
+        // Under to over (AccessoryFit.InDrawOrder): the file name names them in the order they are drawn.
+        var items = AccessoryFit.InDrawOrder(new[] { (Item: worn.Accessory, Style: worn.AccessoryStyle), (Item: worn.Accessory2, Style: worn.Accessory2Style) }
+            .Where(w => w.Item is { Slot: CosmeticSlot.Accessory } c && c.Key.StartsWith(AccessoryPrefix, StringComparison.Ordinal))
+            .Select(w => new WornAccessory(w.Item!.Key, AccessoryStyles.Resolve(w.Item.Key, w.Style))));
+        var aura = AuraMoods.Contains(face) && worn.Aura is { Slot: CosmeticSlot.Aura } a && a.Key.StartsWith(AuraPrefix, StringComparison.Ordinal)
+            ? a.Key[AuraPrefix.Length..]
+            : null;
+        if (items.Count == 0 && aura is null) return null;
+        var dirty = p.FrozenAt is null && PlynlingLife.IsDirty(p, now) && DirtyMoods.Contains(face);
+        return new PlynlingLook(Key(p.Species) + StageSegment(p.Species, PlynlingLife.Stage(p, now)), face.ToString().ToLowerInvariant(),
+            dirty, items.ElementAtOrDefault(0), items.ElementAtOrDefault(1), aura);
     }
 
     /// <summary>
     /// The one way to picture a living Plynling on its own: its species, its stage, its mood (or
-    /// the one given), whether it is « sale », the accessory it wears in its style and its aura — or,
-    /// for a try-on, the ones <paramref name="outfit"/> puts on. Never frozen and dirty — the ice covers it.
+    /// the one given), whether it is « sale », and what it wears — or, for a try-on, what
+    /// <paramref name="outfit"/> puts on. Bare, it is the link (<see cref="Sprite"/>); dressed, it is
+    /// <c>attachment://pl__….webp</c>, drawn here first so the name is only ever handed out for a
+    /// picture that exists: the sender attaches it (<see cref="PlynlingPainter.FilesFor"/>, the cache
+    /// makes that free). A look that can't be drawn (no art, a missing layer) falls back to the link.
+    /// Never frozen and dirty — the ice covers it.
     /// </summary>
     public static string SpriteOf(Plynling p, DateTimeOffset now, PlynlingMood? mood = null, Outfit? outfit = null)
     {
-        var worn = outfit ?? Outfit.Of(p);
-        return Sprite(p.Species, PlynlingLife.Stage(p, now), mood ?? PlynlingLife.Mood(p, now),
-            p.FrozenAt is null && PlynlingLife.IsDirty(p, now), worn.Accessory?.Key, worn.AccessoryStyle, worn.Aura?.Key);
+        var face = mood ?? PlynlingLife.Mood(p, now);
+        return LookOf(p, now, face, outfit) is { } look && PlynlingPainter.Draw(look) is not null
+            ? "attachment://" + look.FileName
+            : Sprite(p.Species, PlynlingLife.Stage(p, now), face, p.FrozenAt is null && PlynlingLife.IsDirty(p, now));
     }
 
     /// <summary>

@@ -152,10 +152,8 @@ public class LevelModule : SyncsModuleBase
     {
         await DeferAsync();
 
-        await FollowupAsync(
-            components: await BuildPageAsync(DefaultView, DefaultPeriod, 0),
-            flags: MessageFlags.ComponentsV2,
-            allowedMentions: AllowedMentions.None);
+        // Through CardSend: the Plynlings view's rows may carry drawn pictures to attach.
+        await Context.Interaction.FollowupCardAsync(await BuildPageAsync(DefaultView, DefaultPeriod, 0));
     }
 
     // Every button on the board comes back to the same place: the custom-id carries the
@@ -197,17 +195,11 @@ public class LevelModule : SyncsModuleBase
         if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
         int.TryParse(pageStr, out var page);
 
-        var components = await BuildPageAsync(view, period, page);
-        var component = (SocketMessageComponent)Context.Interaction;
-
-        await component.UpdateAsync(m =>
-        {
-            m.Components = components;
-            // Re-asserted on every edit: the flag is a property of the message, and an
-            // update that omitted it would be rejected against a ComponentsV2 message.
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        // Deferred first: the ranking is read from the database and the Plynlings view may draw
+        // up to a page of pictures, which can outrun the 3 s on the Pi. CardSend re-asserts the
+        // V2 flag and attaches the drawn pictures (or clears the last page's).
+        await DeferAsync();
+        await Context.Interaction.ModifyCardAsync(await BuildPageAsync(view, period, page));
     }
 
     // ---- /level -------------------------------------------------------------

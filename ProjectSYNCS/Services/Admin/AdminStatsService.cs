@@ -43,7 +43,8 @@ public class AdminStatsService
         var living = plynlings.Where(p => p.DiedAt is null).ToList();
         var bySpecies = living.GroupBy(p => p.Species).OrderByDescending(g => g.Count()).ThenBy(g => g.Key)
             .Select(g => (g.Key, g.Count())).ToList();
-        var worn = living.Sum(p => Enum.GetValues<CosmeticSlot>().Count(s => CosmeticSlots.Get(p, s) is not null));
+        var worn = living.Sum(p => Enum.GetValues<CosmeticSlot>().Count(s => CosmeticSlots.Get(p, s) is not null)
+            + (CosmeticSlots.AccessorySlots(p).Second is not null ? 1 : 0));      // the second accessory too
 
         var completions = (await _db_context.CollectionCompletions.AsNoTracking().Where(c => c.GuildId == guildId)
                 .Select(c => c.SetKey).ToListAsync())

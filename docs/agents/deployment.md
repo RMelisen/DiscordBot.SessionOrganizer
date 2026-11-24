@@ -32,6 +32,12 @@ The database runs in **WAL mode** (`PRAGMA journal_mode=WAL` after `MigrateAsync
 the bot runs, the `.db` file alone can miss the latest writes. To copy the database out, stop the
 bot first or take all three files. WAL needs a local filesystem; never move `/data` to a network share.
 
+## The image carries the Plynling layers
+
+`ProjectSYNCS/Assets/Plynlings/` (~5.5 MB of layers the bot draws dressed pictures from) ships in the
+image. **ImageSharp stays pinned to 3.x**: 4.x needs a Six Labors licence key at build time. It only
+ever decodes the shipped files, never user uploads.
+
 ## The image is built by CI, never on the Pi
 
 Building on the Pi left about 1 GB of .NET layers in Docker's build cache per version, until the

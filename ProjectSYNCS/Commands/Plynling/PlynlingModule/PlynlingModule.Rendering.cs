@@ -19,12 +19,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
     private async Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line)
     {
         var card = await BuildCardAsync(_plynlings, plynling, now, line);
-        await ModifyOriginalResponseAsync(m =>
-        {
-            m.Components = card;
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        await Context.Interaction.ModifyCardAsync(card);      // with its drawn picture, when dressed
     }
 
     // A refusal after deferring stays private: a follow-up to a public deferral would take its place

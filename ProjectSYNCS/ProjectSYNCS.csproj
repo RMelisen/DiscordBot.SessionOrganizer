@@ -25,7 +25,7 @@
     </None>
     <!-- Item sprites the bot uploads as its own emojis on start (ApplicationEmojiService), and
          her seasonal profile pictures, still and animated (SeasonalAvatarService). -->
-    <None Include="Assets\**\*.png;Assets\**\*.gif">
+    <None Include="Assets\**\*.png;Assets\**\*.gif;Assets\**\*.webp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
@@ -53,6 +53,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+    <!-- Draws dressed Plynlings from layers (PlynlingPainter). Stays on 3.1.12, the last 3.x: 4.x needs
+         a Six Labors licence key at build time. NuGet's advisories against it concern decoding crafted
+         images; the bot only decodes its own shipped files. -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
 </Project>

@@ -39,11 +39,14 @@ public static class CosmeticSlots
     {
         CosmeticSlot.Theme => p.ThemeKey,
         CosmeticSlot.Title => p.TitleKey,
-        CosmeticSlot.Accessory => p.AccessoryKey,
+        CosmeticSlot.Accessory => AccessorySlots(p).First?.Key,        // the first accessory
         CosmeticSlot.Aura => p.AuraKey,
         _ => p.GraveKey,
     };
 
+    // Single-slot writes. For the accessory it is the first picker (AccessoryFit.Pick), so one
+    // item's style is never carried onto another: the outgoing one's is remembered, the incoming
+    // one's restored (null, so its default, when none is).
     public static void Set(Plynling p, CosmeticSlot slot, string? key)
     {
         switch (slot)
@@ -51,12 +54,49 @@ public static class CosmeticSlots
             case CosmeticSlot.Theme: p.ThemeKey = key; break;
             case CosmeticSlot.Title: p.TitleKey = key; break;
             case CosmeticSlot.Accessory:
-                if (p.AccessoryKey != key) p.AccessoryStyle = null;     // a style belongs to one accessory
-                p.AccessoryKey = key;
+                var (first, second) = AccessorySlots(p);
+                var saved = SavedStyles.Parse(p.SavedAccessoryStyles);
+                Apply(p, AccessoryFit.Pick(first, second, 0, key is null ? null : new WornAccessory(key, saved.GetValueOrDefault(key))));
                 break;
             case CosmeticSlot.Aura: p.AuraKey = key; break;
             default: p.GraveKey = key; break;
         }
+    }
+
+    /// <summary>
+    /// The two worn accessories as stored, the first never empty under a second (a lone second reads
+    /// as the first). Retired keys are kept: only the catalogue lookups ignore them.
+    /// </summary>
+    public static (WornAccessory? First, WornAccessory? Second) AccessorySlots(Plynling p)
+    {
+        var first = p.AccessoryKey is { } k1 ? new WornAccessory(k1, p.AccessoryStyle) : null;
+        var second = p.Accessory2Key is { } k2 ? new WornAccessory(k2, p.Accessory2Style) : null;
+        return first is null ? (second, null) : (first, second);
+    }
+
+    /// <summary>
+    /// Writes both accessory slots from a change, and remembers the latest style of every item that
+    /// was or is worn (taken off, moved, restyled), so putting one back restores it.
+    /// </summary>
+    public static void Apply(Plynling p, AccessoryChange change)
+    {
+        var (oldFirst, oldSecond) = AccessorySlots(p);
+        var saved = SavedStyles.Parse(p.SavedAccessoryStyles).ToDictionary(kv => kv.Key, kv => kv.Value);
+        foreach (var item in new[] { oldFirst, oldSecond, change.First, change.Second })    // the new ones last: they win
+            if (item is { Style: { } style }) saved[item.Key] = style;
+        p.AccessoryKey = change.First?.Key;
+        p.AccessoryStyle = change.First?.Style;
+        p.Accessory2Key = change.Second?.Key;
+        p.Accessory2Style = change.Second?.Style;
+        p.SavedAccessoryStyles = SavedStyles.Format(saved);
+    }
+
+    /// <summary>Takes the accessory <paramref name="key"/> off wherever it is worn, the second moving up. Nothing if it is not worn.</summary>
+    public static void TakeOff(Plynling p, string key)
+    {
+        var (first, second) = AccessorySlots(p);
+        var at = first?.Key == key ? 0 : second?.Key == key ? 1 : -1;
+        if (at >= 0) Apply(p, AccessoryFit.Pick(first, second, at, null));
     }
 
     // What it wears, slot by slot, as catalog entries (an unknown key reads as nothing).

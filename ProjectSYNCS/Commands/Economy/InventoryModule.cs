@@ -46,8 +46,7 @@ public class InventoryModule : SyncsModuleBase
         await DeferAsync(ephemeral: true);
         var now = DateTimeOffset.UtcNow;
         var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
-        await FollowupAsync(components: CosmeticCards.Build(new CosmeticView(CosmeticTab.Shop), data, now, null),
-            flags: MessageFlags.ComponentsV2, ephemeral: true, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.FollowupCardAsync(CosmeticCards.Build(new CosmeticView(CosmeticTab.Shop), data, now, null), ephemeral: true);
     }
 
     private async Task<(Dictionary<string, int> Held, long Balance)> HeldAsync() =>

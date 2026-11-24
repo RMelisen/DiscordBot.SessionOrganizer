@@ -365,6 +365,18 @@ every Ready and on `JoinedGuild`.
   no stage segment. Every mushroom baby is hand-drawn (`<species>_baby` in `species.py`) — a derived
   shrink kept the adult's full-size cap.
 - `PlynlingArt.Key` is exhaustive and **throws** on an unkeyed species (never default to one).
+- **Dressed pictures are drawn at runtime** (8.9.0, two accessories make pre-rendering every pair
+  impossible): `PlynlingPainter` composes the bare picture with `PlynlingLook` (accessories with their
+  styles and sides, aura, marks) from layers in `ProjectSYNCS/Assets/Plynlings/` (`base`, `acc`, `aura`,
+  `marks`; ImageSharp 3.1.12) and keeps a **bounded cache**. A draw that fails falls back to the bare
+  link. **`Helpers/Core/CardSend.cs` is the single send path for a picture-carrying card**: any new send
+  site of a card built through `SpriteOf` must use it. **After any art change re-export the layers**:
+  `python tools/plynling-art/export.py layers`. Checks sections 62 and 64 now check the layers, 70
+  (`PaintChecks`) the painter and 71 (`AccessoryFitChecks`) the wearing rules; `-- art` runs the full
+  pixel-exact sweep (~9 min, must report 0 differences). `MarksFaces` in `AccessoryArtChecks` is
+  hardcoded to the faces that carry mood marks — update it with `export.py`. The pre-rendered
+  `_with_`/`_aura_` files under `assets/plynlings/` **stay**: posted messages still link them. The two
+  items below describe those files and their naming.
 - **The worn accessory is drawn on the picture** (8.5.0): `SpriteOf` adds
   `_with_<accessory>[_<style>]` after the face and its `_dirty`, from the Plynling's `Outfit` — or the
   try-on's, which `CardHead` passes. Every card face but angry (a visit face: angry stays plain), every

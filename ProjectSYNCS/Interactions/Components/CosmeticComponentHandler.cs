@@ -55,23 +55,8 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         switch (tab)
         {
             case CosmeticTab.Wardrobe:
-            {
-                var off = value.StartsWith(CosmeticCards.NonePrefix, StringComparison.Ordinal);
-                var cosmetic = off ? null : CosmeticCatalog.ByKey(value);
-                var slot = CosmeticSlot.Theme;
-                if (off ? !Enum.TryParse(value[CosmeticCards.NonePrefix.Length..], out slot) : cosmetic is null)
-                {
-                    await RedrawAsync(new CosmeticView(tab), PlynlingText.UnknownItem);
-                    return;
-                }
-                if (cosmetic is not null) slot = cosmetic.Slot;
-                var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, slot, cosmetic?.Key, now);
-                var notice = outcome != CosmeticOutcome.Done ? CosmeticCards.Notice(outcome, cosmetic)
-                    : cosmetic is null ? CosmeticCards.TakenOff(slot)
-                    : WornNotice(plynling!.Name, cosmetic);
-                await RedrawAsync(new CosmeticView(tab, slot), notice);
+                await WardrobePickAsync(value, picker: 0, now);
                 return;
-            }
             case CosmeticTab.Shop when !int.TryParse(weekStr, out var week) || week != CosmeticCatalog.WeekKey(now):
                 await RedrawAsync(new CosmeticView(tab), CosmeticCards.Notice(CosmeticOutcome.NotInShop, null));
                 return;
@@ -79,6 +64,35 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
                 await RedrawAsync(new CosmeticView(tab, Picked: value), null);
                 return;
         }
+    }
+
+    // The second accessory's select (cosm:pick2:{i}, i numbering the selects): the same pick, into the
+    // second slot. « Aucun » takes the second off.
+    [ComponentInteraction("cosm:pick2:*", ignoreGroupNames: true)]
+    public async Task OnPickSecondAsync(string indexStr, string[] selected)
+    {
+        var value = selected.FirstOrDefault() ?? "";
+        await DeferAsync();
+        await WardrobePickAsync(value, picker: 1, DateTimeOffset.UtcNow);
+    }
+
+    // A wardrobe pick is worn at once (« Aucun » takes the slot off); picker says which accessory select spoke.
+    private async Task WardrobePickAsync(string value, int picker, DateTimeOffset now)
+    {
+        var off = value.StartsWith(CosmeticCards.NonePrefix, StringComparison.Ordinal);
+        var cosmetic = off ? null : CosmeticCatalog.ByKey(value);
+        var slot = CosmeticSlot.Theme;
+        if (off ? !Enum.TryParse(value[CosmeticCards.NonePrefix.Length..], out slot) : cosmetic is null)
+        {
+            await RedrawAsync(new CosmeticView(CosmeticTab.Wardrobe), PlynlingText.UnknownItem);
+            return;
+        }
+        if (cosmetic is not null) slot = cosmetic.Slot;
+        var (outcome, plynling, change) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, slot, cosmetic?.Key, now, picker);
+        var notice = outcome != CosmeticOutcome.Done ? CosmeticCards.Notice(outcome, cosmetic)
+            : cosmetic is null ? CosmeticCards.TakenOff(slot)
+            : WornNotice(plynling!.Name, cosmetic, change);
+        await RedrawAsync(new CosmeticView(CosmeticTab.Wardrobe, slot), notice);
     }
 
     [ComponentInteraction("cosm:buy:*:*", ignoreGroupNames: true)]
@@ -97,7 +111,8 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         var bought = result.Outcome == CosmeticOutcome.Done && cosmetic is not null;
         // A purchase that went through redraws clean (its receipt follows); a « …et porter » whose
         // Plynling is gone says so on the card.
-        var notice = bought && (!wear || result.Worn) ? null
+        // …except what the accessory displaced, which only the card can say.
+        var notice = bought && (!wear || result.Worn) ? AccessoryNotices.Of(result.Change, cosmetic)
             : CosmeticCards.Notice(result.Outcome, cosmetic, cosmetic?.Price ?? 0, wear, result.Worn);
         await RedrawAsync(new CosmeticView(CosmeticTab.Shop, Picked: key), notice);
         if (!bought) return;
@@ -128,7 +143,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         var result = await _cosmetics.CraftAsync(Context.Guild.Id, Context.User.Id, key, DateTimeOffset.UtcNow, wear);
         var cosmetic = CosmeticCatalog.ByKey(key);
         await RedrawAsync(new CosmeticView(CosmeticTab.Craft, Picked: key),
-            CosmeticCards.Notice(result.Outcome, cosmetic, cosmetic?.Price ?? 0, wear, result.Worn));
+            WithDisplaced(CosmeticCards.Notice(result.Outcome, cosmetic, cosmetic?.Price ?? 0, wear, result.Worn), AccessoryNotices.Of(result.Change, cosmetic)));
     }
 
     // « Porter » on an owned item in the shop or the recipes: worn, and the item view stays.
@@ -142,8 +157,9 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
             await RedrawAsync(new CosmeticView(tab), PlynlingText.UnknownItem);
             return;
         }
-        var (outcome, plynling) = await _cosmetics.WearAsync(Context.Guild.Id, Context.User.Id, cosmetic.Slot, key, DateTimeOffset.UtcNow);
-        var notice = outcome == CosmeticOutcome.Done ? WornNotice(plynling!.Name, cosmetic) : CosmeticCards.Notice(outcome, cosmetic);
+        // As the try-on showed it: an accessory replaces a clashing one, else takes the empty slot, else the second.
+        var (outcome, plynling, change) = await _cosmetics.WearFittedAsync(Context.Guild.Id, Context.User.Id, key, DateTimeOffset.UtcNow);
+        var notice = outcome == CosmeticOutcome.Done ? WornNotice(plynling!.Name, cosmetic, change) : CosmeticCards.Notice(outcome, cosmetic);
         await RedrawAsync(new CosmeticView(tab, Picked: key), notice);
     }
 
@@ -154,18 +170,22 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         if (!int.TryParse(choiceStr, out var choice)) return;
         await DeferAsync();
         var option = selected.FirstOrDefault() ?? "";
-        var (outcome, plynling) = await _cosmetics.StyleAsync(Context.Guild.Id, Context.User.Id, key, choice, option);
+        var (outcome, plynling, change) = await _cosmetics.StyleAsync(Context.Guild.Id, Context.User.Id, key, choice, option);
         var cosmetic = CosmeticCatalog.ByKey(key);
         var notice = outcome == CosmeticOutcome.Done && cosmetic is not null
-            ? $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(plynling!.Name)} change de style : {cosmetic.Emoji} {CosmeticCatalog.ShortName(cosmetic)}, " +
-              $"{AccessoryStyles.Choices(key)[choice].Options.First(o => o.Key == option).Name.ToLowerInvariant()}."
+            ? WithDisplaced($"{Emotes.Sparkle} {PlynlingCardUi.SafeName(plynling!.Name)} change de style : {cosmetic.Emoji} {CosmeticCatalog.ShortName(cosmetic)}, " +
+              $"{AccessoryStyles.Choices(key)[choice].Options.First(o => o.Key == option).Name.ToLowerInvariant()}.", AccessoryNotices.Of(change, null))
             : outcome == CosmeticOutcome.UnknownItem ? "❌ Ce n'est plus ce qu'il porte : choisis à nouveau."
             : CosmeticCards.Notice(outcome, cosmetic);
         await RedrawAsync(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), notice);
     }
 
-    private static string WornNotice(string name, CosmeticInfo c) =>
-        $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(name)} porte maintenant {c.Emoji} {CosmeticCatalog.ShortName(c)} !";
+    private static string WornNotice(string name, CosmeticInfo c, AccessoryChange? change = null) =>
+        WithDisplaced($"{Emotes.Sparkle} {PlynlingCardUi.SafeName(name)} porte maintenant {c.Emoji} {CosmeticCatalog.ShortName(c)} !",
+            AccessoryNotices.Of(change, c));
+
+    // What a change of accessories displaced (« Le bonnet a remplacé la couronne. ») goes on its own line.
+    private static string WithDisplaced(string notice, string? displaced) => displaced is null ? notice : notice + "\n" + displaced;
 
     // Re-reads everything, so the screen always shows what is true after the click.
     private async Task RedrawAsync(CosmeticView view, string? notice)
@@ -173,11 +193,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         var now = DateTimeOffset.UtcNow;
         var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
         var card = CosmeticCards.Build(view, data, now, notice);
-        await ModifyOriginalResponseAsync(m =>
-        {
-            m.Components = card;
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        // The try-on's picture is attached afresh each time, and dropped when nothing is drawn.
+        await Context.Interaction.ModifyCardAsync(card);
     }
 }

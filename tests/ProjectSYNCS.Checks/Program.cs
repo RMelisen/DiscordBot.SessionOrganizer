@@ -18,6 +18,8 @@ using ProjectSYNCS.Services;
 // PlynlingEvents.All, whose first read loads them.
 StoryCatalog.Folder = Path.Combine(StoryChecks.RepoRoot(), "ProjectSYNCS", "Stories");
 VisitCatalog.Folder = VisitChecks.ShippedFolder;
+// Likewise the painter's layers: every card built with a dressed Plynling draws from them.
+PlynlingPainter.AssetsRoot = AccessoryArtChecks.LayersRoot;
 var asm = typeof(ChatFacts).Assembly;
 var br = asm.GetType("ProjectSYNCS.Services.BotResponses")!;
 var cues = asm.GetType("ProjectSYNCS.Services.MessageCues")!;
@@ -5631,6 +5633,13 @@ ScoreCalibrationChecks.Run(Fail, args);
 
 // 69. The online user guide names every member and staff command: GuideChecks.cs.
 GuideChecks.Run(Fail);
+
+// 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): PaintChecks.cs
+// (`-- art` compares all 14 shapes with today's pre-rendered files, not just the sample).
+PaintChecks.Run(Fail, args);
+
+// 71. Wearing two accessories (categories, sides, picks, try-ons, restyles): AccessoryFitChecks.cs.
+AccessoryFitChecks.Run(Fail);
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

@@ -162,8 +162,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         }
 
         var session = _play.Start(Context.Guild.Id, Context.User.Id, plynling.Id, now, Random.Shared, PlynlingGameUi.LoadedMushrooms());
-        await RespondAsync(components: PlynlingPlayCards.BuildGame(session, plynling, now, null),
-            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.RespondCardAsync(PlynlingPlayCards.BuildGame(session, plynling, now, null));
     }
 
     // An invitation, not a visit: the visitor picks what its Plynling does, then the other owner picks
@@ -182,7 +181,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
 
         // The one message of the visit, and the one send that pings: the invited owner only. At her home
         // nobody is invited, so nobody is pinged.
-        await RespondAsync(components: opening.Card, flags: MessageFlags.ComponentsV2,
+        await Context.Interaction.RespondCardAsync(opening.Card,
             allowedMentions: opening.Pings ? new AllowedMentions { UserIds = new List<ulong> { user.Id } } : AllowedMentions.None);
     }
 
@@ -241,8 +240,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         }
         var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
         var relations = await _plynlings.GetRelationsAsync(plynling.Id);
-        await RespondAsync(components: PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations),
-            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.RespondCardAsync(PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations));
     }
 
     // Everyone it has met and what they are to it — the living one, or else the latest grave.
@@ -471,8 +469,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         await DeferAsync(ephemeral: true);
         var now = DateTimeOffset.UtcNow;
         var data = await CosmeticCards.LoadAsync(_plynlings, _cosmetics, Context.Guild.Id, Context.User.Id, now);
-        await FollowupAsync(components: CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe), data, now, null),
-            flags: MessageFlags.ComponentsV2, ephemeral: true, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.FollowupCardAsync(CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe), data, now, null), ephemeral: true);
     }
 
     // Free text, like a Tomodachi Life word: it only ever appears through generic story

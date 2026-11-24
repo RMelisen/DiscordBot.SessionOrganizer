@@ -133,12 +133,7 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             var p = await _plynlings.GetByIdAsync(plynlingId, now);
             if (p is null) return;
             var card = await PlynlingModule.BuildCardAsync(_plynlings, p, now, null);
-            await Context.Channel.ModifyMessageAsync(cardId, m =>
-            {
-                m.Components = card;
-                m.Flags = MessageFlags.ComponentsV2;
-                m.AllowedMentions = AllowedMentions.None;
-            });
+            await Context.Channel.ModifyCardAsync(cardId, card);
         }
         catch (Exception ex)
         {

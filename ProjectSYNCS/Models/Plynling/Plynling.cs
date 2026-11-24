@@ -173,9 +173,19 @@ public class Plynling
     // The aura, worn with the accessory (drawn around the Plynling on its picture).
     public string? AuraKey { get; set; }
 
-    // The worn accessory's style (AccessoryStyles: « bleue_haut »), null for its default. Reset
-    // whenever the accessory changes (CosmeticSlots.Set); picked, free, in the Garde-robe.
+    // The worn accessory's style (AccessoryStyles: « bleue_haut »), null for its default. It goes
+    // with that accessory only (CosmeticSlots.Apply remembers it in SavedAccessoryStyles); picked,
+    // free, in the Garde-robe.
     public string? AccessoryStyle { get; set; }
+
+    // The second accessory (AccessoryFit): never set while the first is empty (CosmeticSlots reads a
+    // lone second as the first), with its own style.
+    public string? Accessory2Key { get; set; }
+    public string? Accessory2Style { get; set; }
+
+    // The style each accessory was last worn in, « key=style;key=style » (SavedStyles), so taking
+    // one off and putting it back restores it.
+    public string? SavedAccessoryStyles { get; set; }
 
     // The hidden score (Helpers/Plynling/PlynlingScore): every point it ever earned, all time. Ranked on
     // /leaderboard's Plynlings view and what picks its tombstone. On the row, so the Version token guards it
