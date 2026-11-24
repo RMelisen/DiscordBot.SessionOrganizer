@@ -803,7 +803,7 @@ def dore_baby(state, frame, shadow):
 COPRIN_INK = {"angry": 2, "happy": 2, "content": 2, "sad": 2, "sleeping": 2, "hungry": 3, "starving": 4, "frozen": "frozen", "sick": 3}
 COPRIN_BABY_INK = {"angry": 0, "happy": 0, "content": 0, "sad": 0, "sleeping": 0, "hungry": 1, "starving": 3, "sick": 1,
                    "frozen": "frozen"}
-DROP, DROP_SHINE = (112, 102, 140), (214, 206, 238)    # glossy and lighter than the ink, to read on a dark theme
+DROP, DROP_SHINE = (20, 17, 23), (104, 98, 132)        # ink, black like the rim it falls from, its head glossy like the rim's drips (reads on a dark theme)
 # Beads and drips hanging from the rim at each ink level: (column, length).
 COPRIN_DRIPS = {1: [(12, 1), (19, 1)], 2: [(11, 2), (15, 1), (20, 2)],
                 3: [(10, 2), (12, 1), (15, 2), (18, 1), (20, 3)],

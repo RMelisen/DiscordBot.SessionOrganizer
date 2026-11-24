@@ -16,6 +16,14 @@ public static class PlynlingArt
 {
     public const int Version = 5;
 
+    // A species redrawn since Version: its bare and visit pictures take this version instead, so a new
+    // drawing gets new URLs without renaming every other file. Must match REDRAWN in
+    // tools/plynling-art/export.py. Coprin 6: the idle ink drop turned black.
+    private static readonly IReadOnlyDictionary<string, int> Redrawn = new Dictionary<string, int> { ["coprin"] = 6 };
+
+    /// <summary>The version in the bare and visit file names of the species keyed <paramref name="key"/> (<see cref="Key"/>).</summary>
+    public static int VersionOf(string key) => Redrawn.GetValueOrDefault(key, Version);
+
     public const string BaseUrl =
         "https://raw.githubusercontent.com/RMelisen/DiscordBot.SessionOrganizer/main/assets/plynlings/";
 
@@ -46,7 +54,7 @@ public static class PlynlingArt
     // because messages already posted link them.
     public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false) =>
         $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}" +
-        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}_v{Version}.webp";
+        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}_v{VersionOf(Key(species))}.webp";
 
     // The card faces drawn with an aura. Must match AURA_STATES in tools/plynling-art/auras.py (checks
     // section 64): the ice covers it, a sick Plynling's sparkle goes out, angry is a visit face.
@@ -108,7 +116,7 @@ public static class PlynlingArt
     /// (see VISIT_CANVAS in tools/plynling-art/export.py). Any other mood shows the content face.
     /// </summary>
     public static string VisitSprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood) =>
-        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{VisitFace(mood).ToString().ToLowerInvariant()}_visit_v{Version}.webp";
+        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{VisitFace(mood).ToString().ToLowerInvariant()}_visit_v{VersionOf(Key(species))}.webp";
 
     private static PlynlingMood VisitFace(PlynlingMood mood) =>
         mood is PlynlingMood.Happy or PlynlingMood.Sad or PlynlingMood.Angry ? mood : PlynlingMood.Content;

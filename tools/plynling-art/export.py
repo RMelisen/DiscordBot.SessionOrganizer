@@ -20,6 +20,7 @@ aura (auras.py): « _aura_<aura> » last. 18 648 files, also new names (checks s
     python export.py          # everything, after deleting the old files
     python export.py auras    # only the aura files, nothing deleted
     python export.py accessories bonnet lanterne   # only these accessories' files, with their auras
+    python export.py redraw coprin   # a species in REDRAWN: its new bare files, its dressed ones in place
     python export.py layers   # the layers the bot draws dressed pictures from, into ProjectSYNCS/Assets/Plynlings
 
 The layers (export_layers) are the same pictures taken apart: the plain sprite, each accessory
@@ -42,6 +43,13 @@ from accessories import HAT_AT, HAT_CANVAS
 from sprites import build, marks
 
 ART_VERSION = 5
+# A species redrawn since ART_VERSION: its bare and visit pictures (the ones the bot links) take this
+# version instead, so Discord's URL cache can't keep the old drawing, without renaming the other ~30 000
+# files. Its old bare files stay (posted messages link them); its pre-rendered « _with_ » / « _aura_ »
+# files keep ART_VERSION and are redrawn in place (only posted messages link them, and the painter
+# checks compare against them). Must match PlynlingArt.Redrawn in the bot.
+# coprin 6: the idle ink drop turned black.
+REDRAWN = {"coprin": 6}
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))
@@ -87,15 +95,22 @@ def padded(im):
     return canvas.resize((VISIT_CANVAS * scale, VISIT_CANVAS * scale), Image.NEAREST)
 
 
-def save_visit_loop(frames, name):
+def save_visit_loop(frames, name, version=ART_VERSION):
     frames = [padded(f) for f in frames]
-    frames[0].save(os.path.join(OUT, f"{name}_visit_v{ART_VERSION}.webp"), save_all=True,
+    frames[0].save(os.path.join(OUT, f"{name}_visit_v{version}.webp"), save_all=True,
                    append_images=frames[1:], duration=FRAME_MS, loop=0, lossless=True, method=6)
 
 
-def save_loop(frames, name):
+# When set (redraw), only these file names are rewritten: the pre-rendered dressed looks that exist, not
+# the side styles that were never exported (the bot draws those).
+ONLY_EXISTING = None
+
+
+def save_loop(frames, name, version=ART_VERSION):
+    if ONLY_EXISTING is not None and f"{name}_v{version}.webp" not in ONLY_EXISTING:
+        return
     frames = [big(f) for f in frames]
-    frames[0].save(os.path.join(OUT, f"{name}_v{ART_VERSION}.webp"), save_all=True,
+    frames[0].save(os.path.join(OUT, f"{name}_v{version}.webp"), save_all=True,
                    append_images=frames[1:], duration=FRAME_MS, loop=0, lossless=True, method=6)
 
 
@@ -106,25 +121,7 @@ def main():
             os.remove(os.path.join(OUT, old))
     count = 0
     for sp in SPECIES:
-        for state in STATES:
-            save_loop([build(state, sp, f) for f in range(FRAMES)], f"plynling_{sp}_{state}")
-            count += 1
-            if sp in STAGED:
-                save_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}")
-                count += 1
-            if state in DIRTY_STATES:
-                save_loop([build(state, sp, f, dirty=True) for f in range(FRAMES)], f"plynling_{sp}_{state}_dirty")
-                count += 1
-                if sp in STAGED:
-                    save_loop([build(state, sp, f, stage="baby", dirty=True) for f in range(FRAMES)],
-                              f"plynling_{sp}_baby_{state}_dirty")
-                    count += 1
-            if state in VISIT_STATES:
-                save_visit_loop([build(state, sp, f) for f in range(FRAMES)], f"plynling_{sp}_{state}")
-                count += 1
-                if sp in STAGED:
-                    save_visit_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}")
-                    count += 1
+        count += export_bare(sp)
         for tier in range(1, 6):
             save(memorial(tier, sp), f"memorial_{sp}_{tier}")
             count += 1
@@ -136,12 +133,39 @@ def main():
     print(f"{count} files written to {OUT}")
 
 
-def export_accessories(only=None):
+def export_bare(sp):
+    """One species' bare pictures, the ones the bot links: every face, baby, dirty and visit, at
+    its version (REDRAWN, else ART_VERSION)."""
+    v = REDRAWN.get(sp, ART_VERSION)
+    count = 0
+    for state in STATES:
+        save_loop([build(state, sp, f) for f in range(FRAMES)], f"plynling_{sp}_{state}", v)
+        count += 1
+        if sp in STAGED:
+            save_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}", v)
+            count += 1
+        if state in DIRTY_STATES:
+            save_loop([build(state, sp, f, dirty=True) for f in range(FRAMES)], f"plynling_{sp}_{state}_dirty", v)
+            count += 1
+            if sp in STAGED:
+                save_loop([build(state, sp, f, stage="baby", dirty=True) for f in range(FRAMES)],
+                          f"plynling_{sp}_baby_{state}_dirty", v)
+                count += 1
+        if state in VISIT_STATES:
+            save_visit_loop([build(state, sp, f) for f in range(FRAMES)], f"plynling_{sp}_{state}", v)
+            count += 1
+            if sp in STAGED:
+                save_visit_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}", v)
+                count += 1
+    return count
+
+
+def export_accessories(only=None, species=None):
     """Every card face of every shape, in every accessory look: the loop is measured once per
-    face, then dressed in each look. `only`: just these accessories' looks."""
+    face, then dressed in each look. `only`: just these accessories' looks; `species`: just this one."""
     count = 0
     every = [(acc, style) for acc, style in looks() if only is None or acc in only]
-    for sp in SPECIES:
+    for sp in [species] if species else SPECIES:
         for stage in (["adult", "baby"] if sp in STAGED else ["adult"]):
             for state in STATES:
                 if state == "angry":
@@ -156,13 +180,13 @@ def export_accessories(only=None):
     return count
 
 
-def export_auras(only=None):
+def export_auras(only=None, species=None):
     """Every aura face of every shape, clean and dirty, plain and in every accessory look, in each
     aura: the loop is measured once per face, dressed once per look, then surrounded by each aura.
-    `only`: just these accessories' looks (and not the plain one)."""
+    `only`: just these accessories' looks (and not the plain one); `species`: just this one."""
     count = 0
     every = [(None, "")] + looks() if only is None else [(acc, style) for acc, style in looks() if acc in only]
-    for sp in SPECIES:
+    for sp in [species] if species else SPECIES:
         for stage in (["adult", "baby"] if sp in STAGED else ["adult"]):
             for state in AURA_STATES:
                 for dirty in ([False, True] if state in DIRTY_STATES else [False]):
@@ -252,6 +276,16 @@ if __name__ == "__main__":
     elif sys.argv[1:] == ["auras"]:
         os.makedirs(OUT, exist_ok=True)
         print(f"{export_auras()} files written to {OUT}")
+    elif sys.argv[1:2] == ["redraw"] and len(sys.argv) == 3 and sys.argv[2] in REDRAWN:
+        # A species redrawn: its bare pictures under their new version, its pre-rendered dressed ones
+        # in place. Nothing deleted. Then re-export the layers.
+        sp = sys.argv[2]
+        os.makedirs(OUT, exist_ok=True)
+        bare = export_bare(sp)
+        ONLY_EXISTING = set(os.listdir(OUT))
+        export_accessories(species=sp)
+        export_auras(species=sp)
+        print(f"{bare} bare files written, dressed ones redrawn in place in {OUT}")
     elif sys.argv[1:2] == ["accessories"] and len(sys.argv) > 2:
         new = set(sys.argv[2:])
         unknown = new - {acc for acc, _ in looks()}

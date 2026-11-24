@@ -70,7 +70,7 @@ public static class PaintChecks
         foreach (var (shape, face) in new[] { ("amanite", "content"), ("coprin_baby", "happy"), ("rose", "sad") })
         {
             var bare = PlynlingPainter.Draw(new PlynlingLook(shape, face, false, null, null, null, Visit: true));
-            var oldPath = Path.Combine(old, $"plynling_{shape}_{face}_visit_v{PlynlingArt.Version}.webp");
+            var oldPath = Path.Combine(old, $"plynling_{shape}_{face}_visit_v{PlynlingArt.VersionOf(shape.Replace("_baby", ""))}.webp");
             Expect(bare is not null && Differs(bare, oldPath) is null,
                 $"bare {shape} {face} on the visit canvas differs from today's file: {(bare is null ? "not drawn" : Differs(bare, oldPath))}");
         }
@@ -216,7 +216,9 @@ public static class PaintChecks
                 foreach (var aura in AuraFaces.Contains(face) ? Auras().Select(a => (string?)a).Prepend(null) : new string?[] { null })
                 {
                     if (!everything && !InSample(face, l?.Key, aura)) continue;
-                    var file = Path.Combine(old, $"{head}{with}{(aura is null ? "" : "_aura_" + aura)}_v{PlynlingArt.Version}.webp");
+                    // The plain picture is the bare file, which a redrawn species names with its own version.
+                    var version = l is null && aura is null ? PlynlingArt.VersionOf(shape.Replace("_baby", "")) : PlynlingArt.Version;
+                    var file = Path.Combine(old, $"{head}{with}{(aura is null ? "" : "_aura_" + aura)}_v{version}.webp");
                     if (!File.Exists(file)) { missingOld.Add(Path.GetFileName(file)); continue; }
                     jobs.Add((new PlynlingLook(shape, face, dirty, worn, null, aura), file));
                 }

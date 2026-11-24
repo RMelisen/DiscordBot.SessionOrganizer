@@ -365,6 +365,9 @@ every Ready and on `JoinedGuild`.
   no stage segment. Every mushroom baby is hand-drawn (`<species>_baby` in `species.py`) — a derived
   shrink kept the adult's full-size cap.
 - `PlynlingArt.Key` is exhaustive and **throws** on an unkeyed species (never default to one).
+- **One species redrawn = new bare names for it only**: `PlynlingArt.Redrawn` (must match `REDRAWN` in
+  `export.py`) gives its bare and visit files their own version (Coprin 6), instead of a `Version` bump
+  renaming ~30 800 files. How to export one: `tools/plynling-art/README.md`.
 - **Dressed pictures are drawn at runtime** (8.9.0, several accessories make pre-rendering every
   combination impossible): `PlynlingPainter` composes the bare picture with `PlynlingLook` (accessories with their
   styles and sides, aura, marks) from layers in `ProjectSYNCS/Assets/Plynlings/` (`base`, `acc`, `aura`,

@@ -106,6 +106,13 @@ retired rarity tiers — no species is drawn as rarer than another). Frame 0 of 
 still, so a client that cannot animate WebP shows a picture that makes sense. A new species'
 drawing function must take `frame` and route through `finish` with its pose, or it will not move.
 
+**Redrawing one species** without renaming everything: add it to `REDRAWN` in `export.py` **and**
+`PlynlingArt.Redrawn` in the bot with the next version (the Coprin is at 6: its idle drop turned black),
+then `python export.py redraw <species>` and `python export.py layers`. Its bare and visit pictures get
+new names (the bot links those); its old bare files stay for posted messages; its pre-rendered
+`_with_`/`_aura_` files keep v5 and are redrawn in place, since only posted messages link them and the
+painter checks compare against them. A full `python export.py` deletes the superseded bare files.
+
 ## Layers for runtime drawing
 
 `python export.py layers` writes `ProjectSYNCS/Assets/Plynlings/` (deleted first; 7 392 files, about 5.5 MB), the pictures the bot lays over each other instead of reading a pre-dressed file: `base/<shape>_<face>[_dirty]`, `acc/<shape>_<face>_<acc>[_<full style>]` (clean faces only: dirty shares the clean layer), `aura/<shape>_<face>_<aura>[_tall]` (raw, unmasked particles; `_tall` is the 320 px hat canvas, adults only) and `marks/<shape>_<face>` (heart, sweat, « z », frost; no file for content and sad). Every file is an 8x lossless loop on the shared 125 ms timing, its layers sitting at the foot of the largest canvas in play. `sprites.marks()` draws the mood extras alone.
