@@ -111,6 +111,10 @@ Totals + daily buckets (`QuizStat` / `QuizDailyStat`), the project's one pattern
 rankings: all-time reads the totals (wins, then fastest `BestMs`), windows sum the buckets.
 The buckets do not sum to the totals and must not be made to.
 
+The **average time** ("moy.") is the exception: stat tables hold no times beyond `BestMs`, so
+`QuizService.GetAverageMsAsync` averages `WonAt − PostedAt` over the won `QuizRound` rows of the
+window (`Day` in SQL). Winning answers only: wrong ones are never stored.
+
 ## Grosse tête de la semaine
 
 Every Monday at **10:00 Paris** (`QuizCrown.CrownHour`: after the morning hello, before the first

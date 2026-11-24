@@ -6,7 +6,7 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Services;
 
 /// <summary>One person's line on the quiz board.</summary>
-public readonly record struct QuizTally(ulong UserId, long Wins, long BestMs);
+public readonly record struct QuizTally(ulong UserId, long Wins, long BestMs, long AvgMs = 0);
 
 // EF access for the pop quiz — rounds, wins and the board. Transient, like every service
 // wrapping AppDbContext; the behaviour (when to post, who answered) is QuizMasterService's.
@@ -156,6 +156,9 @@ public class QuizService
     /// </summary>
     public async Task<List<QuizTally>> GetBoardAsync(ulong guildId, StatsPeriod period)
     {
+        var averages = await GetAverageMsAsync(guildId, period);
+        long AvgOf(ulong userId) => averages.GetValueOrDefault(userId);
+
         if (period == StatsPeriod.AllTime)
         {
             var all = await _db_context.QuizStats.AsNoTracking()
@@ -165,7 +168,7 @@ public class QuizService
                 .OrderByDescending(s => s.Wins)
                 .ThenBy(s => s.BestMs)
                 .ThenBy(s => s.Id)
-                .Select(s => new QuizTally(s.UserId, s.Wins, s.BestMs))
+                .Select(s => new QuizTally(s.UserId, s.Wins, s.BestMs, AvgOf(s.UserId)))
                 .ToList();
         }
 
@@ -180,7 +183,24 @@ public class QuizService
             .Where(x => x.Wins > 0)
             .OrderByDescending(x => x.Wins)
             .ThenBy(x => x.First)
-            .Select(x => new QuizTally(x.UserId, x.Wins, 0))
+            .Select(x => new QuizTally(x.UserId, x.Wins, 0, AvgOf(x.UserId)))
             .ToList();
+    }
+
+    /// <summary>
+    /// Each winner's average time to a winning answer over <paramref name="period"/>, in ms. Read from
+    /// the won rounds (the stat tables hold no times beyond the record); Day filters in SQL, the
+    /// instants subtract in memory. Only winning answers are timed — wrong ones are never stored.
+    /// </summary>
+    private async Task<Dictionary<ulong, long>> GetAverageMsAsync(ulong guildId, StatsPeriod period)
+    {
+        var since = period == StatsPeriod.AllTime ? 0 : AppTime.KeyDaysAgo(period == StatsPeriod.Week ? 6 : 29);
+        var rows = await _db_context.QuizRounds.AsNoTracking()
+            .Where(r => r.GuildId == guildId && r.Day >= since && r.WinnerId != 0 && r.WonAt != null)
+            .Select(r => new { r.WinnerId, r.PostedAt, r.WonAt })
+            .ToListAsync();
+        return rows
+            .GroupBy(r => r.WinnerId)
+            .ToDictionary(g => g.Key, g => (long)g.Average(r => (r.WonAt!.Value - r.PostedAt).TotalMilliseconds));
     }
 }

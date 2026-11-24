@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.13.0 — 2026-11-24
+
+- `/quiz leaderboard` now shows each player's average time to a winning answer ("moy.") on every
+  period, next to the all-time record.
+
 ## 8.12.0 — 2026-11-24
 
 - Plynlings now earn a hidden score from everything they do and everything done for them: meals
