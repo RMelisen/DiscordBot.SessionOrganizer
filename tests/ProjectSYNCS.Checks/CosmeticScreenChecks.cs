@@ -23,6 +23,8 @@ public static class CosmeticScreenChecks
         TryOnWritesNothing();
         MissingNamesItems();
         WhereToFind();
+        TwoAccessories();
+        AccessoryNoticeWording();
     }
 
     // The Fabrication tab: two groups in order, a ✅ on ready recipes, and each ingredient says
@@ -58,11 +60,98 @@ public static class CosmeticScreenChecks
             "recipe view: the any-common line is not « Champignons communs 0/… — à la Lisière »");
     }
 
+    // Two accessories worn: the card line names both, the Garde-robe has a second picker with its own
+    // style selects, and at the worst (écharpe + nœud, every select present) it stays inside 40 components.
+    private static void TwoAccessories()
+    {
+        var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
+        var noeud = CosmeticCatalog.ByKey("cos.accessory.noeud")!;
+        var ballon = CosmeticCatalog.ByKey("cos.accessory.ballon")!;
+        var echarpe = CosmeticCatalog.ByKey("cos.accessory.echarpe")!;
+        var pair = new Plynling
+        {
+            Name = "Pomme", Species = PlynlingSpecies.Amanite, AdoptedAt = now.AddDays(-60), NeedsAsOf = now, Hygiene = 1.0,
+            AccessoryKey = noeud.Key, Accessory2Key = ballon.Key,
+        };
+        var heading = PlynlingCardUi.Heading(pair, now);
+        Expect(heading.Contains($"Porte {noeud.Emoji} {noeud.Name} et {ballon.Emoji} {ballon.Name}"), "card line with two accessories: " + heading);
+        Expect(heading.Contains(" un nœud et ") && heading.Contains(" un ballon"), "card line wording: " + heading);
+        pair.Accessory2Key = null;
+        var oneHeading = PlynlingCardUi.Heading(pair, now);
+        Expect(oneHeading.Contains($"Porte {noeud.Emoji} {noeud.Name}") && !oneHeading.Contains(" et "), "card line with one accessory changed: " + oneHeading);
+
+        var worst = Fullest();
+        worst.AccessoryKey = echarpe.Key; worst.AccessoryStyle = "bleue_bas"; worst.Accessory2Key = noeud.Key; worst.Accessory2Style = "dore_droite";
+        var held = ItemCatalog.All.ToDictionary(i => i.Key, _ => 9999);
+        var data = new CosmeticScreenData(worst, held, 9_999_999_999, new string('W', 32), "La Chercheuse de trésors perdus");
+        var card = CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), data, now, new string('x', 200));
+        var parts = card.Components.Select(EconomySinkChecks.Measure).ToList();
+        var count = parts.Sum(p => p.Count);
+        Console.WriteLine($"cosmetics screen, écharpe + nœud with every select: {count} components");
+        Expect(count <= 40, $"two accessories: {count} components, over 40");
+
+        var selects = Selects(card.Components).ToList();
+        var ids = selects.Select(s => s.CustomId).Concat(parts.SelectMany(p => p.Ids)).ToList();
+        Expect(ids.Count == ids.Distinct().Count(), "two accessories: a custom-id repeats: " + string.Join(", ", ids));
+        Expect(ids.Contains("cosm:pick2:0"), "two accessories: no second picker");
+        Expect(ids.Contains($"cosm:style:0:{echarpe.Key}") && ids.Contains($"cosm:style:1:{echarpe.Key}")
+               && ids.Contains($"cosm:style:0:{noeud.Key}") && ids.Contains($"cosm:style:1:{noeud.Key}"), "two accessories: a style select is missing");
+        Expect(selects.FirstOrDefault(s => s.CustomId == "cosm:pick:Wardrobe:0")?.Placeholder.StartsWith("Premier accessoire") == true, "first picker label");
+        Expect(selects.FirstOrDefault(s => s.CustomId == "cosm:pick2:0")?.Placeholder.StartsWith("Second accessoire") == true, "second picker label");
+        var second = selects.FirstOrDefault(s => s.CustomId == $"cosm:style:0:{noeud.Key}");
+        Expect(second?.Options.Single(o => o.IsDefault == true).Value == "dore", "the second accessory's style selects read its own style");
+        var firstSide = selects.FirstOrDefault(s => s.CustomId == $"cosm:style:1:{echarpe.Key}");
+        Expect(firstSide?.Options.Single(o => o.IsDefault == true).Value == "bas", "the first accessory's style selects read its own style");
+
+        // One accessory: a second picker still offers a second. None: no second picker.
+        worst.Accessory2Key = null; worst.Accessory2Style = null;
+        var one = Selects(CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), data, now, null).Components).ToList();
+        Expect(one.Any(s => s.CustomId == "cosm:pick2:0"), "one accessory worn: the second picker should offer a second");
+        worst.AccessoryKey = null; worst.AccessoryStyle = null;
+        var none = Selects(CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory), data, now, null).Components).ToList();
+        Expect(!none.Any(s => s.CustomId.StartsWith("cosm:pick2:", StringComparison.Ordinal)), "no accessory worn: a second picker shows");
+
+        // The shop's try-on keeps the worn accessory and adds the tried one beside it.
+        var withOne = Fullest();
+        withOne.AccessoryKey = noeud.Key; withOne.Accessory2Key = null;
+        var shopData = new CosmeticScreenData(withOne, new Dictionary<string, int>(), 0);
+        var shop = CosmeticCatalog.Shop(now).FirstOrDefault(c => c.Slot == CosmeticSlot.Accessory && c.Key != noeud.Key);
+        if (shop is not null)
+        {
+            var tried = string.Join("\n", Texts(CosmeticCards.Build(new CosmeticView(CosmeticTab.Shop, Picked: shop.Key), shopData, now, null).Components));
+            Expect(tried.Contains($"Porte {noeud.Emoji} {noeud.Name} et {shop.Emoji} {shop.Name}") || CosmeticCatalog.Shop(now).Count(c => c.Slot == CosmeticSlot.Accessory) == 0,
+                "try-on keeps the worn accessory beside the tried one: " + tried);
+        }
+    }
+
+    private static void AccessoryNoticeWording()
+    {
+        const string P = "cos.accessory.";
+        string? Notice(string? replaced, string? moved, string newKey, WornAccessory? first = null, WornAccessory? second = null) =>
+            AccessoryNotices.Of(new AccessoryChange(first, second, replaced, moved), CosmeticCatalog.ByKey(P + newKey));
+        string? R(string old, string neu) => Notice(P + old, null, neu);
+        Expect(R("couronne", "bonnet") == "Le bonnet a remplacé la petite couronne.", "Replaced: " + R("couronne", "bonnet"));
+        Expect(R("casquette", "echarpe") == "L'écharpe a remplacé la casquette.", "Replaced, elided: " + R("casquette", "echarpe"));
+        Expect(R("echarpe", "lunettes") == "Les lunettes de soleil ont remplacé l'écharpe.", "Replaced, plural: " + R("echarpe", "lunettes"));
+        Expect(R("bonnet", "haut_de_forme") == "Le haut-de-forme a remplacé le bonnet.", "Replaced, h aspiré: " + R("bonnet", "haut_de_forme"));
+        var left = new WornAccessory(P + "fleur", "rose_gauche");
+        var m1 = Notice(null, P + "fleur", "noeud", second: left);
+        Expect(m1 == "La fleur est passée à gauche.", "Moved, feminine: " + m1);
+        var right = new WornAccessory(P + "ballon", "rouge_droite");
+        var m2 = Notice(null, P + "ballon", "tulipe", first: right);
+        Expect(m2 == "Le ballon est passé à droite.", "Moved, masculine: " + m2);
+        var both = Notice(P + "couronne", P + "ballon", "bonnet", first: right);
+        Expect(both == "Le bonnet a remplacé la petite couronne. Le ballon est passé à droite.", "both notices: " + both);
+        Expect(Notice(null, null, "bonnet") is null, "no change, no notice");
+        var preview = AccessoryNotices.Of(new AccessoryChange(null, null, P + "couronne", null), CosmeticCatalog.ByKey(P + "bonnet"), preview: true);
+        Expect(preview == "Le bonnet remplacerait la petite couronne.", "try-on wording: " + preview);
+    }
+
     private static Plynling Fullest() => new()
     {
         Name = new string('W', 32), Gender = PlynlingGender.Female, OwnerId = ulong.MaxValue,
         ThemeKey = "cos.theme.aurore_boreale", TitleKey = "cos.title.chercheur_tresors",
-        AccessoryKey = "cos.accessory.echarpe", GraveKey = "cos.grave.couronne_fleurs",   // the écharpe: two style selects, the widest
+        AccessoryKey = "cos.accessory.echarpe", Accessory2Key = "cos.accessory.noeud", GraveKey = "cos.grave.couronne_fleurs",   // the écharpe: two style selects, the widest
         AuraKey = "cos.aura.scintillements",                       // the aura line in the heading
         SickSince = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),   // and the « aura ne se voit pas » note
     };

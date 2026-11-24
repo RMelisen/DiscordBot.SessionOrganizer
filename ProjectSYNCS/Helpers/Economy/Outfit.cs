@@ -19,8 +19,8 @@ public sealed record Outfit(CosmeticInfo? Theme, CosmeticInfo? Title, CosmeticIn
         var (first, second) = CosmeticSlots.AccessorySlots(p);
         var one = CosmeticCatalog.ByKey(first?.Key);
         var two = CosmeticCatalog.ByKey(second?.Key);
-        var style1 = first?.Style;
-        var style2 = second?.Style;
+        var style1 = one is null ? null : first?.Style;      // a retired key leaves no stray style behind
+        var style2 = two is null ? null : second?.Style;
         if (one is null) (one, style1, two, style2) = (two, style2, null, null);
         return new(
             CosmeticSlots.Worn(p, CosmeticSlot.Theme),
@@ -38,15 +38,22 @@ public sealed record Outfit(CosmeticInfo? Theme, CosmeticInfo? Title, CosmeticIn
     public Outfit TryOn(CosmeticInfo c, IReadOnlyDictionary<string, string> saved)
     {
         if (c.Slot != CosmeticSlot.Accessory) return With(c);
-        var first = Accessory is null ? null : new WornAccessory(Accessory.Key, AccessoryStyle);
-        var second = Accessory2 is null ? null : new WornAccessory(Accessory2.Key, Accessory2Style);
-        var style = first?.Key == c.Key ? first.Style : second?.Key == c.Key ? second.Style : saved.GetValueOrDefault(c.Key);
-        var change = AccessoryFit.TryOn(first, second, new WornAccessory(c.Key, style));
+        var change = AccessoryChangeFor(c, saved)!;
         return this with
         {
             Accessory = CosmeticCatalog.ByKey(change.First?.Key), AccessoryStyle = change.First?.Style,
             Accessory2 = CosmeticCatalog.ByKey(change.Second?.Key), Accessory2Style = change.Second?.Style,
         };
+    }
+
+    /// <summary>What trying the accessory <paramref name="c"/> on would do to the two slots; null for any other slot.</summary>
+    public AccessoryChange? AccessoryChangeFor(CosmeticInfo c, IReadOnlyDictionary<string, string> saved)
+    {
+        if (c.Slot != CosmeticSlot.Accessory) return null;
+        var first = Accessory is null ? null : new WornAccessory(Accessory.Key, AccessoryStyle);
+        var second = Accessory2 is null ? null : new WornAccessory(Accessory2.Key, Accessory2Style);
+        var style = first?.Key == c.Key ? first.Style : second?.Key == c.Key ? second.Style : saved.GetValueOrDefault(c.Key);
+        return AccessoryFit.TryOn(first, second, new WornAccessory(c.Key, style));
     }
 
     public CosmeticInfo? In(CosmeticSlot slot) => slot switch

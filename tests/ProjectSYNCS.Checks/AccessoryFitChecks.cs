@@ -71,6 +71,10 @@ public static class AccessoryFitChecks
         var retiredFirst = Outfit.Of(Row(P + "sac_a_dos", "x", P + "noeud", "rose_gauche"));
         Expect(retiredFirst.Accessory?.Key == P + "noeud" && retiredFirst.Accessory2 is null && retiredFirst.AccessoryStyle == "rose_gauche",
             "a retired key in slot 1 moves the second up");
+        var strayStyle = Outfit.Of(Row(P + "noeud", "rose_gauche", P + "sac_a_dos", "stray"));
+        Expect(strayStyle.Accessory2 is null && strayStyle.Accessory2Style is null, "a retired second leaves no stray style: " + strayStyle.Accessory2Style);
+        var strayFirst = Outfit.Of(Row(P + "sac_a_dos", "stray"));
+        Expect(strayFirst.Accessory is null && strayFirst.AccessoryStyle is null && strayFirst.Accessory2Style is null, "a retired lone first leaves no stray style");
         var both = Outfit.Of(Row(P + "noeud", "rose", P + "ballon", null));
         Expect(both.Accessory?.Key == P + "noeud" && both.Accessory2?.Key == P + "ballon", "two accessories read in order");
         var two = Row(P + "noeud", "rose", P + "ballon");

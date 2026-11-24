@@ -132,6 +132,24 @@ public class CosmeticService
     }
 
     /// <summary>
+    /// Wears an owned cosmetic the way the shop's try-on shows it: an accessory replaces a clashing
+    /// one, else fills the empty slot, else replaces the second (<see cref="AccessoryFit.TryOn"/>), in
+    /// the style the Plynling remembers for it. Any other slot is a plain <see cref="WearAsync"/>.
+    /// </summary>
+    public async Task<(CosmeticOutcome Outcome, Plynling? Plynling, AccessoryChange? Change)> WearFittedAsync(
+        ulong guildId, ulong userId, string key, DateTimeOffset now)
+    {
+        if (CosmeticCatalog.ByKey(key) is not { } cosmetic) return (CosmeticOutcome.UnknownItem, null, null);
+        if (cosmetic.Slot != CosmeticSlot.Accessory) return await WearAsync(guildId, userId, cosmetic.Slot, key, now);
+        var plynling = await _db_context.Plynlings.FirstOrDefaultAsync(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null);
+        if (plynling is null) return (CosmeticOutcome.NoPlynling, null, null);
+        if (await InventoryService.CountAsync(_db_context, guildId, userId, key) < 1) return (CosmeticOutcome.NotOwned, plynling, null);
+        var (_, change) = await PutOnAsync(guildId, userId, cosmetic);
+        await _db_context.SaveChangesAsync();
+        return (CosmeticOutcome.Done, plynling, change);
+    }
+
+    /// <summary>
     /// Sets one choice (colour, position, side) of an accessory the person's living Plynling wears,
     /// in either slot — free, like wearing. Refused (<see cref="CosmeticOutcome.UnknownItem"/>) when
     /// that accessory is no longer worn (a screen left open across a change) or the option isn't one of
