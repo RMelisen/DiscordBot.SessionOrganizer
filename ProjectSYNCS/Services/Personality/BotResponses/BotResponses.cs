@@ -166,6 +166,7 @@ namespace ProjectSYNCS.Services;
 //     ShameEmptyHysterique · ShameEmptyIndigne
 //     GiveawayDrawLines · GiveawayEmptyLines ......... /giveaway
 //     WarnDmLines .............. /admin warn, the DM to the person warned
+//     PremiumPaywallLines → PremiumRevealLines ... the premium easter egg: the fake paywall, then its edit
 //     WorkLines ................ /work
 //     WorkGraceLines ........... on top of a /work paid a few minutes early (the once-a-day grace)
 //     WorkReadyLines ........... the DM when /work is ready again (WorkReminderService)
@@ -319,7 +320,7 @@ namespace ProjectSYNCS.Services;
 //       PlynlingThoughtTypedLines · PlynlingDreamTypedLines ... /plynling view's thought bubble, awake / asleep
 //     Sickness and death
 //       PlynlingSickWarningLines ...... DM when it falls sick
-//       PlynlingWarningLines ......... the ~3h DM before death
+//       PlynlingWarningLines ......... the ~12h DM before death
 //       PlynlingIllnessDeathLines · PlynlingDeathLines · PlynlingAbandonLines · PlynlingResurrectLines
 //                              ... public, game channel
 //     Staff actions — PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms

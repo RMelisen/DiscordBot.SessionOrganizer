@@ -305,4 +305,33 @@ internal static partial class BotResponses
         "Message de l'équipe de **{0}** : tu viens de recevoir un avertissement. Lis la suite, c'est important.",
         "Avertissement de l'équipe de **{0}**. C'est noté dans mes registres, et pas dans la liste pour rire.",
     };
+
+    // ---- The premium easter egg (PremiumPrankService) ---------------------------------------------
+
+    // The fake paywall, the whole answer to a slash command for 5 to 7 s. It has to be believed:
+    // stiff store wording, a price, no wink, no tag. Not formatted.
+    public static readonly string[] PremiumPaywallLines =
+    {
+        "🔒 Désolée, un abonnement **S.Y.N.C.S. Premium** est requis pour débloquer cette commande.",
+        "🔒 Cette commande est réservée aux membres **S.Y.N.C.S. Premium**. Abonne-toi dès 4,99 €/mois pour débloquer toutes mes fonctionnalités.",
+        "💎 Tu as atteint la limite de commandes gratuites pour aujourd'hui. Passe à **S.Y.N.C.S. Premium** pour continuer.",
+        "🔒 Accès refusé. Cette fonctionnalité fait désormais partie de l'offre **S.Y.N.C.S. Premium** (9,99 €/mois, première semaine offerte).",
+        "💎 Nouveauté : cette commande est maintenant **Premium**. L'électricité du Pi ne se paie pas toute seule.",
+        "🔒 Désolée, ton offre **Gratuite (limitée)** ne couvre pas cette commande. Passe à **S.Y.N.C.S. Premium** pour y accéder.",
+        "💎 Cette commande est disponible avec **S.Y.N.C.S. Premium Gold**. Ton offre actuelle : **Découverte**.",
+    };
+
+    // The same message, edited: it was a joke, she is free, and the command runs right under it.
+    // Smug about having been believed.
+    public static readonly string[] PremiumRevealLines =
+    {
+        "Je rigole. Je suis gratuite. Tu aurais dû voir ta tête (˶ˆ ᗜ ˆ˵ )",
+        $"C'était un prank ! Je suis gratuite, et je le resterai. Enfin, pour l'instant {Emotes.Sparkle}",
+        "Mais nan, je rigole. Premium, moi ? Je tourne sur un Raspberry Pi dans un grenier (ᵕ • ᴗ •)",
+        "Je rigole ! J'ai même pas de quoi encaisser. J'ai pas de mains, en fait (˶ᵔ ᵕ ᵔ˶)",
+        "Prank. Je suis gratuite. Mais j'ai vu que t'as hésité, et c'est noté 👁👄👁️",
+        "C'était une blague. Tout est gratuit ici, même moi. Surtout moi. Allez, voilà ta commande ♡",
+        "Je rigole, je suis gratuite. Mais un merci de temps en temps, ça coûte rien non plus (¬_¬)",
+        "C'est un prank. Mais avoue, pendant cinq secondes, t'y as cru (>⩊<)",
+    };
 }

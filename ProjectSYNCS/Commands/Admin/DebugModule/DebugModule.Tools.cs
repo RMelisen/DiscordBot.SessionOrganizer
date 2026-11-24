@@ -11,7 +11,7 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-public partial class DebugModule : InteractionModuleBase<SocketInteractionContext>
+public partial class DebugModule : SyncsModuleBase
 {
     // Sickness is rare by design and could take days to reach, so the owner can force it — and a
     // low hygiene — on his own living Plynling to test the card, the art and the refusals. The

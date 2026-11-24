@@ -8,7 +8,7 @@ namespace ProjectSYNCS.Services;
 
 // « Grosse tête de la semaine » (docs/agents/quiz.md): every Monday at 10:00 Paris, the best answerer
 // of the calendar week that just ended gets the configured role for the whole week and a purse of
-// cailloux, and SYNCS says so in the quiz channel, pinging them. Off until staff set a role
+// cailloux, and SYNCS says so in the bots channel, pinging them. Off until staff set a role
 // (`/config quiz-role`).
 //
 // Driven by QuizMasterService's 1-minute tick (no loop of its own): the first tick past Monday 10:00
@@ -34,10 +34,15 @@ public sealed class QuizCrownService
     private readonly ILogger<QuizCrownService> _logger;
     private readonly BadgeAwarder _badges;
     private readonly SilenceService _silence;
+    private readonly DiscordSocketClient _client;
+    private readonly PlynlingAnnouncer _announcer;
 
     public QuizCrownService(IServiceProvider services, GuildConfigService config, RoleMirror mirror,
-        ILogger<QuizCrownService> logger, BadgeAwarder badges, SilenceService silence)
+        ILogger<QuizCrownService> logger, BadgeAwarder badges, SilenceService silence,
+        DiscordSocketClient client, PlynlingAnnouncer announcer)
     {
+        _client = client;
+        _announcer = announcer;
         _silence = silence;
         _badges = badges;
         _services = services;
@@ -135,15 +140,15 @@ public sealed class QuizCrownService
         bool roleWorks = RoleMirror.Problem(guild, guild.GetRole(config.QuizRoleId), adopting: false, RoleKind.QuizCrown) is null;
         // Silence mode mutes the Monday crowning only (purse and role still move); /debug's dry run speaks.
         if (champions.Count > 0 && roleWorks && !(pay && _silence.IsSilent))
-            await AnnounceAsync(guild, config, champions, week, purse);
+            await AnnounceAsync(guild, champions, week, purse);
         return champions;
     }
 
-    private async Task AnnounceAsync(SocketGuild guild, GuildConfig config, IReadOnlyList<CrownEntry> champions, int week,
-        long purse)
+    private async Task AnnounceAsync(SocketGuild guild, IReadOnlyList<CrownEntry> champions, int week, long purse)
     {
-        // No quiz channel (or one she can't find): the role still moves, nobody is told.
-        if (config.QuizChannelId == 0 || guild.GetTextChannel(config.QuizChannelId) is not { } channel) return;
+        // The bots channel (falling back to the game channel). None she can find: the role still
+        // moves, nobody is told.
+        if (await BotsChannel.ResolveAsync(_client, _config, _announcer, guild.Id) is not { } channel) return;
 
         int weekIndex = AppTime.DayNumber(AppTime.AtWallClock(AppTime.FromDayKey(week))) / 7;
         var ids = champions.Select(c => c.UserId).ToList();

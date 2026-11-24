@@ -23,6 +23,11 @@ public enum LeaderboardView
     Collections,
     /// <summary>Cailloux given to the jar (Helpers/Economy/Patronage).</summary>
     Patrons,
+    /// <summary>
+    /// The Plynlings' hidden score (PlynlingScore): ranks Plynlings, not people, read from PlynlingService.
+    /// Only ever in custom-ids, never stored; appended last like the rest.
+    /// </summary>
+    Plynlings,
 }
 
 /// <summary>One person's standing, carrying every metric the views rank by.</summary>

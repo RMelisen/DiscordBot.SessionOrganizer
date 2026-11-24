@@ -2,8 +2,8 @@ using Discord.Interactions;
 
 namespace ProjectSYNCS.Interactions.Modals;
 
-// A guess in /plynling play's « Plus ou moins ». Three characters: « 100 » is the longest
-// valid answer, and anything else is refused in the handler.
+// A guess in /arcade guess (« Plus ou moins », once a /plynling play game). Three characters:
+// « 100 » is the longest valid answer, and anything else is refused in the handler.
 public class GuessModal : IModal
 {
     public string Title => "Plus ou moins";

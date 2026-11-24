@@ -35,7 +35,7 @@ public static class ItemEmojis
     // eat 14 of them. The longest today is ac_collier_coquillages (22).
     // Redrawing a whole family changes its prefix: an uploaded emoji is never replaced, so new names
     // are what make the bot upload the new pictures. tr2_ is the 22×22 traits; the old tr_ emojis
-    // are left unused, to delete in the developer portal.
+    // are stale (StaleNames, add the old prefix to RetiredPrefixes) and deleted on start.
     private static readonly (string Key, string Emoji)[] Prefixes =
     {
         ("col.", "c_"), ("set.", "s_"), ("cos.theme.", "th_"), ("cos.title.", "ti_"),
@@ -43,8 +43,8 @@ public static class ItemEmojis
     };
 
     // Redrawing one picture gives it a revision instead: « _v2 » after its name, so the new picture
-    // uploads under a new name without touching the family's other emojis. The old emoji is left
-    // unused, to delete in the developer portal. Bump a key's number on each redraw. A set's icon is
+    // uploads under a new name without touching the family's other emojis. The old emoji is then
+    // stale and deleted on start. Bump a key's number on each redraw. A set's icon is
     // also its five badges' subject: redrawing one means revising all six (the checks hold this).
     private static readonly Dictionary<string, int> Revisions = new(StringComparer.Ordinal)
     {
@@ -107,6 +107,26 @@ public static class ItemEmojis
             var key = Path.GetFileNameWithoutExtension(file);
             yield return new IconSource(file, key, IsIconKey(key) ? EmojiName(key) : null);
         }
+    }
+
+    // Family prefixes the bot named emojis with once and no longer does: a redrawn family's old
+    // emojis still carry them. Append when a family gets a new prefix (traits: tr_ → tr2_).
+    private static readonly string[] RetiredPrefixes = { "tr_" };
+
+    /// <summary>
+    /// The application emojis the bot made and no longer uses: named with one of its prefixes
+    /// (today's or retired) but matching no shipped sprite — a redrawn icon's earlier revision, an
+    /// old family prefix, a retired item. Empty when no sprite was found at all, so a publish missing
+    /// its assets never wipes the emojis. An emoji named outside the bot's prefixes is never stale.
+    /// </summary>
+    public static IReadOnlyList<string> StaleNames(IEnumerable<string> existing, IEnumerable<IconSource> sources)
+    {
+        var current = sources.Select(s => s.EmojiName).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        if (current.Count == 0) return Array.Empty<string>();
+        var owned = Prefixes.Select(p => p.Emoji).Append(MushroomPrefix).Concat(RetiredPrefixes).ToArray();
+        return existing
+            .Where(n => !current.Contains(n) && owned.Any(p => n.StartsWith(p, StringComparison.Ordinal)))
+            .ToList();
     }
 
     private static bool IsIconKey(string key) =>

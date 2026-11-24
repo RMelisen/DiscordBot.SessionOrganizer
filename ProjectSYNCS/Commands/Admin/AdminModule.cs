@@ -24,7 +24,7 @@ namespace ProjectSYNCS.Commands;
 // SessionPermissions.IsStaff in every handler is the only real gate — see CLAUDE.md's
 // authorization-models note.
 [Group("admin", "Outils de modération (admins/modérateurs)")]
-public class AdminModule : InteractionModuleBase<SocketInteractionContext>
+public class AdminModule : SyncsModuleBase
 {
     private readonly AdminStatsService _stats;
     private readonly EconomyDashboardService _dashboard;
@@ -339,7 +339,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     // (/level, /leaderboard) and is entirely Components V2 — these are two plain ephemeral
     // replies and share nothing with it but XpService.
     [Group("xp", "Ajuster l'XP de quelqu'un")]
-    public class XpModule : InteractionModuleBase<SocketInteractionContext>
+    public class XpModule : SyncsModuleBase
     {
         // Generous but finite. The cap is not about balance — staff can simply run the
         // command again — it is so a slipped digit is caught by Discord's own validation
@@ -410,7 +410,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     // ephemeral, bots refused, a cap that catches a slipped digit — and, like it, the person is
     // not notified.
     [Group("pebble", "Ajuster les cailloux de quelqu'un")]
-    public class PebbleAdminModule : InteractionModuleBase<SocketInteractionContext>
+    public class PebbleAdminModule : SyncsModuleBase
     {
         private const int MaxAdjustment = 1_000_000;
 
@@ -459,7 +459,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("plynling", "Gérer le Plynling de quelqu'un")]
-    public class PlynlingAdminModule : InteractionModuleBase<SocketInteractionContext>
+    public class PlynlingAdminModule : SyncsModuleBase
     {
         private readonly PlynlingService _plynlings;
         private readonly ResponsePicker _picker;

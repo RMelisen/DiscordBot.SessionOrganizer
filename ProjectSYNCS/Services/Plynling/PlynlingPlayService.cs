@@ -3,7 +3,7 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
-// One /plynling play game in progress. Gate serialises the moves: a double click must not
+// One /plynling play game in progress (the rules: Helpers/Plynling/PlynlingGames). Gate serialises the moves: a double click must not
 // play twice, and exactly one move may be the one that finishes the game.
 public sealed class PlynlingGameSession
 {
@@ -26,7 +26,7 @@ public sealed class PlynlingGameSession
     public object Gate { get; } = new();
 }
 
-// The live games, by id — a singleton, so the secrets (the rock, the number) stay here and
+// The live games, by id — a singleton, so the secrets (the rock, the gland, the pebbles) stay here and
 // never travel in a custom-id. In memory like every other gate here: a restart ends games in
 // progress, which costs nothing (the hour was already spent), and a game left alone expires.
 public sealed class PlynlingPlayService
@@ -35,15 +35,20 @@ public sealed class PlynlingPlayService
 
     private readonly ConcurrentDictionary<string, PlynlingGameSession> _games = new();
 
-    // Picks one of the three games at random and starts it.
-    public PlynlingGameSession Start(ulong guildId, ulong ownerId, int plynlingId, DateTimeOffset now, Random rng)
+    // Picks one of the games at random and starts it. Mémoire only when enough mushrooms have
+    // their emoji loaded (PlynlingGameUi.LoadedMushrooms): otherwise every button would be 🍄.
+    public PlynlingGameSession Start(ulong guildId, ulong ownerId, int plynlingId, DateTimeOffset now, Random rng,
+        IReadOnlyList<string> mushrooms)
     {
         foreach (var (id, game) in _games)
             if (now - game.StartedAt > Expiry) _games.TryRemove(id, out _);
 
-        var kind = (PlynlingGame)rng.Next(3);
+        var kinds = Enum.GetValues<PlynlingGame>()
+            .Where(g => g != PlynlingGame.Memory || mushrooms.Count >= PlynlingGameState.MemoryOptions)
+            .ToList();
+        var kind = kinds[rng.Next(kinds.Count)];
         var session = new PlynlingGameSession(Guid.NewGuid().ToString("N")[..12], guildId, ownerId, plynlingId,
-            new PlynlingGameState(kind, rng), now);
+            new PlynlingGameState(kind, rng, mushrooms), now);
         _games[session.Id] = session;
         return session;
     }

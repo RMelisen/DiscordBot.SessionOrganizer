@@ -10,7 +10,7 @@ namespace ProjectSYNCS.Commands;
 // checks can measure them. Read-only answers are ephemeral, to keep channels clean.
 [Group("minecraft", "Le serveur Minecraft : son mode d'emploi, où elle en est, et l'y inviter")]
 [CommandContextType(InteractionContextType.Guild)]
-public class MinecraftModule : InteractionModuleBase<SocketInteractionContext>
+public class MinecraftModule : SyncsModuleBase
 {
     private readonly MinecraftBodyService _minecraft;
     private readonly MinecraftDataService _data;
@@ -201,9 +201,11 @@ public class MinecraftModule : InteractionModuleBase<SocketInteractionContext>
         return embed.Build();
     }
 
+    // Also MinecraftHelpHandler's on every page swap, so the guide link stays.
     public static MessageComponent BuildHelpButtons(int page) =>
         new ComponentBuilder()
             .WithButton("◀", $"minecraft:help:{page - 1}", ButtonStyle.Secondary, disabled: page <= 0)
             .WithButton("▶", $"minecraft:help:{page + 1}", ButtonStyle.Secondary, disabled: page >= HelpPages - 1)
+            .WithButton(HelpModule.GuideButton("minecraft/"))
             .Build();
 }

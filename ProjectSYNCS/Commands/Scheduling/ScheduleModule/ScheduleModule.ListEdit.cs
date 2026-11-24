@@ -13,7 +13,7 @@ using System.Text;
 
 namespace ProjectSYNCS.Commands;
 
-public partial class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
+public partial class ScheduleModule : SyncsModuleBase
 {
     // ---- /schedule list ---------------------------------------------------
 
@@ -128,6 +128,7 @@ public partial class ScheduleModule : InteractionModuleBase<SocketInteractionCon
             ephemeral: true);
     }
 
+    [NoPremiumPrank]
     [SlashCommand("edit", "Modifier une session que tu as organisée")]
     public async Task ScheduleEditAsync(
         [Summary("event-id", "La session à modifier"), Autocomplete(typeof(SessionIdAutocompleteHandler))] int eventId)

@@ -38,7 +38,9 @@ public partial class PlynlingService
             {
                 return await work();
             }
-            catch (DbUpdateConcurrencyException) when (attempt < UnitAttempts)
+            // A Version conflict, or two units inserting the same row (the day's first score bucket, an owner's
+            // first total): the slower re-runs and finds the row the other committed (EconomySave's rule).
+            catch (DbUpdateException ex) when (attempt < UnitAttempts && EconomySave.IsRace(ex))
             {
                 // Not the queued on-actions: a fact an attempt saved before the conflict (a morning
                 // played) is not replayed by the next, so its on-action must survive. The flush

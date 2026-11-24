@@ -94,7 +94,12 @@ public static class EconomySinkChecks
         Expect(LevelCardUi.Spent(1) == "1 caillou versé au bocal", "Spent(1): " + LevelCardUi.Spent(1));
         Expect(LevelCardUi.Row(1, a, LeaderboardView.Patrons, StatsPeriod.AllTime, new MemberTally(a, 0, 0, 0, 0, 900)).EndsWith(LevelCardUi.Spent(900)), "mécènes row");
         Expect(LevelCardUi.EmptyLine(LeaderboardView.Patrons, StatsPeriod.AllTime).StartsWith("Personne n'a encore rien versé au bocal"), "mécènes empty line");
-        Expect(Enum.GetValues<LeaderboardView>().Length <= 5, "more than 5 leaderboard tabs on one row");
+        // The tabs go in rows of three since the sixth (Plynlings): every row of the page must keep Discord's five.
+        var page = ProjectSYNCS.Commands.LevelModule.BuildPage(new List<MemberTally>(), LeaderboardView.Xp, StatsPeriod.AllTime, 0, 7, _ => null);
+        var rows = page.Components.OfType<Discord.ActionRowComponent>().ToList();
+        Expect(rows.All(r => r.Components.Count <= 5), "a leaderboard row with more than 5 buttons");
+        Expect(rows.Sum(r => r.Components.Count(c => c is Discord.ButtonComponent b && b.CustomId.StartsWith("level:view:")))
+               == Enum.GetValues<LeaderboardView>().Length, "every leaderboard view has its tab");
     }
 
     private static async Task PayAsync()

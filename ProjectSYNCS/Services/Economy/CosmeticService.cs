@@ -44,6 +44,7 @@ public class CosmeticService
         await InventoryService.AddAsync(_db_context, guildId, userId, key, 1, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendCosmetic, cosmetic.Price, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.CosBought, 1, now);
+        await PlynlingScore.AddToLivingAsync(_db_context, guildId, userId, PlynlingScore.Cosmetic, now);
         var (worn, change) = wear ? await PutOnAsync(guildId, userId, cosmetic) : (Worn: false, Change: (AccessoryChange?)null);
         await _db_context.SaveChangesAsync();
         return new(CosmeticOutcome.Done, wallet.Balance, worn, change);
@@ -78,6 +79,7 @@ public class CosmeticService
         await InventoryService.AddAsync(_db_context, guildId, userId, key, 1, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendCraft, cosmetic.Price, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.CosCrafted, 1, now);
+        await PlynlingScore.AddToLivingAsync(_db_context, guildId, userId, PlynlingScore.Cosmetic, now);
         var (worn, change) = wear ? await PutOnAsync(guildId, userId, cosmetic) : (Worn: false, Change: (AccessoryChange?)null);
         await _db_context.SaveChangesAsync();
         return new(CosmeticOutcome.Done, wallet.Balance, worn, change);

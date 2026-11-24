@@ -138,6 +138,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ChouchouBook>();
         // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
         services.AddSingleton<GlitchService>();
+        // The premium easter egg, called from BotService's interaction dispatch.
+        services.AddSingleton<PremiumPrankService>();
         // The sticker follow-ups: one instance, reached from BotChat's static hook.
         services.AddSingleton<StickerService>();
         // What her own recent posts were, so a reply to one is answered about it: in memory.
@@ -279,5 +281,10 @@ var host = Host.CreateDefaultBuilder(args)
         // first start. Adds ProjectSYNCS.db-wal / -shm beside the database (see deployment.md).
         await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
     }
+
+    // The Plynling score's one-off rebuild of the history kept before it shipped: after the migrations, before
+    // the bot connects, so no live action lands in between. A no-op once every row is rebuilt.
+    await PlynlingScoreRebuild.RunAsync(host.Services,
+        host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("PlynlingScoreRebuild"), DateTimeOffset.UtcNow);
 
     await host.RunAsync();

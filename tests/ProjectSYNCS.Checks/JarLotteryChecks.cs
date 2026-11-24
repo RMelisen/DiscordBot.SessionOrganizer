@@ -253,7 +253,7 @@ public static class JarLotteryChecks
 
         var commands = typeof(ArcadeModule).GetMethods()
             .Count(m => m.GetCustomAttributes(typeof(Discord.Interactions.SlashCommandAttribute), false).Length > 0);
-        Expect(commands == 11, $"/arcade has {commands} subcommands, want 11 (cap 25)");
+        Expect(commands == 12, $"/arcade has {commands} subcommands, want 12 (cap 25)");
     }
 
     // ---- the lottery -----------------------------------------------------------------------------

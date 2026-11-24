@@ -5,6 +5,9 @@ planning gaming sessions, activities and movie nights, and letting people sign u
 in one click. It also keeps score: XP and levels, emote and verdict leaderboards, a
 wall of shame, and a pop quiz. The bot's user-facing language is French.
 
+**Members' guide (in French): <https://rmelisen.github.io/DiscordBot.SessionOrganizer/>** —
+sources in [`guide/`](guide/), linked from `/help`.
+
 - [Commands](#commands)
 - [Sessions](#sessions) · [Polls & votes](#polls--votes) · [Giveaways](#giveaways) · [Game nights & tools](#game-nights--tools)
 - [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame) · [Pop quiz](#pop-quiz) · [Plynlings](#plynlings) · [Arcade](#arcade)
@@ -21,7 +24,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/giveaway create · list · delete` | Prize draws | staff (`delete`: organiser or staff) |
 | `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
 | `/recap [user]` | Your recap over 7 days, 30 days or all time | everyone |
-| `/leaderboard` | Server ranking — five views, three windows | everyone |
+| `/leaderboard` | Server ranking — six views (Plynlings included), three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
@@ -35,7 +38,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
 | `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
-| `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · puissance4 · morpion · lottery` | Her games, mostly for cailloux | everyone |
+| `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · guess · puissance4 · morpion · lottery` | Her games, mostly for cailloux | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · train · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
@@ -331,9 +334,10 @@ Vocal leaderboard stays honest about time actually spent.
   sessions joined and attended, `/tonight` answers, quiz wins, the current Plynling and its graves,
   cailloux, and the wall of shame — then one line from her about what the numbers say.
 - **`/leaderboard`** — the ranked list, five per page, every row carrying that
-  person's real avatar. Five buttons switch what it ranks — **Niveaux** (XP),
+  person's real avatar. Six buttons switch what it ranks — **Niveaux** (XP),
   **Réactions** (reactions added), **Vocal** (eligible time in voice), **Collections** (sets
-  completed, turn-ins included), **Mécènes** (cailloux given to the jar) — and three more
+  completed, turn-ins included), **Mécènes** (cailloux given to the jar), **Plynlings** (the
+  Plynlings themselves by their hidden score, each shown as itself, or its memorial once gone) — and three more
   switch the window: **all time** (default), **30 days**, **7 days**. In a window the
   XP view ranks by XP earned in that window and drops the level, which is a lifetime
   figure and can't be recomputed for a week. A `/level` card's "Voir le classement"
@@ -477,9 +481,12 @@ looks after her.
   and the first time its owner looks at it each day it has a one-in-two chance of having found
   5–15 cailloux for them. A sad one (below 30 %) gets 25 % less. At 0 % it sulks and refuses to
   eat until someone plays with it or pets it — unless it is starving, when hunger wins.
-- **Play:** `/plynling play` starts one of three mini-games at random with your own Plynling —
-  cache-cache (find it behind one of three rocks, two tries), pierre-papier-ciseaux (first to
-  two) or plus ou moins (a number from 1 to 100 in seven guesses, with every earlier guess listed). Once an hour; it always
+- **Play:** `/plynling play` starts one of six quick mini-games at random with your own Plynling,
+  all played with buttons — cache-cache (find it behind one of three rocks, two tries),
+  pierre-papier-ciseaux (first to two), le sac de cailloux (call the next numbered pebble higher or
+  lower, three right in a row), mémoire (four mushrooms to repeat in order), le dernier caillou
+  (take 1 to 3 pebbles in turn; whoever takes the last wins) or la chasse au trésor (find the
+  buried acorn on a 4×4 grid in three digs, with « brûlant / chaud / froid » hints). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling to someone's. One message holds the whole
   visit: a little scene somewhere in the village (skimming stones on the river, the queue at the
@@ -510,7 +517,8 @@ looks after her.
   are very close may confess their love and become a couple (or suffer a heartbreak), and a
   couple that keeps arguing breaks up. The closer they are, the happier a visit makes them;
   between enemies it makes them sadder. A best friend or partner grieves when the other dies
-  or is abandoned. `/plynling relations [user]` lists them, the card shows its partner
+  or is abandoned. `/plynling relations [user]` lists the living ones, highest affinity first (a « 🪦 » tab
+  shows the dead), the card shows its partner
   (« 💞 En couple avec … »), and the journal names the partner and the best friends.
 - **Sleep:** every Plynling sleeps from 1 am to 5 am (Paris time), with its own sleeping
   picture. It can be fed but not petted, and it never dies in its sleep — a death due at
@@ -549,8 +557,15 @@ looks after her.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours
-  before (at 11 pm the evening before, if that would fall at night). `/plynling graveyard` lists every grave, newest or longest-lived first — and the longer a
-  Plynling lived, the grander its memorial, from a simple cairn to a statue in its likeness.
+  before (at 11 pm the evening before, if that would fall at night). `/plynling graveyard` lists every grave, newest or longest-lived first — and the better a
+  Plynling was looked after over its life, the grander its memorial, from a simple cairn to a statue
+  in its likeness.
+- **A hidden score** grows with everything a Plynling does and has done for it: meals (finer
+  food counts more), pets, baths, games, visits, forage, training and its levels, events it saw
+  through, collections and cosmetics, badges, growing up, the bonds it forms (rivals included) and
+  mornings it starts well kept. Never shown on its card, it is what picks its memorial, and
+  `/leaderboard`'s **Plynlings** view ranks every Plynling by it — the departed too, under their
+  memorial.
 - **Abandoning** (`/plynling abandon`) — you type its name to confirm, and it leaves for
   good: no grave, no coming back. The whole server hears about it, it counts towards
   *L'Indigne* on `/shame`, and you wait 30 minutes before adopting again.
@@ -614,7 +629,7 @@ looks after her.
   else) count toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
 - **Bribes:** `/bribe favourite` makes you her chouchou for 24 h (warm answers when you tag or reply to
   her, warm reactions; an insult still gets roasted); `/bribe shame` erases one of your `/shame` hits
-  (not ban votes). A bribe costs 100 cailloux, doubled by every bribe you already paid this week.
+  (ban votes included). A bribe costs 100 cailloux, doubled by every bribe you already paid this week.
 - **Dedications:** `/shoutout bid amount` bids for a dedication in tomorrow's morning hello (from
   50, each bid at least 10 more; bids close at 20:00, and later ones go to the day after). The winner gets a ping and a big-up:
   either a dedication line instead of the usual greeting, or the usual greeting ending on a credit to them; outbid bids are refunded at once. On her birthday or a quiet
@@ -659,6 +674,9 @@ is gone).
   guess wins 15 cailloux; one try each; the author can't play. Ten minutes, then she tells.
 - **`/arcade temperature`** — guess her CPU temperature (10 each, 10 minutes, at least two
   players): the closest guess takes the pot minus 10 %. Only on the Pi, where she can feel it.
+- **`/arcade guess [stake]`** — plus ou moins: she thinks of a number from 1 to 100 and you have six
+  guesses, each answered « plus » or « moins ». Stake up to 500 cailloux (or nothing): found, she
+  pays back 1.4 times the stake. Five idle minutes lose.
 - **`/arcade puissance4 [opponent] [stake]`** · **`/arcade morpion …`** — against someone (who
   accepts first) or against her. Five minutes per move, or you lose. At morpion she never loses.
   At Puissance 4 she's beatable — though one game in five she might drop two pieces at once, and
@@ -999,3 +1017,10 @@ Only `/data` is persisted by the add-on, so the SQLite file lives there in
 production. Never commit a real token: `appsettings.json` and `config.yaml` ship
 placeholders, and real credentials belong in user secrets (dev) or the add-on
 options (prod).
+
+## Credits
+
+The mushroom item icons come from the free *Mushroom Pack* by
+[Atelier Pixerelia](https://pixerelia.itch.io/) (`ProjectSYNCS/Assets/Mushrooms/`).
+The other item icons are drawn in the same style and palette
+(`tools/item-art/`).

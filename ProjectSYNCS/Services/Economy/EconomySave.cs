@@ -48,7 +48,8 @@ public static class EconomySave
         }
     }
 
-    private static bool IsRace(DbUpdateException ex) =>
+    // Also what PlynlingService.UnitAsync retries: its units insert daily rows too (the score's buckets).
+    internal static bool IsRace(DbUpdateException ex) =>
         ex is DbUpdateConcurrencyException
         || ex.InnerException is SqliteException { SqliteExtendedErrorCode: ConstraintUnique or ConstraintPrimaryKey };
 }

@@ -14,7 +14,7 @@ public sealed record AccessoryChange(WornAccessory? First, WornAccessory? Second
 /// The rules for wearing two accessories: categories (a clash is the same non-sided category), the
 /// sides of the sided ones (<see cref="AccessoryCategory.Head"/>, <see cref="AccessoryCategory.Held"/>),
 /// and the order they are drawn in. Pure: the callers store the result. Must match the families in
-/// tools/plynling-art/accessories.py (section 67 compares them).
+/// tools/plynling-art/accessories.py (section 71 compares them).
 /// </summary>
 public static class AccessoryFit
 {

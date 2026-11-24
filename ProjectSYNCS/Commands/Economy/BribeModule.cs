@@ -11,7 +11,7 @@ namespace ProjectSYNCS.Commands;
 // purchase is public (it is the joke), a refusal private, like /pay's.
 [Group("bribe", "Soudoyer SYNCS avec des cailloux")]
 [CommandContextType(InteractionContextType.Guild)]
-public class BribeModule : InteractionModuleBase<SocketInteractionContext>
+public class BribeModule : SyncsModuleBase
 {
     private readonly BribeService _bribes;
 

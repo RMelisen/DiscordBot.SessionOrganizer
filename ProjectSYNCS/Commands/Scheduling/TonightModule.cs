@@ -11,7 +11,7 @@ namespace ProjectSYNCS.Commands;
 // time; buttons in TonightComponentHandler; ReminderService closes it at midnight. The card
 // builders are static and shared by all three.
 [CommandContextType(InteractionContextType.Guild)]
-public partial class TonightModule : InteractionModuleBase<SocketInteractionContext>
+public partial class TonightModule : SyncsModuleBase
 {
     public const int DefaultMinimum = 4;
     // Also the hour of a call asked for in chat without one (ChatterService.Requests).

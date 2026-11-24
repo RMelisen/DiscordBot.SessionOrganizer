@@ -334,6 +334,7 @@ public partial class PlynlingService
         var applied = (success ? option.OnSuccess : option.OnFailure).Where(e => PlynlingEventEngine.Applies(e, def, decidedAlone)).ToList();
         // A story run's flags after this step: carried to its next scene, or kept by its ending.
         var flags = StoryRuns.WriteFlags(StoryRuns.NextFlags(inst.Flags, applied));
+        var continues = false;     // a follow-up queued: the run is not over, so it scores at its last step
         foreach (var effect in applied)
         {
             switch (effect)
@@ -379,6 +380,7 @@ public partial class PlynlingService
                     break;
                 case FollowUp f when PlynlingEvents.ByKey(f.EventKey) is { } next:
                     // Comes back later, about the same Plynling; a death cancels it with the rest.
+                    continues = true;
                     var later = QueueEvent(p, next, inst.TargetPlynlingId, now);
                     later.AvailableAt = PlynlingEventEngine.FollowUpAt(inst.Id, f, now);
                     later.ExpiresAt = later.AvailableAt + PlynlingEventEngine.Lifetime;
@@ -436,6 +438,11 @@ public partial class PlynlingService
         inst.OptionKey = option.Key;
         inst.DecidedAlone = decidedAlone;
         await AddMomentAsync(p, JournalKind.EventStory, def.Key, now);
+        // The score counts a run once, at its end, and only when the owner chose (an event left to decide
+        // alone is not engagement): a long story's ending is worth more than a short one or a C# event.
+        if (!decidedAlone && !continues)
+            await PlynlingScore.AddAsync(_db_context, p,
+                inst.EndingKey is not null && PlynlingEventEngine.IsLong(def) ? PlynlingScore.EventLong : PlynlingScore.EventShort, now);
 
         // Each level climbed brings on its mental break, whatever the pulse cap says.
         await QueueBreaksAsync(p, levelBefore, inst.Id, now);

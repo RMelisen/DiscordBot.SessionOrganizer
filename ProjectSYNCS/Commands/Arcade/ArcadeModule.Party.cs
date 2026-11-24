@@ -346,6 +346,45 @@ public partial class ArcadeModule
         }
     }
 
+    // ---- Guess (plus ou moins) --------------------------------------------------------------------
+
+    [SlashCommand("guess", "Plus ou moins : trouve mon nombre en 6 essais (×1,4 ta mise)")]
+    public async Task GuessAsync(
+        [Summary("stake", "Une mise, si tu veux (0 par défaut)")] [MinValue(0)] [MaxValue(NumberGuess.MaxStake)] int stake = 0)
+    {
+        if (stake > 0)
+        {
+            var balance = await _arcade.BalanceAsync(Context.Guild.Id, Context.User.Id);
+            if (balance < stake)
+            {
+                await RespondAsync($"Tu n'as que **{PebbleEconomy.Cailloux(balance)}**. Mise moins, ou va faire un `/work`.", ephemeral: true);
+                return;
+            }
+        }
+
+        var game = new GuessGame
+        {
+            GuildId = Context.Guild.Id, ChannelId = Context.Channel.Id, PlayerId = Context.User.Id, Stake = stake,
+            Secret = Random.Shared.Next(NumberGuess.Min, NumberGuess.Max + 1),
+        };
+        var (opened, blocking) = _tables.TryOpen(game, g => g is GuessGame x && x.PlayerId == Context.User.Id);
+        if (await RefuseRunningAsync(blocking, "Ta partie de plus ou moins")) return;
+
+        try
+        {
+            game.Line = Pick(BotResponses.GuessIntroLines, $"<@{Context.User.Id}>");
+            await RespondAsync(embed: PartyCards.GuessCard(game), components: PartyCards.GuessButtons(game),
+                allowedMentions: AllowedMentions.None);
+            game.MessageId = (await GetOriginalResponseAsync()).Id;
+            Party.WatchGuess(opened!.Id);
+        }
+        catch
+        {
+            _tables.End(game.Id);
+            throw;
+        }
+    }
+
     // ---- Boards -----------------------------------------------------------------------------------
 
     [SlashCommand("puissance4", "Une partie de Puissance 4, contre quelqu'un ou contre moi")]

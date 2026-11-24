@@ -27,7 +27,7 @@ namespace ProjectSYNCS.Commands;
 // No [CommandContextType]: tell, dm and absent never read Context.Guild and work from a DM;
 // /debug plynling does, and checks for a DM itself rather than hiding the whole group there.
 [Group("debug", "Outils du propriétaire du bot")]
-public partial class DebugModule : InteractionModuleBase<SocketInteractionContext>
+public partial class DebugModule : SyncsModuleBase
 {
     public enum AbsenceState
     {

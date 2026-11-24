@@ -31,7 +31,7 @@ namespace ProjectSYNCS.Commands;
 // Guild-only: this module reads Context.Guild, which is null in a DM, and config.yaml
 // ships register_globally: true (a global command is DM-enabled by default).
 [CommandContextType(InteractionContextType.Guild)]
-public class ShameModule : InteractionModuleBase<SocketInteractionContext>
+public class ShameModule : SyncsModuleBase
 {
     // The wall opens on 30 days. A title is a standing, but "Le Malfaisant" starts at
     // zero the day this ships and both counters are sparse, so all-time would read as

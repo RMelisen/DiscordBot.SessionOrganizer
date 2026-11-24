@@ -3,7 +3,7 @@ using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
-// 67. Wearing two accessories: categories, sides, the draw order, and what a pick, a try-on or a
+// 71. Wearing two accessories: categories, sides, the draw order, and what a pick, a try-on or a
 // restyle does to the other slot (AccessoryFit, AccessoryStyles side choices).
 public static class AccessoryFitChecks
 {

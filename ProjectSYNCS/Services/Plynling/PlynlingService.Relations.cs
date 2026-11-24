@@ -36,6 +36,7 @@ public partial class PlynlingService
             await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.EarnGame, pebbles, now);
         }
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActGame, 1, now);
+        await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Play, now);
         var find = won && rng.NextDouble() < ItemCatalog.PlayFindChance
             ? await InventoryService.GrantAsync(_db_context, plynling.GuildId, ownerId, ItemCatalog.DrawCollectible(rng, now), now)
             : null;
@@ -148,7 +149,7 @@ public partial class PlynlingService
             }
         }
 
-        var evt = await ApplyBondChangeAsync(visitor, host, before, after, now);
+        var evt = await ApplyBondChangeAsync(visitor, host, relation, before, after, now);
         // Her own Plynling finds nothing: an item would land in the bot's inventory, where nobody can use it.
         async Task<ItemFind?> FindFor(Plynling p) => good && !PlynlingMascot.Is(p) && findRng.NextDouble() < ItemCatalog.VisitFindChance
             ? await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, ItemCatalog.DrawCollectible(findRng, now), now)
@@ -158,6 +159,9 @@ public partial class PlynlingService
         var visitorBadges = await AwardAsync(visitor, now, evt);
         var hostBadges = await AwardAsync(host, now, evt);
         await EconomyLog.AddAsync(_db_context, visitor.GuildId, EconomyLog.ActVisit, 1, now);
+        var visitPoints = PlynlingScore.Visit + (good ? PlynlingScore.VisitGoodScene : 0);
+        await PlynlingScore.AddAsync(_db_context, visitor, visitPoints, now);
+        await PlynlingScore.AddAsync(_db_context, host, visitPoints, now);
         await _db_context.SaveChangesAsync();
         // Sometimes something is left behind (FlushOnActionsAsync rolls it per Plynling and day).
         QueueOnAction(OnAction.AfterVisit, visitor, host.Id);
@@ -169,11 +173,22 @@ public partial class PlynlingService
 
     // A change of bond between two Plynlings: both journal it, and getting closer may earn a badge.
     // Shared by visits and events so the two can never word or reward it differently. Never saves.
-    private async Task<BadgeEvent> ApplyBondChangeAsync(Plynling a, Plynling b, PlynlingBond before, PlynlingBond after, DateTimeOffset now)
+    //
+    // A bond reached (not a breakup) scores both sides, once per pair and bond (relation.ScoredBonds): a pair
+    // drifting across a band edge, or a couple making up, adds nothing the second time.
+    private async Task<BadgeEvent> ApplyBondChangeAsync(Plynling a, Plynling b, PlynlingRelation relation,
+        PlynlingBond before, PlynlingBond after, DateTimeOffset now)
     {
         if (after == before || BondMoment(before, after) is not { } kind) return BadgeEvent.None;
         await AddMomentAsync(a, kind, b.Name, now);
         await AddMomentAsync(b, kind, a.Name, now);
+        var bit = PlynlingScore.BondBit(after);
+        if (kind != JournalKind.BrokeUp && (relation.ScoredBonds & bit) == 0)
+        {
+            relation.ScoredBonds |= bit;
+            await PlynlingScore.AddAsync(_db_context, a, PlynlingScore.Bond(after), now);
+            await PlynlingScore.AddAsync(_db_context, b, PlynlingScore.Bond(after), now);
+        }
         var evt = after switch
         {
             PlynlingBond.Friends => BadgeEvent.BecameFriends,
@@ -198,7 +213,7 @@ public partial class PlynlingService
             relation.Bond = after;
             relation.Since = now;
         }
-        var evt = await ApplyBondChangeAsync(a, b, before, after, now);
+        var evt = await ApplyBondChangeAsync(a, b, relation, before, after, now);
         await AwardAsync(a, now, evt);
         await AwardAsync(b, now, evt);
         return (before, after);
@@ -220,7 +235,7 @@ public partial class PlynlingService
         var before = relation.Bond;
         relation.Bond = PlynlingBond.Lovers;
         relation.Since = now;
-        var evt = await ApplyBondChangeAsync(a, b, before, PlynlingBond.Lovers, now);
+        var evt = await ApplyBondChangeAsync(a, b, relation, before, PlynlingBond.Lovers, now);
         await AwardAsync(a, now, evt);
         await AwardAsync(b, now, evt);
         return (before, PlynlingBond.Lovers);

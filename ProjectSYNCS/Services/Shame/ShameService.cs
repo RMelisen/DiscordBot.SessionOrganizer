@@ -99,6 +99,10 @@ public class ShameService
                 await record.ExecuteUpdateAsync(s => s.SetProperty(r => r.MeanHits, r => r.MeanHits + hits));
                 await bucket.ExecuteUpdateAsync(s => s.SetProperty(b => b.MeanHits, b => b.MeanHits + hits));
                 break;
+            case ShameCategory.Ban:
+                await record.ExecuteUpdateAsync(s => s.SetProperty(r => r.BanVotes, r => r.BanVotes + hits));
+                await bucket.ExecuteUpdateAsync(s => s.SetProperty(b => b.BanVotes, b => b.BanVotes + hits));
+                break;
             case ShameCategory.Perfidy:
                 await record.ExecuteUpdateAsync(s => s.SetProperty(r => r.PerfidyHits, r => r.PerfidyHits + hits));
                 await bucket.ExecuteUpdateAsync(s => s.SetProperty(b => b.PerfidyHits, b => b.PerfidyHits + hits));
@@ -140,6 +144,11 @@ public class ShameService
                 if (erased > 0 && await buckets.Where(b => b.MeanHits > 0).OrderByDescending(b => b.Day).Select(b => (int?)b.Id).FirstOrDefaultAsync() is { } mean)
                     await buckets.Where(b => b.Id == mean).ExecuteUpdateAsync(s => s.SetProperty(b => b.MeanHits, b => b.MeanHits - 1));
                 break;
+            case ShameCategory.Ban:
+                erased = await records.Where(r => r.BanVotes > 0).ExecuteUpdateAsync(s => s.SetProperty(r => r.BanVotes, r => r.BanVotes - 1));
+                if (erased > 0 && await buckets.Where(b => b.BanVotes > 0).OrderByDescending(b => b.Day).Select(b => (int?)b.Id).FirstOrDefaultAsync() is { } ban)
+                    await buckets.Where(b => b.Id == ban).ExecuteUpdateAsync(s => s.SetProperty(b => b.BanVotes, b => b.BanVotes - 1));
+                break;
             case ShameCategory.Perfidy:
                 erased = await records.Where(r => r.PerfidyHits > 0).ExecuteUpdateAsync(s => s.SetProperty(r => r.PerfidyHits, r => r.PerfidyHits - 1));
                 if (erased > 0 && await buckets.Where(b => b.PerfidyHits > 0).OrderByDescending(b => b.Day).Select(b => (int?)b.Id).FirstOrDefaultAsync() is { } perfidy)
@@ -177,8 +186,10 @@ public class ShameService
     /// <remarks>
     /// The limit is read straight off today's bucket, which already counts exactly
     /// "votes this person took on this day" — so the rule needs no state of its own, and
-    /// it cannot drift from the number the wall displays. The check and both writes go
-    /// out in a single <c>SaveChangesAsync</c>. Refusing writes nothing.
+    /// it cannot drift from the number the wall displays. Refusing writes nothing. The vote
+    /// goes through <see cref="AddHitsAsync"/> like every hit, incremented in SQL, so a
+    /// <c>/bribe shame</c> buying a ban vote back in between is not overwritten; a vote bought
+    /// back from today's bucket frees that slot of today's cap.
     /// <para>Who may vote at all is the module's business, not this method's: it is the
     /// piece holding the <c>IUser</c> and its guild permissions. The voter's identity
     /// does not reach here at all any more — with the cap on the target, nothing about
@@ -189,15 +200,13 @@ public class ShameService
     {
         var today = AppTime.TodayKey;
 
-        var bucket = await GetOrCreateDailyAsync(guildId, targetId, today);
-        if (bucket.BanVotes >= MaxVotesPerTargetPerDay) return ShameVoteResult.TargetLimitReached;
+        var votesToday = await _db_context.ShameDailyStats
+            .Where(b => b.GuildId == guildId && b.UserId == targetId && b.Day == today)
+            .Select(b => b.BanVotes)
+            .FirstOrDefaultAsync();
+        if (votesToday >= MaxVotesPerTargetPerDay) return ShameVoteResult.TargetLimitReached;
 
-        var target = await GetOrCreateRecordAsync(guildId, targetId);
-
-        target.BanVotes++;
-        bucket.BanVotes++;
-
-        await _db_context.SaveChangesAsync();
+        await AddHitsAsync(guildId, targetId, ShameCategory.Ban, 1);
         return ShameVoteResult.Recorded;
     }
 

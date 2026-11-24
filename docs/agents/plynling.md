@@ -96,7 +96,7 @@ neither is logged and skipped, never cross-posted.
 Time of day, not a need: `PlynlingLife.IsAsleep` reads the Paris wall clock; `Mood` returns
 `Sleeping` (frozen still wins); nothing is stored. Hunger keeps dropping, but **death moves**:
 `EffectiveDeathAt` puts a death due in the window at 05:00, and `Settle`, `ShouldWarn` and the feed
-re-arm all read the effective instant, never raw `DeathAt`. The warning (`WarnAt`) is 3 h before
+re-arm all read the effective instant, never raw `DeathAt`. The warning (`WarnAt`) is 12 h before
 effective death, pulled back to 23:00 when it would land between 23:00 and 05:00. `WakeAfter` and
 `WarnAt` build instants from the Paris wall clock because both DST changes fall in the window (the
 harness pins 2026-03-29 and 2026-10-25).
@@ -218,7 +218,18 @@ not undo the abandonment.
 
 ## `/plynling play`
 
-**Secrets never leave the process.** The hidden rock, the throw and the number live in
+**Quick, buttons only** (the owner's call, 8.10.0): six games drawn at random — cache-cache,
+pierre-papier-ciseaux, le sac de cailloux, mémoire, le dernier caillou, la chasse au trésor. **No
+modal and no timer**: plus ou moins left for `/arcade guess` because a typed guess per move dragged.
+A new game keeps one click per move and a win rate near the others' (~45–60 % for a careful
+player); section 66 of the checks simulates each one's odds. **Mémoire draws only from mushrooms
+whose own emoji is loaded** (`PlynlingGameUi.LoadedMushrooms`): before Ready they are all 🍄, and
+`PlynlingPlayService.Start` leaves it out. `PlynlingGame` is in memory only, never stored.
+**A double click must not play blind**: the game's `Gate` only serialises clicks. Where a move
+depends on what the card showed (the bag's pebble, the pile), the buttons carry `PlynlingGameState.Step`
+and a stale one is ignored; Mémoire ignores a mushroom already found, a dug cell digs nothing.
+
+**Secrets never leave the process.** The hidden rock, the throw, the gland and the pebbles live in
 `PlynlingPlayService` (singleton, sessions by short id, 10-minute expiry), never in a custom-id
 (readable from the client). Rules are pure in `Helpers/Plynling/PlynlingGames` with the `Random` passed in;
 text in `Helpers/Plynling/PlynlingGameUi`; card `PlynlingPlayCards.BuildGame`. Each move runs under the
@@ -360,8 +371,8 @@ every Ready and on `JoinedGuild`.
   `marks`; ImageSharp 3.1.12) and keeps a **bounded cache**. A draw that fails falls back to the bare
   link. **`Helpers/Core/CardSend.cs` is the single send path for a picture-carrying card**: any new send
   site of a card built through `SpriteOf` must use it. **After any art change re-export the layers**:
-  `python tools/plynling-art/export.py layers`. Checks sections 62 and 64 now check the layers, 66
-  (`PaintChecks`) the painter and 67 (`AccessoryFitChecks`) the wearing rules; `-- art` runs the full
+  `python tools/plynling-art/export.py layers`. Checks sections 62 and 64 now check the layers, 70
+  (`PaintChecks`) the painter and 71 (`AccessoryFitChecks`) the wearing rules; `-- art` runs the full
   pixel-exact sweep (~9 min, must report 0 differences). `MarksFaces` in `AccessoryArtChecks` is
   hardcoded to the faces that carry mood marks — update it with `export.py`. The pre-rendered
   `_with_`/`_aura_` files under `assets/plynlings/` **stay**: posted messages still link them. The two
@@ -397,17 +408,68 @@ is Tasks 3–5 of `docs/superpowers/plans/2026-09-24-plynling-gender-and-sunflow
 purpose. `PlynlingSpecies` is **append-only**; the family is `SpeciesInfo.Family`, not a column.
 **Every line is family-neutral** — never name a cap, petals or spores.
 
+## Score — `Helpers/Plynling/PlynlingScore`, `PlynlingService.Score.cs`
+
+**A hidden score, the owner's call (8.12.0)**: everything a Plynling does or has done for it adds
+points. It's never on the card, buys nothing, ranks Plynlings on `/leaderboard`'s **Plynlings** view (`xp.md`),
+and **picks the tombstone**. It is separate from the RPG's `RpgXp`, which buys levels.
+
+- **Every value is in `PlynlingScore`**: flat points per action, finer foods worth more (1/2/3/5), **no
+  daily cap** (owner's call: a Morille still eaten at full hunger buys 3 points for 40 cailloux, accepted).
+  Milestones too: a badge scores its own cailloux reward, growing up 10/20/40, a trait 5, a recovery 10, an
+  RPG level 5, a bond 10–40 (rivals 10, enemies 15: a feud is a story), a good morning 3. **A refused
+  confession, item finds, shop purchases, the gift, wearing a cosmetic and placing points score nothing.**
+- **The one writer is `PlynlingScore.AddAsync`, which never saves**: it adds to `Plynling.Score`, today's
+  `PlynlingScoreDay` bucket and the owner's `PlynlingOwnerScore`, riding the action's own save like
+  `EconomyLog` (a refusal scores nothing). Each hook sits beside the action's `EconomyLog` call. A new
+  Plynling action needs its hook there too.
+- **Points go to the Plynling cared for, whoever does the caring**, so a friend's meal raises yours and
+  counts toward **your** total, never the helper's. **The mascot never scores** (`AddAsync` skips her)
+  and is never ranked.
+- **The journal hook**: `AddMomentAsync` scores `PlynlingScore.ForMoment` (badge, growing up, trait,
+  recovery), dated by the moment. Bond kinds return 0 there. `scored: false` for the staff cure and `/debug
+  heal`.
+- **Bonds score once per pair and bond**: `ApplyBondChangeAsync` (visits and events alike) checks
+  `PlynlingRelation.ScoredBonds`, one bit per `PlynlingBond` (append-only, so the bits are stable). Drifting
+  across a band edge, or a couple making up, adds nothing the second time. A breakup scores nothing.
+- **Events score at a run's end, owner-chosen only**: in `ApplyEventAsync`, a step that queued no follow-up
+  scores 3, or 10 for a long story's ending. Decided alone scores nothing, so the sweep never scores.
+- **Good mornings ride `Plynling.PendingScore`** (not mapped, beside `PendingMoments`): `PlayMorning`
+  judges the 05:00 needs before anything changes them (`PlynlingScore.IsGoodMorning`), and
+  `FlushMomentsAsync` writes them, so `Settle` stays pure. A list's in-memory settle saves nothing, and the
+  real row replays the same morning once.
+- **Person-level actions** (a collection completed or turned in, a cosmetic bought or crafted) go to the
+  person's living Plynling through `AddToLivingAsync`, inside `EconomySave.RetryAsync`, which retries the
+  row's `Version` conflict. With no living Plynling, they score nothing.
+- **`UnitAsync` retries a unique-index race too** (`EconomySave.IsRace`): two units can both insert the
+  day's first bucket.
+- **The tombstone** is `PlynlingCatalog.MemorialTier(p)` = `max(score tier, TombstoneFloor)`. The
+  thresholds (`MemorialScores`: 180 / 780 / 2 400 / 4 700) come from **checks section 68's calibration**:
+  a simulated well-cared life reaches them on days 7 / 28 / 91 / 180, the old age rule's 7 / 28 / 90 / 180,
+  and a neglected one on 30 / 156 / never. `-- score-sim` prints the days. **Retune by re-running it,
+  never by feel**, and re-run it whenever a point value changes.
+- **The rebuild** (`PlynlingScoreRebuild`, at startup before the bot connects, `architecture.md`) gave every
+  row that predated the score its history once (`ScoreRebuilt`). `PlynlingScoreHistory.Rebuild` is pure.
+  It is exact where the database kept facts: the counters, badges, `RpgXp`, age, journal traits, recoveries
+  and bonds, finished event runs, and the owner's `CollectionDailyStat` on the days it lived. Baths, forage
+  and good mornings were never recorded, so they are estimated at a well-cared day's rate times the care
+  ratio (meals ÷ one a day, capped at 1). The calibration holds the rebuilt tombstone within one tier of
+  the live one. **The dead got `TombstoneFloor`** = their old age tier: never a plainer grave (owner's
+  call). No buckets were rebuilt: the 7/30-day windows start on release day.
+- **Abandonment** deletes the score and buckets with the row; the owner's total keeps them.
+
 ## Graveyard
 
 `/plynling graveyard` is Components V2 with two button rows and two verbs (`grave:sort:` newest /
 longest life, `grave:page:`). Budget 24 of 40 (container, heading, five picture rows × 3, footer, two
 rows of two). Changing the sort resets to page 0. It settles every living Plynling in the guild in
 memory before listing (one that starved unseen is already in the ground), and writes nothing. Ties
-break on id.
+break on id. Each grave's picture is its tombstone by score (*Score*); « Plus longue vie » still sorts
+by age.
 
 ## `/plynling help`
 
-Within ~85 characters of the 6000 embed cap (5 917). Measure before adding; shorten or split rather than
+Within 15 characters of the 6000 embed cap (5 985 since 8.12.0). Measure before adding; shorten or split rather than
 let it throw. The main `/help` points to it in one line only.
 
 ## Data migrations and the production launch

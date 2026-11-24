@@ -228,6 +228,7 @@ public partial class PlynlingService
             .ToDictionary(i => i.Key, i => i.Quantity);
         var find = await InventoryService.GrantAsync(_db_context, guildId, ownerId, item, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActForage, 1, now);
+        await PlynlingScore.AddAsync(_db_context, p, PlynlingScore.Forage, now);
         await _db_context.SaveChangesAsync();
         return new ForageResult(CareOutcome.Done, p, find, Place: at, NowReady: Recipes.NowReady(before, item.Key));
     }
@@ -350,9 +351,14 @@ public partial class PlynlingService
     // moments added earlier in this same unit of work, so several in one save cannot overshoot.
     // The new moments are candidates too: a backdated one older than everything kept goes itself
     // rather than pushing out a newer memory (unsaved, its Id is 0 — on a tie, stored ones go first).
-    private async Task AddMomentAsync(Plynling p, JournalKind kind, string? detail, DateTimeOffset at)
+    //
+    // It is also where four of the score's milestones land (PlynlingScore.ForMoment: a badge, growing up, a trait,
+    // a recovery), dated by the moment so a 05:00 recovery counts on that morning. `scored: false` for a moment
+    // staff or the owner's tools caused (a cure, /debug heal).
+    private async Task AddMomentAsync(Plynling p, JournalKind kind, string? detail, DateTimeOffset at, bool scored = true)
     {
         _db_context.PlynlingJournalEntries.Add(new PlynlingJournalEntry { PlynlingId = p.Id, At = at, Kind = kind, Detail = detail });
+        if (scored) await PlynlingScore.AddAsync(_db_context, p, PlynlingScore.ForMoment(kind, detail), at);
 
         var stored = await _db_context.PlynlingJournalEntries.Where(e => e.PlynlingId == p.Id).ToListAsync();
         var kept = stored.Where(e => _db_context.Entry(e).State != EntityState.Deleted);
@@ -418,6 +424,10 @@ public partial class PlynlingService
             if (kind == JournalKind.Recovered) QueueOnAction(OnAction.Recovered, p);
         }
         p.PendingMoments.Clear();
+        // The good mornings a Settle found, scored on their own morning's day.
+        foreach (var (points, at) in p.PendingScore)
+            await PlynlingScore.AddAsync(_db_context, p, points, at);
+        p.PendingScore.Clear();
     }
 
     // The {T} of a trait reveal: the traits of a kind this pass just added, as "key,key". Null without.

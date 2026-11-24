@@ -11,7 +11,7 @@ namespace ProjectSYNCS.Commands;
 //
 // Deliberately no [CommandContextType]: nothing here reads Context.Guild, so it works
 // in a DM as happily as in a channel — the same reason HelpModule carries no guard.
-public class YesNoModule : InteractionModuleBase<SocketInteractionContext>
+public class YesNoModule : SyncsModuleBase
 {
     private readonly ResponsePicker _picker;
 

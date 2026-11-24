@@ -2,6 +2,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
@@ -27,14 +28,15 @@ namespace ProjectSYNCS.Commands;
 // config.yaml ships register_globally: true, and a global command is DM-enabled by
 // default, so without this the command is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-public class LevelModule : InteractionModuleBase<SocketInteractionContext>
+public class LevelModule : SyncsModuleBase
 {
     // Five. Ten was readable but long, and the view switcher makes it impossible
     // anyway: a row with an avatar costs three components (Section + TextDisplay +
     // Thumbnail) against Discord's 40-per-message ceiling, so ten rows plus a second
     // action row of view buttons comes to 42 and throws inside
-    // ComponentBuilderV2.Build(). Five lands at 27. Adding anything to a row, or
-    // another element to the container, means checking that sum again.
+    // ComponentBuilderV2.Build(). Five lands at 35 with the six views on two rows (checks
+    // sections 52 and 68 measure it). Adding anything to a row, or another element to the
+    // container, means checking that sum again.
     private const int PageSize = 5;
 
     // The view the leaderboard opens on. XP is the original ranking and the one that
@@ -54,9 +56,11 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     private readonly XpService _xp;
     private readonly InventoryService _inventory;
     private readonly MemberBadgeService _badges;
+    private readonly PlynlingService _plynlings;
 
-    public LevelModule(XpService xp, InventoryService inventory, MemberBadgeService badges)
+    public LevelModule(XpService xp, InventoryService inventory, MemberBadgeService badges, PlynlingService plynlings)
     {
+        _plynlings = plynlings;
         _xp = xp;
         _inventory = inventory;
         _badges = badges;
@@ -148,10 +152,8 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync();
 
-        await FollowupAsync(
-            components: await BuildPageAsync(DefaultView, DefaultPeriod, 0),
-            flags: MessageFlags.ComponentsV2,
-            allowedMentions: AllowedMentions.None);
+        // Through CardSend: the Plynlings view's rows may carry drawn pictures to attach.
+        await Context.Interaction.FollowupCardAsync(await BuildPageAsync(DefaultView, DefaultPeriod, 0));
     }
 
     // Every button on the board comes back to the same place: the custom-id carries the
@@ -193,17 +195,11 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
         int.TryParse(pageStr, out var page);
 
-        var components = await BuildPageAsync(view, period, page);
-        var component = (SocketMessageComponent)Context.Interaction;
-
-        await component.UpdateAsync(m =>
-        {
-            m.Components = components;
-            // Re-asserted on every edit: the flag is a property of the message, and an
-            // update that omitted it would be rejected against a ComponentsV2 message.
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        // Deferred first: the ranking is read from the database and the Plynlings view may draw
+        // up to a page of pictures, which can outrun the 3 s on the Pi. CardSend re-asserts the
+        // V2 flag and attaches the drawn pictures (or clears the last page's).
+        await DeferAsync();
+        await Context.Interaction.ModifyCardAsync(await BuildPageAsync(view, period, page));
     }
 
     // ---- /level -------------------------------------------------------------
@@ -255,8 +251,18 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
                 .Select(t => new MemberTally(t.UserId, 0, 0, 0, t.Completions)).ToList()
             : await _xp.GetRankingAsync(Context.Guild.Id, view, period);
 
-    private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, StatsPeriod period, int page) =>
-        BuildPage(await RankingAsync(view, period), view, period, page, Context.User.Id, id => Context.Guild.GetUser(id));
+    // The Plynlings view ranks Plynlings rather than people, from PlynlingService, on its own page builder;
+    // every other view goes through the member one. Both share Frame.
+    private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, StatsPeriod period, int page)
+    {
+        if (view == LeaderboardView.Plynlings)
+        {
+            var now = DateTimeOffset.UtcNow;
+            return BuildPlynlingPage(await _plynlings.GetScoreRankingAsync(Context.Guild.Id, period, now),
+                period, page, Context.User.Id, now);
+        }
+        return BuildPage(await RankingAsync(view, period), view, period, page, Context.User.Id, id => Context.Guild.GetUser(id));
+    }
 
     // Static and Context-free so the checks can measure the page at its fullest against the
     // 40-component cap. viewerId is whoever is reading (the footer's standing); userOf resolves
@@ -264,50 +270,88 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     public static MessageComponent BuildPage(IReadOnlyList<MemberTally> ranking, LeaderboardView view,
         StatsPeriod period, int page, ulong viewerId, Func<ulong, IUser?> userOf)
     {
-        var totalPages = Math.Max(1, (int)Math.Ceiling(ranking.Count / (double)PageSize));
+        var totalPages = PagesFor(ranking.Count);
         page = Math.Clamp(page, 0, totalPages - 1);
+        var rows = ranking.Skip(page * PageSize).Take(PageSize).Select((tally, index) =>
+            (Avatar(userOf(tally.UserId)), LevelCardUi.Row(page * PageSize + index + 1, tally.UserId, view, period, tally)));
+        return Frame(rows.ToList(), view, period, page, totalPages,
+            ranking.Count == 0 ? LevelCardUi.EmptyLine(view, period) : null,
+            Footer(ranking, viewerId, view, period, page, totalPages));
+    }
 
+    // The Plynlings view: each row shows the Plynling itself (its picture while alive, its tombstone once
+    // dead, since the hall of fame keeps them), then its name, its owner and its points. Static and
+    // Context-free like BuildPage, so the checks measure it too.
+    public static MessageComponent BuildPlynlingPage(IReadOnlyList<PlynlingStanding> ranking, StatsPeriod period,
+        int page, ulong viewerId, DateTimeOffset now)
+    {
+        var totalPages = PagesFor(ranking.Count);
+        page = Math.Clamp(page, 0, totalPages - 1);
+        var rows = ranking.Skip(page * PageSize).Take(PageSize).Select((standing, index) =>
+            (PlynlingPicture(standing.Plynling, now),
+             LevelCardUi.PlynlingRow(page * PageSize + index + 1, standing.Plynling, standing.Points)));
+
+        // The viewer's best-placed Plynling, living or not: the list is in rank order.
+        var mine = ranking.ToList().FindIndex(s => s.Plynling.OwnerId == viewerId);
+        var footer = mine < 0
+            ? $"-# Page {page + 1}/{totalPages}"
+            : $"-# Page {page + 1}/{totalPages} · ton Plynling : rang #{mine + 1}, {LevelCardUi.Points(ranking[mine].Points)}";
+        return Frame(rows.ToList(), LeaderboardView.Plynlings, period, page, totalPages,
+            ranking.Count == 0 ? LevelCardUi.EmptyLine(LeaderboardView.Plynlings, period) : null, footer);
+    }
+
+    private static int PagesFor(int count) => Math.Max(1, (int)Math.Ceiling(count / (double)PageSize));
+
+    private static ThumbnailBuilder PlynlingPicture(Plynling p, DateTimeOffset now) => new ThumbnailBuilder()
+        .WithMedia(new UnfurledMediaItemProperties(p.DiedAt is null
+            ? PlynlingArt.SpriteOf(p, now)
+            : PlynlingArt.Memorial(p.Species, PlynlingCatalog.MemorialTier(p))))
+        .WithDescription(PlynlingCardUi.SafeName(p.Name));
+
+    // Six views no longer fit Discord's five buttons a row.
+    private const int ViewsPerRow = 3;
+
+    // Everything a page has besides its rows: the title, the rows (or the empty line), the footer, then the
+    // view rows, the window row and the pager.
+    private static MessageComponent Frame(IReadOnlyList<(ThumbnailBuilder Picture, string Text)> rows,
+        LeaderboardView view, StatsPeriod period, int page, int totalPages, string? emptyLine, string footer)
+    {
         var container = new ContainerBuilder()
             .WithAccentColor(Color.Purple)
             .AddComponent(new TextDisplayBuilder(LevelCardUi.Title(view)))
             .AddComponent(new SeparatorBuilder());
 
-        if (ranking.Count == 0)
-        {
-            container.AddComponent(new TextDisplayBuilder(LevelCardUi.EmptyLine(view, period)));
-        }
-        else
-        {
-            foreach (var (tally, index) in ranking.Skip(page * PageSize).Take(PageSize).Select((t, i) => (t, i)))
-            {
-                var rank = page * PageSize + index + 1;
-
-                container.AddComponent(new SectionBuilder()
-                    .WithAccessory(Avatar(userOf(tally.UserId)))
-                    .AddComponent(new TextDisplayBuilder(
-                        LevelCardUi.Row(rank, tally.UserId, view, period, tally))));
-            }
-        }
+        if (emptyLine is not null)
+            container.AddComponent(new TextDisplayBuilder(emptyLine));
+        foreach (var (picture, text) in rows)
+            container.AddComponent(new SectionBuilder()
+                .WithAccessory(picture)
+                .AddComponent(new TextDisplayBuilder(text)));
 
         container
             .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(Footer(ranking, viewerId, view, period, page, totalPages)));
+            .AddComponent(new TextDisplayBuilder(footer));
 
-        // Row 0: what is being ranked. Changing it keeps the period.
-        var views = new ActionRowBuilder();
-        foreach (var candidate in Enum.GetValues<LeaderboardView>())
+        var builder = new ComponentBuilderV2().AddComponent(container);
+
+        // What is being ranked, in rows of three. Changing it keeps the period. One verb for both rows is
+        // safe: each button's id carries its own view, so no two are the same.
+        foreach (var chunk in Enum.GetValues<LeaderboardView>().Chunk(ViewsPerRow))
         {
-            views.WithButton(
-                LevelCardUi.ViewLabel(candidate),
-                $"level:view:{candidate}:{period}:0",
-                candidate == view ? ButtonStyle.Primary : ButtonStyle.Secondary,
-                disabled: candidate == view);
+            var views = new ActionRowBuilder();
+            foreach (var candidate in chunk)
+            {
+                views.WithButton(
+                    LevelCardUi.ViewLabel(candidate),
+                    $"level:view:{candidate}:{period}:0",
+                    candidate == view ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                    disabled: candidate == view);
+            }
+            builder.AddComponent(views);
         }
 
-        return new ComponentBuilderV2()
-            .AddComponent(container)
-            .AddComponent(views)
-            // Row 1: the window, from the same helper /emotestats and /goodbot use, so
+        return builder
+            // The window, from the same helper /emotestats and /goodbot use, so
             // the three commands cannot drift into labelling it differently. Its own
             // verb, never the paging one — see the handlers above.
             .AddComponent(new ActionRowBuilder().AddFilterRow($"level:win:{view}", period))

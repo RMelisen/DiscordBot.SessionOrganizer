@@ -13,6 +13,10 @@ public static class StaffHelpCards
 {
     public const string Refusal = "Ce mode d'emploi est réservé aux administrateurs et aux modérateurs (˶ᵔ ᵕ ᵔ˶)";
 
+    // Its page of the online guide (the /report section of staff.md).
+    public static MessageComponent BuildReportHelpButtons() =>
+        new ComponentBuilder().WithButton(HelpModule.GuideButton("staff/#report")).Build();
+
     public static Embed BuildReportHelp() =>
         new EmbedBuilder()
             .WithTitle("📊 Mes rapports — mode d'emploi")
@@ -83,6 +87,7 @@ public static class StaffHelpCards
                 "**`plynling`** · **`stress`** · **`modifier`** · **`event`** — Règlent ton propre Plynling pour tester " +
                 "(hygiène, maladie, stress, modificateurs, événements).\n" +
                 "**`heal`** — Remet un Plynling vivant en pleine forme : besoins au max, guéri, sans stress.\n" +
+                "**`affinity`** — Les points d'affinité d'un Plynling avec chacun, et sa compatibilité cachée.\n" +
                 "**`sweep`** — Lance tout de suite le passage horaire des Plynlings.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();

@@ -18,7 +18,7 @@ namespace ProjectSYNCS.Commands;
 // config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this it is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-public class PollModule : InteractionModuleBase<SocketInteractionContext>
+public class PollModule : SyncsModuleBase
 {
     private readonly PollService _pollService;
     private readonly EventService _eventService;
@@ -54,6 +54,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- Entry: typed slots publish at once, the wizard otherwise --------
 
+    [NoPremiumPrank]
     [SlashCommand("create", "Proposer plusieurs créneaux et laisser voter")]
     public async Task PollCreateAsync(
         [Summary("title", "Le titre du sondage"), MaxLength(InputCaps.Title)] string title = "",

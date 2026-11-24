@@ -293,6 +293,11 @@ public static class AccessoryArtChecks
         }
         AttachesCheck("a death post", ProjectSYNCS.Services.PlynlingAnnouncer.BuildPost("x",
             PlynlingArt.Memorial(PlynlingSpecies.Amanite, PlynlingCatalog.MemorialTier(TimeSpan.FromDays(60)))), expectFile: false);
+
+        // /leaderboard's Plynlings view: one picture per row, a dressed one attached, a bare one linked.
+        var board = new List<ProjectSYNCS.Services.PlynlingStanding> { new(dressed, 20), new(bare, 10) };
+        AttachesCheck("the Plynlings leaderboard", ProjectSYNCS.Commands.LevelModule.BuildPlynlingPage(
+            board, ProjectSYNCS.Services.StatsPeriod.AllTime, 0, 1, now), expectFile: true);
     }
 
     // Every picture a card shows: thumbnails, gallery items and files, anywhere in the tree.

@@ -93,7 +93,7 @@ the command defers: buying writes the database before it can answer.
 
 ## The newer games — `PartyRunner`, `PartyCards`, `PartyComponentHandler`
 
-Race, crash, blackjack, bomb, quote, temperature, Puissance 4, morpion and Quokka's visits share one
+Race, crash, blackjack, bomb, quote, temperature, guess, Puissance 4, morpion and Quokka's visits share one
 shape, so a new game should follow it:
 
 - **State** is a class deriving from `ArcadeGame` (`Services/Arcade/ArcadeGames.cs`), registered with
@@ -130,6 +130,13 @@ Game notes:
   play. Quoted inside an embed, so mentions in it are inert.
 - **Temperature** refuses at the start when `PiHardware` can't read the CPU (on dev), cancels at the
   end when it can't or with fewer than two players.
+- **Guess** (plus ou moins, from `/plynling play` in 8.10.0): 1–100, **six** tries, the modal
+  `GuessModal` per guess (`num:try` → `num:m`). Halving finds 63 numbers in 100, so a win pays
+  `NumberGuess.Payout` ×1.4 (~88 % back for a perfect player); keep that under 0.9 if the numbers
+  change (the checks hold it). Stake 0–500, 0 allowed; **only a win that gains cailloux feeds the
+  badge** (`NumberGuess.CountsForBadge`: a free game, or a stake of 1–2 that ×1.4 rounds back,
+  could be farmed). Five idle minutes lose; opening the modal counts as activity (`GuessGame.Touch`).
+  The ending answers the modal at once with « … », then edits her line and the money in after settling.
 - **Boards**: morpion against her is a full minimax (she never loses); Puissance 4 is a depth-4
   negamax, beatable. One Puissance 4 game in five against her, she drops two pieces once (after
   move 6) with a `BoardCheatLines` line that denies it — the owner's call, like the duel. Stakes

@@ -1,0 +1,341 @@
+/* « Sa chambre » — the guide dressed in SYNCS's own palette (docs/syncs-appearance.md):
+   deep navy outline, red-pink cap, cream spots, lilac hair, and the green power LED as the
+   only cold accent. Light = her room by day, dark (slate) = the attic at night. */
+
+:root {
+  --syncs-navy: #262041;
+  --syncs-navy-2: #393653;
+  --syncs-cap: #ed8085;
+  --syncs-cap-deep: #a8475a;
+  --syncs-cream: #feeacf;
+  --syncs-lilac: #d2afd7;
+  --syncs-led: #4fbf5a;
+}
+
+/* ---- Light: her room ---- */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--syncs-navy);
+  --md-primary-fg-color--light: var(--syncs-navy-2);
+  --md-primary-fg-color--dark: #1a1630;
+  --md-primary-bg-color: var(--syncs-cream);
+  --md-primary-bg-color--light: #feeacfb3;
+  --md-accent-fg-color: var(--syncs-cap);
+  --md-accent-fg-color--transparent: #ed80851a;
+
+  --md-default-bg-color: #fff8f5;
+  --md-default-fg-color: #262041de;
+  --md-default-fg-color--light: #26204199;
+  --md-default-fg-color--lighter: #26204152;
+  --md-default-fg-color--lightest: #26204112;
+
+  --md-typeset-color: #2b2540;
+  --md-typeset-a-color: var(--syncs-cap-deep);
+  --md-code-bg-color: #f6e4ea;
+  --md-code-fg-color: var(--syncs-navy-2);
+  --md-typeset-table-color: #2620411f;
+
+  --syncs-heading: var(--syncs-cap-deep);
+  --syncs-h2: var(--syncs-navy);
+  --syncs-table-head: #fbe9ea;
+}
+
+/* ---- Dark: the attic at night ---- */
+[data-md-color-scheme="slate"] {
+  --md-hue: 255;
+  --md-primary-fg-color: #1a1630;
+  --md-primary-fg-color--light: var(--syncs-navy-2);
+  --md-primary-fg-color--dark: #120f22;
+  --md-primary-bg-color: var(--syncs-cream);
+  --md-primary-bg-color--light: #feeacfb3;
+  --md-accent-fg-color: #f6a3a8;
+  --md-accent-fg-color--transparent: #f6a3a81a;
+
+  --md-default-bg-color: #1f1a33;
+  --md-default-fg-color: #ece3f0de;
+  --md-default-fg-color--light: #ece3f099;
+  --md-default-fg-color--lighter: #ece3f052;
+  --md-default-fg-color--lightest: #ece3f012;
+
+  --md-typeset-color: #e9e1ee;
+  --md-typeset-a-color: #f29aa0;
+  --md-code-bg-color: #2c2745;
+  --md-code-fg-color: #f2dce6;
+  --md-footer-bg-color: #14112a;
+  --md-footer-bg-color--dark: #0f0d20;
+
+  --syncs-heading: #f29aa0;
+  --syncs-h2: #e8c9e9;
+  --syncs-table-head: #2c2745;
+}
+
+/* ---- Header and tabs: her navy outline, with the cap's red as an underline ---- */
+.md-header {
+  border-bottom: 3px solid var(--syncs-cap);
+}
+.md-header__button.md-logo img {
+  height: 2rem;
+  width: 2rem;
+}
+.md-search__form {
+  background-color: #ffffff1a;
+  border-radius: 1rem;
+}
+.md-search__form:hover {
+  background-color: #ffffff2b;
+}
+
+/* ---- Headings ---- */
+.md-typeset h1 {
+  color: var(--syncs-heading);
+  font-weight: 800;
+}
+.md-typeset h2 {
+  color: var(--syncs-h2);
+  font-weight: 700;
+}
+.md-typeset h3 {
+  font-weight: 700;
+}
+.md-typeset h2::after {
+  /* a row of cream-and-cap dots under each section title, like the spots on her cap */
+  content: "";
+  display: block;
+  width: 3.2rem;
+  height: 0.35rem;
+  margin-top: 0.35rem;
+  background-image: radial-gradient(circle, var(--syncs-cap) 45%, transparent 50%);
+  background-size: 0.8rem 0.35rem;
+  background-repeat: repeat-x;
+}
+
+/* ---- Links and inline code ---- */
+.md-typeset a:hover {
+  color: var(--syncs-cap);
+}
+.md-typeset code {
+  border-radius: 0.35rem;
+}
+
+/* ---- Navigation: the active page in cap red ---- */
+.md-nav__link--active,
+.md-nav__item .md-nav__link--active {
+  color: var(--md-typeset-a-color);
+  font-weight: 700;
+}
+
+/* ---- Tables ---- */
+.md-typeset table:not([class]) {
+  border-radius: 0.6rem;
+  overflow: hidden;
+}
+.md-typeset table:not([class]) th {
+  background-color: var(--syncs-table-head);
+  color: var(--md-typeset-color);
+}
+
+/* ---- Admonitions: her face instead of an icon ----
+   tip = happy, note/info = « je note », warning = shocked. */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 0.7rem;
+  border-width: 0 0 0 0.25rem;
+  box-shadow: none;
+}
+.md-typeset .admonition.tip, .md-typeset details.tip {
+  border-color: var(--syncs-led);
+}
+.md-typeset .tip > .admonition-title, .md-typeset .tip > summary {
+  background-color: #4fbf5a1f;
+}
+.md-typeset .admonition.note, .md-typeset details.note,
+.md-typeset .admonition.info, .md-typeset details.info {
+  border-color: var(--syncs-lilac);
+}
+.md-typeset .note > .admonition-title, .md-typeset .note > summary,
+.md-typeset .info > .admonition-title, .md-typeset .info > summary {
+  background-color: #d2afd72e;
+}
+.md-typeset .admonition.warning, .md-typeset details.warning {
+  border-color: var(--syncs-cap);
+}
+.md-typeset .warning > .admonition-title, .md-typeset .warning > summary {
+  background-color: #ed808526;
+}
+.md-typeset .admonition-title::before,
+.md-typeset summary::before {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  width: 1.6rem;
+  height: 1.6rem;
+  top: 0.3rem;
+}
+/* Material sets these per text direction, so ours must name it too to win. */
+[dir=ltr] .md-typeset .admonition-title::before,
+[dir=ltr] .md-typeset summary::before {
+  left: 0.5rem;
+}
+[dir=ltr] .md-typeset .admonition-title,
+[dir=ltr] .md-typeset summary {
+  padding-left: 2.6rem;
+}
+.md-typeset .tip > .admonition-title::before, .md-typeset .tip > summary::before {
+  background-image: url("../assets/syncs/happy.png");
+}
+.md-typeset .note > .admonition-title::before, .md-typeset .note > summary::before,
+.md-typeset .info > .admonition-title::before, .md-typeset .info > summary::before {
+  background-image: url("../assets/syncs/jenote.png");
+}
+.md-typeset .warning > .admonition-title::before, .md-typeset .warning > summary::before {
+  background-image: url("../assets/syncs/shocked.png");
+}
+
+/* ---- The welcome card on « Commencer ici » ---- */
+.syncs-hello {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  margin: 0 0 1.5rem;
+  border-radius: 1rem;
+  background-color: var(--md-code-bg-color);
+}
+.syncs-hello img {
+  display: block;
+  width: 5.5rem;
+  height: 5.5rem;
+  max-width: none;
+}
+.syncs-hello p {
+  margin: 0;
+}
+/* Markdown wraps the picture in its own paragraph: keep that one from shrinking. */
+.syncs-hello > p:first-child {
+  flex: none;
+}
+@media screen and (max-width: 30em) {
+  .syncs-hello img {
+    width: 4rem;
+    height: 4rem;
+  }
+}
+
+/* ---- Her asides: `!!! syncs <mood> ""` — a speech bubble with her face on the left ----
+   The steps and numbers stay in plain text; what she thinks about them goes in here, so a
+   reader can enjoy it or skip it. The mood class picks the face (guide/assets/syncs/<mood>.png);
+   no mood = smug. An empty title ("") gives a bubble with no title bar. */
+.md-typeset .admonition.syncs {
+  position: relative;
+  min-height: 4.2rem;
+  padding-left: 4.4rem;
+  border: none;
+  border-radius: 1rem;
+  background-color: var(--md-code-bg-color);
+  font-size: 0.75rem;
+}
+.md-typeset .admonition.syncs::before {
+  content: "";
+  position: absolute;
+  left: 0.7rem;
+  top: 0.6rem;
+  width: 3rem;
+  height: 3rem;
+  background: url("../assets/syncs/smug.png") center / contain no-repeat;
+}
+.md-typeset .admonition.syncs > .admonition-title {
+  background-color: transparent;
+  padding-left: 0;
+  margin-left: 0;
+  color: var(--syncs-heading);
+  font-weight: 700;
+}
+.md-typeset .admonition.syncs > .admonition-title::before {
+  display: none;
+}
+.md-typeset .admonition.syncs > p:first-child,
+.md-typeset .admonition.syncs > .admonition-title + p {
+  margin-top: 0.7rem;
+}
+.md-typeset .admonition.syncs.happy::before { background-image: url("../assets/syncs/happy.png"); }
+.md-typeset .admonition.syncs.smug::before { background-image: url("../assets/syncs/smug.png"); }
+.md-typeset .admonition.syncs.jenote::before { background-image: url("../assets/syncs/jenote.png"); }
+.md-typeset .admonition.syncs.shocked::before { background-image: url("../assets/syncs/shocked.png"); }
+.md-typeset .admonition.syncs.love::before { background-image: url("../assets/syncs/love.png"); }
+.md-typeset .admonition.syncs.mama::before { background-image: url("../assets/syncs/mama.png"); }
+.md-typeset .admonition.syncs.menace::before { background-image: url("../assets/syncs/menace.png"); }
+.md-typeset .admonition.syncs.outraged::before { background-image: url("../assets/syncs/outraged.png"); }
+.md-typeset .admonition.syncs.sulk::before { background-image: url("../assets/syncs/sulk.png"); }
+.md-typeset .admonition.syncs.formal::before { background-image: url("../assets/syncs/formal.png"); }
+.md-typeset .admonition.syncs.confused::before { background-image: url("../assets/syncs/confused.png"); }
+.md-typeset .admonition.syncs.bored::before { background-image: url("../assets/syncs/bored.png"); }
+.md-typeset .admonition.syncs.laugh::before { background-image: url("../assets/syncs/laugh.png"); }
+.md-typeset .admonition.syncs.flustered::before { background-image: url("../assets/syncs/flustered.png"); }
+.md-typeset .admonition.syncs.grumpy::before { background-image: url("../assets/syncs/grumpy.png"); }
+.md-typeset .admonition.syncs.bargain::before { background-image: url("../assets/syncs/bargain.png"); }
+.md-typeset .admonition.syncs.devoted::before { background-image: url("../assets/syncs/devoted.png"); }
+.md-typeset .admonition.syncs.sleepy::before { background-image: url("../assets/syncs/sleepy.png"); }
+.md-typeset .admonition.syncs.overheat::before { background-image: url("../assets/syncs/overheat.png"); }
+.md-typeset .admonition.syncs.sad::before { background-image: url("../assets/syncs/sad.png"); }
+
+/* ---- The face card that opens a page: <div class="syncs-hello" markdown> ---- */
+.syncs-hello + h2 {
+  margin-top: 0.5rem;
+}
+
+/* ---- 404 ---- */
+.syncs-404 {
+  text-align: center;
+  padding: 2rem 0;
+}
+.syncs-404 img {
+  width: 8rem;
+  height: 8rem;
+}
+
+/* ---- Seasonal logo: her round avatar (guide-theme/partials/logo.html) ---- */
+.md-header__button.md-logo img.syncs-logo,
+.md-nav__button.md-logo img.syncs-logo {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--syncs-cap);
+}
+
+/* ---- Glossary terms (guide-theme/glossaire.md): a soft dotted underline ---- */
+.md-typeset abbr {
+  text-decoration: underline dotted var(--syncs-cap);
+  text-underline-offset: 0.2em;
+  border-bottom: none;
+  cursor: help;
+}
+
+/* ---- Art: her pixel-art sprites and icons, inline: ![…](…){ .syncs-art width="48" } ---- */
+.md-typeset img.syncs-art {
+  vertical-align: middle;
+  image-rendering: pixelated;
+  max-width: none;
+}
+/* A row of pictures with their names under them (species, tombs). */
+.md-typeset .syncs-art-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin: 1em 0;
+}
+.md-typeset .syncs-art-row figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.md-typeset .syncs-art-row figure br {
+  display: none;
+}
+.md-typeset .syncs-art-row figcaption {
+  margin: 0.2rem 0 0;
+  max-width: none;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}

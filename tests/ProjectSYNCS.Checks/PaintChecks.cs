@@ -9,7 +9,7 @@ using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
 
-// 66. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): look names round-trip, every
+// 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): look names round-trip, every
 // single-accessory picture (and with an aura) drawn from ProjectSYNCS/Assets/Plynlings is pixel-exact,
 // tick for tick, against today's pre-rendered file in assets/plynlings/, the marks repaint changes
 // nothing on its own, missing art is null, the cache hits, and FilesFor finds a card's pictures.

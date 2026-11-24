@@ -1,0 +1,19 @@
+{#- Link previews: pasted in Discord (or anywhere), a guide link shows her banner and the
+    page's title instead of a bare line of text. -#}
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {% set title = (page.title ~ " — " ~ config.site_name) if page and page.title and not page.is_homepage else config.site_name %}
+  {% set description = (page.meta.description if page and page.meta and page.meta.description else config.site_description) %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ description }}">
+  <meta property="og:url" content="{{ page.canonical_url if page and page.canonical_url else config.site_url }}">
+  <meta property="og:image" content="{{ config.site_url }}assets/syncs/banner.jpg">
+  <meta property="og:image:width" content="2000">
+  <meta property="og:image:height" content="697">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#262041">
+{% endblock %}

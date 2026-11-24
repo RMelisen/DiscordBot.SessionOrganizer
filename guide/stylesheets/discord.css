@@ -1,0 +1,445 @@
+/* « Ce que je poste » — a drawing of a Discord message, so a member recognises the card before
+   reading about it. Plain HTML (no screenshot): it stays text, searchable and light, and never
+   goes stale with Discord's look. Always Discord's dark theme, in both site modes: it is a picture
+   of the app, not part of the page.
+
+   Copy the real card: labels, emojis, colours and button styles come from the card builder in
+   ProjectSYNCS/, her lines from her pools (custom emotes dropped or swapped for a plain emoji).
+   Other people are invented pseudos with a coloured initial, never real members (the repo is public).
+   Write it as raw HTML with no blank line inside, so Markdown leaves it alone:
+
+   <div class="dc">
+   <div class="dc-msg">
+     <div class="dc-reply"><span class="dc-mini dc-c2">K</span><b>Kiwi</b> a utilisé <span class="dc-cmd">/arcade crash</span></div>
+     <span class="dc-avatar dc-syncs"></span>                      (her face, drawn from here: any page depth)
+     <div class="dc-body">
+       <div class="dc-head"><span class="dc-name">S.Y.N.C.S.</span><span class="dc-app">APP</span><span class="dc-time">Aujourd'hui à 21:04</span></div>
+       <div class="dc-text">Du texte, une <span class="dc-mention">@Plume</span>, une <span class="dc-ts">date</span>, du <span class="dc-code">code</span>.</div>
+       <div class="dc-embed" style="--dc-accent: #e67e22">            (an embed: bar, title, text, fields)
+         <div class="dc-embed-main">
+           <div class="dc-embed-title">Titre</div>
+           <div>Description</div>
+           <div class="dc-fields"><div class="dc-field dc-inline"><div class="dc-field-name">Nom</div>Valeur</div></div>
+         </div>
+         <span class="dc-embed-thumb dc-c3">P</span>                (optional thumbnail, top right)
+       </div>
+       <div class="dc-v2" style="--dc-accent: #2ecc71">            (a Components V2 container)
+         <div class="dc-section"><div class="dc-grow"><div class="dc-h3">Titre</div><div class="dc-sub">-# sous-texte</div></div><span class="dc-thumb dc-c1">K</span></div>
+         <div class="dc-sep"></div>
+         <div>Un TextDisplay</div>
+       </div>
+       <div class="dc-row">                                         (an action row, up to 5 buttons)
+         <span class="dc-btn dc-success">✅ Rejoindre</span><span class="dc-btn dc-secondary">Peut-être</span>
+         <span class="dc-btn dc-danger">✖️ Refuser</span><span class="dc-btn dc-primary">Choisir</span>
+         <span class="dc-btn dc-link">Lien</span>
+       </div>
+       <div class="dc-row"><span class="dc-select">Nourrir…</span></div>
+       <div class="dc-ephemeral">Seul·e toi peux voir ceci</div>  (an ephemeral answer's footer)
+     </div>
+   </div>
+   </div>
+
+   Optional: <div class="dc-where">Message privé</div> first, to say where it lands; a
+   <div class="dc-image">what the picture shows</div> stands in for a rendered image.
+   MkDocs does not rewrite paths inside raw HTML, and a page `x.md` is served at `x/`: a picture
+   in the markup (<img class="dc-thumb" src="../assets/…">) counts one `../` more than the
+   Markdown would. */
+
+.md-typeset .dc {
+  --dc-bg: #313338;
+  --dc-panel: #2b2d31;
+  --dc-deep: #1e1f22;
+  --dc-line: #3f4147;
+  --dc-text: #dbdee1;
+  --dc-bright: #f2f3f5;
+  --dc-muted: #949ba4;
+  --dc-accent: #4e5058;
+  max-width: 32rem;
+  margin: 1.2em 0;
+  padding: 0.8em 1em;
+  border-radius: 0.6rem;
+  background: var(--dc-bg);
+  color: var(--dc-text);
+  font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.7rem;
+  line-height: 1.375;
+  overflow-wrap: anywhere;
+}
+.md-typeset .dc b,
+.md-typeset .dc strong {
+  color: var(--dc-bright);
+  font-weight: 600;
+}
+
+/* ---- Where it lands ---- */
+.dc .dc-where {
+  margin: -0.2em 0 0.7em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--dc-line);
+  color: var(--dc-muted);
+  font-size: 0.857em;
+  font-weight: 600;
+}
+
+/* ---- One message: avatar column, then the body. A command header (dc-reply) takes the first
+   row when there is one, and the avatar drops to the second. ---- */
+.dc .dc-msg {
+  display: grid;
+  grid-template-columns: 2.857em minmax(0, 1fr);
+  column-gap: 1.143em;
+}
+.dc .dc-msg + .dc-msg {
+  margin-top: 1.1em;
+}
+.dc .dc-reply {
+  grid-column: 2;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3em;
+  margin-bottom: 0.2em;
+  color: var(--dc-muted);
+  font-size: 0.875em;
+}
+.dc .dc-reply::before {
+  /* the spine from the avatar up to the header */
+  content: "";
+  position: absolute;
+  left: -2.75em;
+  top: 0.65em;
+  width: 2.3em;
+  height: 0.75em;
+  border-left: 2px solid #4e5058;
+  border-top: 2px solid #4e5058;
+  border-top-left-radius: 6px;
+}
+.dc .dc-reply b {
+  color: var(--dc-text);
+  font-weight: 500;
+}
+.dc .dc-cmd {
+  color: #00a8fc;
+}
+.dc .dc-avatar {
+  grid-column: 1;
+  width: 2.857em;
+  height: 2.857em;
+  border-radius: 50%;
+}
+.dc .dc-syncs {
+  background: #feeacf url("../assets/syncs/happy.png") center 60% / 100% no-repeat;
+}
+.dc .dc-body {
+  grid-column: 2;
+  min-width: 0;
+}
+.dc .dc-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25em;
+}
+.dc .dc-name {
+  color: var(--dc-bright);
+  font-weight: 500;
+}
+.dc .dc-app {
+  align-self: center;
+  padding: 0.05em 0.3em;
+  border-radius: 0.25em;
+  background: #5865f2;
+  color: #fff;
+  font-size: 0.65em;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.dc .dc-time {
+  color: var(--dc-muted);
+  font-size: 0.75em;
+}
+.dc .dc-text {
+  white-space: normal;
+}
+
+/* ---- People without a picture: a coloured circle with an initial (Discord's default colours) ---- */
+.dc .dc-avatar,
+.dc .dc-mini,
+.dc .dc-thumb,
+.dc .dc-embed-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: #fff;
+  font-weight: 600;
+}
+.dc .dc-avatar {
+  font-size: 1.1em;
+}
+.dc .dc-mini {
+  width: 1.15em;
+  height: 1.15em;
+  border-radius: 50%;
+  font-size: 0.85em;
+}
+.dc .dc-c1 { background: #5865f2; }
+.dc .dc-c2 { background: #3ba55c; }
+.dc .dc-c3 { background: #eb459f; }
+.dc .dc-c4 { background: #faa61a; }
+.dc .dc-c5 { background: #ed4245; }
+.dc .dc-c6 { background: #757e8a; }
+
+/* ---- Inline markup ---- */
+.dc .dc-mention {
+  padding: 0 0.15em;
+  border-radius: 3px;
+  background: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.dc .dc-ts {
+  padding: 0 0.15em;
+  border-radius: 3px;
+  background: rgba(78, 80, 88, 0.48);
+}
+.dc .dc-code {
+  padding: 0.1em 0.25em;
+  border-radius: 4px;
+  background: var(--dc-deep);
+  font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", monospace;
+  font-size: 0.85em;
+  white-space: pre;
+}
+.dc .dc-sub {
+  color: var(--dc-muted);
+  font-size: 0.8125em;
+}
+.dc .dc-link-text {
+  color: #00a8fc;
+}
+.dc .dc-h2 {
+  color: var(--dc-bright);
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.15em;
+}
+.dc .dc-h3 {
+  color: var(--dc-bright);
+  font-size: 1.25em;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.1em;
+}
+
+/* ---- Embed: a left colour bar, title, text, fields, optional thumbnail ---- */
+.dc .dc-embed {
+  display: flex;
+  gap: 1em;
+  max-width: 32em;
+  margin-top: 0.3em;
+  padding: 0.6em 1em 1em 0.75em;
+  border-left: 4px solid var(--dc-accent);
+  border-radius: 4px;
+  background: var(--dc-panel);
+  font-size: 0.875em;
+}
+.dc .dc-embed-main {
+  flex: 1;
+  min-width: 0;
+}
+.dc .dc-embed-title {
+  margin: 0.3em 0 0.4em;
+  color: var(--dc-bright);
+  font-size: 1.07em;
+  font-weight: 600;
+}
+.dc .dc-embed-thumb {
+  width: 5.7em;
+  height: 5.7em;
+  margin-top: 0.4em;
+  border-radius: 4px;
+  font-size: 1.1em;
+}
+.dc .dc-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em 1em;
+  margin-top: 0.6em;
+}
+.dc .dc-field {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.dc .dc-field.dc-inline {
+  flex: 1 1 8em;
+}
+.dc .dc-field-name {
+  margin-bottom: 0.1em;
+  color: var(--dc-bright);
+  font-weight: 600;
+}
+
+/* ---- Components V2: a container with an accent bar, sections, separators ---- */
+.dc .dc-v2 {
+  margin-top: 0.3em;
+  padding: 1em;
+  border: 1px solid var(--dc-line);
+  border-left: 4px solid var(--dc-accent);
+  border-radius: 8px;
+  background: var(--dc-panel);
+}
+.dc .dc-v2 > * + * {
+  margin-top: 0.55em;
+}
+.dc .dc-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 1em;
+}
+.dc .dc-grow {
+  flex: 1;
+  min-width: 0;
+}
+.dc .dc-thumb {
+  width: 6em;
+  height: 6em;
+  border-radius: 8px;
+  font-size: 1.4em;
+}
+.md-typeset .dc img.dc-thumb {
+  display: block;
+  width: 6em;
+  height: 6em;
+  max-width: none;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border-radius: 8px;
+}
+.dc .dc-sep {
+  height: 1px;
+  background: var(--dc-line);
+}
+.dc .dc-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 7em;
+  margin-top: 0.4em;
+  padding: 1em;
+  border: 1px dashed var(--dc-muted);
+  border-radius: 8px;
+  color: var(--dc-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ---- Components: buttons (Discord's real colours) and select menus ---- */
+.dc .dc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.57em;
+  margin-top: 0.57em;
+}
+.dc .dc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+  min-height: 2.286em;
+  min-width: 4.3em;
+  padding: 0.15em 1.15em;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.dc .dc-primary { background: #5865f2; }
+.dc .dc-secondary { background: #4e5058; }
+.dc .dc-success { background: #248046; }
+.dc .dc-danger { background: #da373c; }
+.dc .dc-link { background: #4e5058; }
+.dc .dc-link::after {
+  /* the external-link mark */
+  content: "↗";
+  margin-left: 0.15em;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+.dc .dc-btn.dc-emoji {
+  min-width: 0;
+  padding: 0.15em 0.9em;
+  font-size: 1.1em;
+}
+.dc .dc-btn.dc-disabled {
+  opacity: 0.5;
+}
+.dc .dc-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 28.5em;
+  min-height: 2.857em;
+  padding: 0 2.5em 0 0.85em;
+  border: 1px solid var(--dc-deep);
+  border-radius: 8px;
+  background: var(--dc-deep);
+  color: var(--dc-muted);
+  font-weight: 500;
+}
+.dc .dc-select::after {
+  /* the chevron */
+  content: "";
+  position: absolute;
+  right: 1em;
+  top: 50%;
+  width: 0.45em;
+  height: 0.45em;
+  margin-top: -0.35em;
+  border-right: 2px solid var(--dc-text);
+  border-bottom: 2px solid var(--dc-text);
+  transform: rotate(45deg);
+}
+
+/* ---- Ephemeral answer ---- */
+.dc .dc-ephemeral {
+  margin-top: 0.3em;
+  color: var(--dc-muted);
+  font-size: 0.75em;
+}
+.dc .dc-ephemeral::before {
+  content: "👁 ";
+}
+
+/* ---- Narrow screens: smaller avatar column, buttons keep wrapping ---- */
+@media screen and (max-width: 30em) {
+  .md-typeset .dc {
+    padding: 0.7em 0.7em;
+  }
+  .dc .dc-msg {
+    grid-template-columns: 2.3em minmax(0, 1fr);
+    column-gap: 0.7em;
+  }
+  .dc .dc-avatar {
+    width: 2.3em;
+    height: 2.3em;
+  }
+  .dc .dc-reply::before {
+    left: -2.05em;
+    width: 1.75em;
+  }
+  .dc .dc-thumb,
+  .md-typeset .dc img.dc-thumb {
+    width: 4.5em;
+    height: 4.5em;
+  }
+  .dc .dc-embed-thumb {
+    width: 4em;
+    height: 4em;
+  }
+}

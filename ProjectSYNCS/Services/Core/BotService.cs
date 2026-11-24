@@ -40,6 +40,7 @@ internal sealed class BotService : IHostedService
     private readonly SilenceService _silence;
     private readonly ReplyWatchService _replyWatch;
     private readonly ChannelMilestoneService _milestones;
+    private readonly PremiumPrankService _premiumPrank;
 
     public BotService(
         DiscordSocketClient client,
@@ -66,8 +67,10 @@ internal sealed class BotService : IHostedService
         ActivityCounter activity,
         SilenceService silence,
         ReplyWatchService replyWatch,
-        ChannelMilestoneService milestones)
+        ChannelMilestoneService milestones,
+        PremiumPrankService premiumPrank)
     {
+        _premiumPrank = premiumPrank;
         _silence = silence;
         _replyWatch = replyWatch;
         _milestones = milestones;
@@ -306,6 +309,9 @@ internal sealed class BotService : IHostedService
     {
         // An autocomplete has its own, shorter life, and nobody sees it fail.
         if (interaction is not SocketAutocompleteInteraction) _ = WatchAnswerAsync(interaction);
+
+        // The premium easter egg answers first and runs the command itself, after the reveal.
+        if (_premiumPrank.TryTakeOver(interaction)) return;
 
         var ctx = new SocketInteractionContext(_client, interaction);
         var result = await _interactions.ExecuteCommandAsync(ctx, _services);

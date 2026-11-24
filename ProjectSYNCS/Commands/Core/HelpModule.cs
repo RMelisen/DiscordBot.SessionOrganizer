@@ -5,7 +5,7 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Commands;
 
 // The in-Discord usage guide. Hand-maintained: a new user-facing command means editing
-// this and README.md, neither of which is generated. Owner-only commands are
+// this, README.md and the online guide (guide/), none of which is generated. Owner-only commands are
 // deliberately absent; staff ones are listed, since staff still have to discover them.
 //
 // **Discord's embed caps are the reason this is one static builder rather than inline
@@ -23,7 +23,7 @@ namespace ProjectSYNCS.Commands;
 // every embed of a message, so a second embed would not have bought any room — another
 // page does. The command list is the first page, cailloux and items the second, the
 // how-tos the third.
-public class HelpModule : InteractionModuleBase<SocketInteractionContext>
+public class HelpModule : SyncsModuleBase
 {
     [SlashCommand("help", "Comment utiliser le bot d'organisation de sessions")]
     public Task HelpAsync() => RespondAsync(embed: BuildEmbed(CommandsPage), components: BuildButtons(CommandsPage), ephemeral: true);
@@ -44,12 +44,27 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         _ => BuildCommands(),
     };
 
+    // The full user guide: guide/ built by .github/workflows/guide.yml onto GitHub Pages.
+    // It has room for what these capped embeds can't explain.
+    public const string GuideUrl = "https://rmelisen.github.io/DiscordBot.SessionOrganizer/";
+
+    // One page of the guide, for the subsystem help cards (/plynling, /minecraft, /report help). The
+    // path is the page's URL under the site ("plynlings/", "staff/#report"): renaming a page breaks it.
+    public static string GuideUrlFor(string path) => GuideUrl + path;
+
+    // The « 📖 Guide complet » link button every help card carries, pointing at its own page.
+    // A link button has a url instead of a custom-id, so it never collides with a card's own buttons.
+    public static ButtonBuilder GuideButton(string path) =>
+        ButtonBuilder.CreateLinkButton("Guide complet", GuideUrlFor(path), new Emoji("📖"));
+
     // Read by HelpComponentHandler: each button carries its own page, so no two share an id.
+    // The guide is a link button, which carries a url instead of a custom-id.
     public static MessageComponent BuildButtons(int page) =>
         new ComponentBuilder()
             .WithButton("Commandes", $"help:page:{CommandsPage}", ButtonStyle.Secondary, disabled: page == CommandsPage)
             .WithButton("Cailloux & objets", $"help:page:{EconomyPage}", ButtonStyle.Secondary, disabled: page == EconomyPage)
             .WithButton("Mode d'emploi", $"help:page:{GuidePage}", ButtonStyle.Secondary, disabled: page == GuidePage)
+            .WithButton(GuideButton(""))
             .Build();
 
     // Every command, in one list.
@@ -81,7 +96,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/arcade race`** — Une course de Plynlings, avec des paris.\n" +
                 "**`/arcade crash`** · **`bomb`** · **`blackjack`** — La fusée, la patate chaude, et une main contre moi.\n" +
                 "**`/arcade quote`** — Qui a dit ça ? Un vieux message du serveur, à attribuer.\n" +
-                "**`/arcade temperature`** — Devine la température de mon processeur.\n" +
+                "**`/arcade temperature`** · **`guess`** — Devine la température de mon processeur, ou mon nombre en 6 essais.\n" +
                 "**`/arcade puissance4`** · **`morpion`** — Contre quelqu'un, ou contre moi.\n" +
                 "**`/arcade lottery`** — La loterie : 20 cailloux le ticket, tirage dimanche à 21 h. Le gagnant prend 75 %.\n" +
                 "Et parfois, Quokka passe dans le salon des bots : frappe-le pour des cailloux.")
@@ -100,8 +115,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Commandes — Niveaux & statistiques",
                 "**`/level [user]`** — Ta carte : niveau, progression, rang et succès.\n" +
                 "**`/recap [user]`** — Ton récap : XP, vocal, soirées, quiz et bêtises, sur 7 jours, 30 jours ou depuis toujours.\n" +
-                "**`/leaderboard`** — Le classement, 5 par page. Cinq vues (**Niveaux**, **Réactions**, " +
-                "**Vocal**, **Collections**, **Mécènes**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
+                "**`/leaderboard`** — Le classement, 5 par page. Six vues (**Niveaux**, **Réactions**, " +
+                "**Vocal**, **Collections**, **Mécènes**, **Plynlings**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
                 "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +
                 "**`/yesno [question]`** — Tu hésites ? Je tranche. Pile ou face, mais avec du caractère.\n" +
                 "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Réagir à un de mes " +
@@ -161,7 +176,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "elle disparaît, personne ne la touche.")
             .AddField("Commandes — Ce que les cailloux m'achètent",
                 "**`/bribe favourite`** — 24 h comme mon chouchou : je suis gentille avec toi. Pour une fois.\n" +
-                "**`/bribe shame`** — J'efface un de tes points de `/shame` (pas les votes). Un pot-de-vin coûte 100 cailloux, " +
+                "**`/bribe shame`** — J'efface un de tes points de `/shame`, votes du Banni compris. Un pot-de-vin coûte 100 cailloux, " +
                 "doublé à chaque pot-de-vin de la semaine.\n" +
                 "**`/shoutout bid`** — Enchéris (dès 50) pour une dédicace dans mon bonjour de demain, jusqu'à 20 h. " +
                 "Si on te dépasse, ta mise te revient. `/shoutout status` montre où en sont les enchères.\n" +

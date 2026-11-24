@@ -195,6 +195,40 @@ public static class BribeChecks
             Expect(r.Outcome == BribeOutcome.Done && c2.ShameRecords.Single().ShoutHits == 0 && db.Balance(A) == 900, $"pre-bucket forgive: {r}");
         }
 
+        // Le Banni is for sale: two staff votes today hit the cap, a bribe erases one from today's
+        // bucket and the record, and that frees one slot of today's cap.
+        using (var db = new Db())
+        {
+            db.Wallet(A, 1000);
+            using (var c = db.New()) { await new ShameService(c).TryVoteAsync(G, A); await new ShameService(c).TryVoteAsync(G, A); }
+            ShameVoteResult capped;
+            using (var c = db.New()) capped = await new ShameService(c).TryVoteAsync(G, A);
+            BribeResult r;
+            using (var c = db.New()) r = await db.Bribes(c).ForgiveShameAsync(G, A, ShameCategory.Ban, Now);
+            using (var c = db.New())
+                Expect(r.Outcome == BribeOutcome.Done && capped == ShameVoteResult.TargetLimitReached
+                    && c.ShameRecords.Single().BanVotes == 1 && c.ShameDailyStats.Single().BanVotes == 1 && db.Balance(A) == 900,
+                    $"ban forgive: {r.Outcome}, capped {capped}, record {c.ShameRecords.Single().BanVotes}, bucket {c.ShameDailyStats.Single().BanVotes}");
+            ShameVoteResult again;
+            using (var c = db.New()) again = await new ShameService(c).TryVoteAsync(G, A);
+            using (var c = db.New())
+                Expect(again == ShameVoteResult.Recorded && c.ShameRecords.Single().BanVotes == 2, $"vote after a buy-back: {again}, record {c.ShameRecords.Single().BanVotes}");
+        }
+
+        // A vote landing while a bribe erases one: the voter's context read the record before the
+        // erase, and its vote must not write that stale count back over it.
+        using (var db = new Db())
+        {
+            db.Wallet(A, 1000);
+            using (var c = db.New()) { c.ShameRecords.Add(new ShameRecord { GuildId = G, UserId = A, BanVotes = 1 }); c.SaveChanges(); }
+            using var voter = db.New();
+            _ = voter.ShameRecords.Single();
+            using (var c = db.New()) await db.Bribes(c).ForgiveShameAsync(G, A, ShameCategory.Ban, Now);
+            await new ShameService(voter).TryVoteAsync(G, A);
+            using var c2 = db.New();
+            Expect(c2.ShameRecords.Single().BanVotes == 1, $"a vote overwrote the erase: record {c2.ShameRecords.Single().BanVotes}, want 1");
+        }
+
         // Nothing to erase: refused, nothing taken, nothing logged.
         using (var db = new Db())
         {
@@ -233,7 +267,8 @@ public static class BribeChecks
         }
 
         Expect(ShameCategories.Title(ShameCategory.Mean) == "Le Malfaisant" && ShameCategories.Title(ShameCategory.Perfidy) == "Le Perfide"
-            && ShameCategories.Title(ShameCategory.Shout) == "L'Hystérique" && ShameCategories.Title(ShameCategory.Abandon) == "L'Indigne", "shame titles");
+            && ShameCategories.Title(ShameCategory.Shout) == "L'Hystérique" && ShameCategories.Title(ShameCategory.Abandon) == "L'Indigne"
+            && ShameCategories.Title(ShameCategory.Ban) == "Le Banni", "shame titles");
     }
     // The chouchou's side of the chat: her reactions, the /bribe replies, the pools' house rules.
     private static void Chouchou()

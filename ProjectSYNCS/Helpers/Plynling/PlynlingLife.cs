@@ -20,7 +20,7 @@ public static class PlynlingLife
     public static readonly TimeSpan HygieneLife = TimeSpan.FromDays(3);
     public static readonly TimeSpan SelfFreezeMax = TimeSpan.FromDays(14);
     public static readonly TimeSpan SelfFreezeCooldown = TimeSpan.FromDays(7);
-    public static readonly TimeSpan WarningLead = TimeSpan.FromHours(3);
+    public static readonly TimeSpan WarningLead = TimeSpan.FromHours(12);
     public static readonly TimeSpan PetCooldown = TimeSpan.FromHours(4);
     public static readonly TimeSpan BathCooldown = TimeSpan.FromHours(6);
     public static readonly TimeSpan AbandonCooldown = TimeSpan.FromMinutes(30);
@@ -386,6 +386,11 @@ public static class PlynlingLife
     // roll (from the third, unless dosed since the previous morning) and then the day's recovery.
     private static void PlayMorning(Plynling p, DateTimeOffset morning, int day, SicknessRoll roll)
     {
+        // A good morning scores, judged before anything this morning changes it. It rides on PendingScore,
+        // like the moments, so Settle stays pure: whoever saves the row writes it (FlushMomentsAsync), and a
+        // list's in-memory settle, which never saves, leaves the morning for the real row to replay once.
+        if (PlynlingScore.IsGoodMorning(p, morning)) p.PendingScore.Add((PlynlingScore.GoodMorning, morning));
+
         // The morning eases its stress — a transition, so the needs are rebased at 05:00 first.
         if (p.Stress > 0)
         {

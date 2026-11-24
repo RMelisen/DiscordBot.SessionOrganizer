@@ -10,7 +10,7 @@ namespace ProjectSYNCS.Commands;
 // channel, the count and the mode, and re-reads who is in voice on every click
 // (TeamsComponentHandler), so a restart breaks nothing.
 [CommandContextType(InteractionContextType.Guild)]
-public class TeamsModule : InteractionModuleBase<SocketInteractionContext>
+public class TeamsModule : SyncsModuleBase
 {
     private readonly XpService _xp;
     private readonly ResponsePicker _picker;

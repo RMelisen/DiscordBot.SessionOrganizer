@@ -10,7 +10,7 @@ namespace ProjectSYNCS.Commands;
 // who chose what, her comment and her own pick. Guild-only: the round lives in a channel and
 // closes by editing its card.
 [CommandContextType(InteractionContextType.Guild)]
-public class WouldYouRatherModule : InteractionModuleBase<SocketInteractionContext>
+public class WouldYouRatherModule : SyncsModuleBase
 {
     private const string HalfRefusal =
         "Un dilemme, c'est deux options. Donne-moi `a` **et** `b`, ou aucune des deux et je choisis.";

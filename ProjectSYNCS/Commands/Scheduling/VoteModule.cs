@@ -17,7 +17,7 @@ namespace ProjectSYNCS.Commands;
 // config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this it is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-public class VoteModule : InteractionModuleBase<SocketInteractionContext>
+public class VoteModule : SyncsModuleBase
 {
     private readonly PollService _pollService;
     private readonly ChatOffers _offers;
@@ -48,6 +48,7 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
     // *updated* afterwards. Creating it from a modal response instead caused the
     // first option-add update to be dropped.
 
+    [NoPremiumPrank]
     [SlashCommand("create", "Proposer plusieurs options (texte) et laisser voter")]
     public async Task VoteCreateAsync(
         [Summary("title", "Le titre du vote"), MaxLength(InputCaps.Title)] string title = "",

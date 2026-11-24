@@ -111,14 +111,19 @@ Totals + daily buckets (`QuizStat` / `QuizDailyStat`), the project's one pattern
 rankings: all-time reads the totals (wins, then fastest `BestMs`), windows sum the buckets.
 The buckets do not sum to the totals and must not be made to.
 
+The **average time** ("moy.") is the exception: stat tables hold no times beyond `BestMs`, so
+`QuizService.GetAverageMsAsync` averages `WonAt − PostedAt` over the won `QuizRound` rows of the
+window (`Day` in SQL). Winning answers only: wrong ones are never stored.
+
 ## Grosse tête de la semaine
 
 Every Monday at **10:00 Paris** (`QuizCrown.CrownHour`: after the morning hello, before the first
 slot) the best answerer of the calendar week that just ended gets the `/config quiz-role` role for
-the whole week and `QuizCrown.Purse` (150) cailloux, and she announces it in the quiz channel.
+the whole week and `QuizCrown.Purse` (150) cailloux, and she announces it in the bots channel
+(`BotsChannel.ResolveAsync`, falling back to the game channel), not the quiz channel.
 
 - **The purse** is paid right after `QuizCrownedWeek` is saved, to each champion when the crown is
-  shared, under `earn.quiz`. It is paid even when the role is broken or there is no quiz channel
+  shared, under `earn.quiz`. It is paid even when the role is broken or there is no channel
   (it rewards the week, not the announcement); a failed payment is logged and the announcement
   then leaves it out. Its line (`QuizCrown.PurseText`) is appended after the crown line's sticker
   tag, which `BotChat` strips wherever it sits. `/debug quiz action:Crown` never pays it.
@@ -132,8 +137,8 @@ the whole week and `QuizCrown.Purse` (150) cailloux, and she announces it in the
 - **Once a week**: `GuildSettings.QuizCrownedWeek` is saved **before** the role and the post, like
   `DeathAnnounced` — a crash after it never announces twice. Between Mondays an hourly pass (its own
   `CooldownGate`) keeps the role mirrored through `RoleMirror` (see `plynling.md`).
-- **The announcement pings the champions only** (`AllowedMentions.UserIds`), never the role. No quiz
-  channel → the role still moves, silently. Lines: `QuizCrownLines`, `QuizCrownSharedLines`,
+- **The announcement pings the champions only** (`AllowedMentions.UserIds`), never the role. No channel
+  found → the role still moves, silently. Lines: `QuizCrownLines`, `QuizCrownSharedLines`,
   `QuizCrownOwnerLines` (Papa: adoration, never a pinch), through `DailyRotation` keyed by the
   week — one pick a week, restarts would wipe `ResponsePicker`.
 - **A role set mid-week** goes to the reigning champion at once, silently: `SetQuizRoleAsync` raises

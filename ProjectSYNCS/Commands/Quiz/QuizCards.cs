@@ -141,8 +141,11 @@ public static class QuizCards
     private static string Row(QuizTally tally, int rank, StatsPeriod period)
     {
         var line = $"{LevelCardUi.RankMarker(rank)} <@{tally.UserId}> — **{tally.Wins}** {(tally.Wins == 1 ? "victoire" : "victoires")}";
+        var fr = CultureInfo.GetCultureInfo("fr-FR");
         if (period == StatsPeriod.AllTime && tally.BestMs > 0)
-            line += $" · record {(tally.BestMs / 1000.0).ToString("0.0", CultureInfo.GetCultureInfo("fr-FR"))} s";
+            line += $" · record {(tally.BestMs / 1000.0).ToString("0.0", fr)} s";
+        if (tally.AvgMs > 0)
+            line += $" · moy. {(tally.AvgMs / 1000.0).ToString("0.0", fr)} s";
         return line;
     }
 

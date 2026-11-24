@@ -1,0 +1,102 @@
+# The members' user guide, published to GitHub Pages by .github/workflows/guide.yml.
+# Sources are the French pages under guide/ (docs/ holds contributor notes and is not published).
+site_name: Guide de S.Y.N.C.S.
+site_description: Le mode d'emploi de SYNCS, la bot du serveur — sessions, votes, niveaux, Plynlings, arcade et le reste.
+site_url: https://rmelisen.github.io/DiscordBot.SessionOrganizer/
+repo_url: https://github.com/RMelisen/DiscordBot.SessionOrganizer
+docs_dir: guide
+strict: true
+# Broken anchors (#a-heading that no longer exists) are only INFO by default: make strict catch them.
+validation:
+  anchors: warn
+  unrecognized_links: warn
+
+theme:
+  name: material
+  language: fr
+  # Her own palette and faces: guide/stylesheets/syncs.css (« sa chambre »).
+  # Template overrides live in guide-theme/, outside docs_dir: the 404 page, link previews
+  # (main.html), the seasonal logo (partials/logo.html), the glossary (glossaire.md).
+  custom_dir: guide-theme
+  # Fallback only: partials/logo.html swaps in her seasonal avatar.
+  logo: assets/syncs/smug.png
+  favicon: assets/syncs/happy.png
+  font:
+    text: Nunito
+    code: JetBrains Mono
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tooltips
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Passer en mode sombre
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Passer en mode clair
+
+extra_css:
+  - stylesheets/syncs.css
+  - stylesheets/discord.css
+
+markdown_extensions:
+  - abbr
+  # The glossary: every page gets guide-theme/glossaire.md appended, so its terms show a
+  # definition on hover wherever they appear.
+  - pymdownx.snippets:
+      auto_append:
+        - guide-theme/glossaire.md
+      check_paths: true
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Commencer ici: index.md
+  - Organiser:
+      - Sessions et soirées: sessions.md
+      - Sondages, votes et tirages: sondages.md
+  - Progresser:
+      - Niveaux et classements: niveaux.md
+      - Le mur de la honte: honte.md
+      - Le quiz: quiz.md
+      - Cailloux et objets: cailloux.md
+  - Plynlings:
+      - plynlings/index.md
+      - Prendre soin de lui: plynlings/soins.md
+      - Visites et relations: plynlings/visites-et-relations.md
+      - Entraînement et combats: plynlings/entrainement.md
+      - Le village: plynlings/village.md
+      - La fin, et après: plynlings/mort.md
+  - S'amuser:
+      - L'arcade: arcade.md
+      - Petites commandes: amusement.md
+      - Minecraft: minecraft.md
+  - Staff: staff.md
+  - Questions fréquentes: faq.md

@@ -135,6 +135,9 @@ culture: without `Fr` or `InvariantCulture`, quote it (`{d:dd'/'MM}`).
 
 ### Interactions and custom-ids
 
+- **Slash-command modules derive from `SyncsModuleBase`**, not `InteractionModuleBase`, and answer
+  through its methods. A command that opens a modal or answers through `Context.Interaction` carries
+  `[NoPremiumPrank]` (personality, *Premium easter egg*), or a pranked use breaks.
 - **`[ComponentInteraction]` / `[ModalInteraction]` inside a `[Group]` need
   `ignoreGroupNames: true`**, or the handler silently never fires.
 - **Custom-ids are a contract across files** (`PollModule` builds `schedule:finalize:…` for
@@ -249,8 +252,21 @@ channel via `BotsChannel.ResolveAsync` — never hardcoded, never the main chann
 
 ### Docs
 
-`/help` (`HelpModule`) and `README.md` are hand-maintained: a new user-facing command updates both
-— except owner-only commands. Easter eggs (breakdown, quoicoubeh, the glitch) stay out of both.
+`/help` (`HelpModule`), `README.md` and the members' guide (`guide/`) are hand-maintained: a new
+user-facing command or rule updates all three — except owner-only commands. Easter eggs
+(breakdown, quoicoubeh, the glitch) and hidden triggers stay out of all three.
+
+**`guide/`** is the French user guide, built by MkDocs Material (`mkdocs.yml`, `strict`) and
+published to GitHub Pages by `.github/workflows/guide.yml`; `/help` links to it
+(`HelpModule.GuideUrl`), and the `/plynling`, `/minecraft` and `/report` help cards to their
+own page (`HelpModule.GuideButton`): renaming or moving a page breaks those links. Pages are for
+members: how to use things, no internals. A page added goes in `mkdocs.yml`'s `nav`. Checks section 69 fails on any command whose full path
+(`/admin xp add`) appears in no page. The guide is written by her, in her voice
+(`docs/syncs-voice.md`): steps, tables and numbers stay plain; her personality goes in the opening
+face card (`<div class="syncs-hello" markdown>`) and her asides (`!!! syncs <mood> ""`, the mood
+picks a face from `guide/assets/syncs/`). Look and 404 page: `guide/stylesheets/syncs.css`,
+`guide-theme/`. A new piece of server jargon gets a hover definition in
+`guide-theme/glossaire.md` (appended to every page; terms match exactly, case included).
 
 **A notes file under `docs/` stays under ~40 KB**; past that it becomes an index plus a folder of
 topic files of the same name — read the index, then only the topic you need.
@@ -267,7 +283,8 @@ update when it changes.
   owner commits by hand).
 - **Patch**: lines, facts, emotes, fixes, art, tweaks. **Minor** (patch reset): a new command,
   subcommand, subsystem, user-visible behaviour, or any migration. **Major**: the owner's call only.
-- **No bump** for `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`, `tests/`, `.github/`.
+- **No bump** for `docs/`, `guide/`, `guide-theme/`, `mkdocs.yml`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`,
+  `tools/`, `tests/`, `.github/`.
 - Numbers don't roll over (`5.11.26` is fine). Say the new number in your summary.
 - **A bump adds an entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
   one short English bullet per user-visible change; extend the entry if already bumped). It must

@@ -12,7 +12,7 @@ namespace ProjectSYNCS.Commands;
 // config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this it is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
+public class GiveawayModule : SyncsModuleBase
 {
     private const int MaxWinners = 10;
 

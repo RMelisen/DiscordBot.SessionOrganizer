@@ -13,7 +13,7 @@ namespace ProjectSYNCS.Commands;
 // config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this it is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-public class BotFeedbackModule : InteractionModuleBase<SocketInteractionContext>
+public class BotFeedbackModule : SyncsModuleBase
 {
     private const int PageSize = 20;
 

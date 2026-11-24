@@ -96,7 +96,8 @@ public class InventoryService
     }
 
     // What every completion of a set pays and records — the first (discovery) and each turn-in:
-    // the set's reward, the dashboard's counters and today's ranking bucket. Not saved.
+    // the set's reward, the dashboard's counters, today's ranking bucket and the Plynling score of
+    // the person's living Plynling, if any (PlynlingScore.AddToLivingAsync). Not saved.
     private static async Task<long> PayCompletionAsync(AppDbContext db, ulong guildId, ulong userId, CollectionSet set, DateTimeOffset now)
     {
         var wallet = await PebbleService.GetOrCreateWalletAsync(db, guildId, userId);
@@ -113,6 +114,7 @@ public class InventoryService
             db.CollectionDailyStats.Add(bucket);
         }
         bucket.Completions++;
+        await PlynlingScore.AddToLivingAsync(db, guildId, userId, PlynlingScore.Collection, now);
         return wallet.Balance;
     }
 

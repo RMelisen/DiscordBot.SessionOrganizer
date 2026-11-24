@@ -415,6 +415,76 @@ public class PartyComponentHandler : InteractionModuleBase<SocketInteractionCont
         await _arcade.EditAsync(round, card!, PartyCards.TemperatureButtons(round));
     }
 
+    // ---- Guess (plus ou moins) --------------------------------------------------------------------
+
+    // « Deviner » opens the modal; the guess itself arrives in OnNumberGuessAsync.
+    [ComponentInteraction("num:try:*")]
+    public async Task OnNumberTryAsync(string idStr)
+    {
+        if (!int.TryParse(idStr, out var id) || _tables.With<GuessGame, GuessGame?>(id, g => g) is not { } game)
+        {
+            await RespondAsync(Gone, ephemeral: true);
+            return;
+        }
+        if (game.PlayerId != Context.User.Id)
+        {
+            await RespondAsync("Ce n'est pas ta partie. Lance la tienne avec `/arcade guess`.", ephemeral: true);
+            return;
+        }
+        _tables.With<GuessGame, bool>(id, g => { g?.Touch(); return true; });   // typing is activity
+        await RespondWithModalAsync<GuessModal>($"num:m:{id}");
+    }
+
+    [ModalInteraction("num:m:*")]
+    public async Task OnNumberGuessAsync(string idStr, GuessModal modal)
+    {
+        if (NumberGuess.Parse(modal.Guess) is not { } n)
+        {
+            await RespondAsync($"Un nombre entier entre {NumberGuess.Min} et {NumberGuess.Max}, s'il te plaît.", ephemeral: true);
+            return;
+        }
+        if (!int.TryParse(idStr, out var id))
+        {
+            await RespondAsync(Gone, ephemeral: true);
+            return;
+        }
+        // The guess and « is it over? » are one step; only the player's own guesses count.
+        var outcome = _tables.With<GuessGame, (GuessGame Game, bool Over)?>(id, g =>
+        {
+            if (g is null || g.PlayerId != Context.User.Id || g.Over) return null;
+            g.Guess(n);
+            return (g, g.Over);
+        });
+        if (outcome is not { } o)
+        {
+            await RespondAsync(Gone, ephemeral: true);
+            return;
+        }
+        var submit = (SocketModal)Context.Interaction;
+        if (!o.Over)
+        {
+            await submit.UpdateAsync(p =>
+            {
+                p.Embed = PartyCards.GuessCard(o.Game);
+                p.Components = PartyCards.GuessButtons(o.Game);
+            });
+            return;
+        }
+        if (!_tables.End(id))
+        {
+            await RespondAsync("Cette partie est déjà terminée.", ephemeral: true);
+            return;
+        }
+        // Answer at once (the settlement writes the database), then put her line and the money on.
+        await submit.UpdateAsync(p =>
+        {
+            p.Embed = PartyCards.GuessCard(o.Game, "…");
+            p.Components = PartyCards.GuessButtons(o.Game, over: true);
+        });
+        var embed = await _party.FinishGuessAsync(o.Game);
+        await submit.ModifyOriginalResponseAsync(p => p.Embed = embed);
+    }
+
     // ---- Boards -----------------------------------------------------------------------------------
 
     [ComponentInteraction("board:accept:*")]

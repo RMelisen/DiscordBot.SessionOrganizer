@@ -3,13 +3,91 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 8.9.0 — 2026-11-24
+## 8.15.0 — 2026-11-24
 
 - A Plynling can wear two accessories at once, from different categories; a clash replaces the other
   item, and the wardrobe says what was replaced or moved.
 - Sides: the nœud and flower go on either side of the head, and held items in either hand.
 - The colour, place or side picked for an accessory is remembered per Plynling and restored when it is worn again.
-- Dressed pictures are now drawn by the bot on the card, the wardrobe, games, journal, visits and posts.
+- Dressed pictures are now drawn by the bot on the card, the wardrobe, games, journal, visits, posts
+  and the Plynlings leaderboard.
+
+## 8.14.1 — 2026-11-24
+
+- The help cards of `/plynling`, `/minecraft` and `/report` now link to their page of the online guide.
+
+## 8.14.0 — 2026-11-24
+
+- `/bribe shame` can now erase a « Le Banni » ban vote too. A vote bought back today frees one of
+  today's two vote slots against that person.
+
+## 8.13.3 — 2026-11-24
+
+- The Plynling starvation warning DM now comes 12 hours before death instead of 3 (still at
+  23:00 the evening before when it would land at night).
+
+## 8.13.2 — 2026-11-24
+
+- `/help` gains a « 📖 Guide complet » button opening the full user guide online: a French website
+  with a page per topic, search, and room to explain how everything works.
+
+## 8.13.1 — 2026-11-24
+
+- On start, the bot deletes its own outdated icon emojis (earlier drawings, retired items), so its
+  emoji list holds only the icons in use.
+
+## 8.13.0 — 2026-11-24
+
+- `/quiz leaderboard` now shows each player's average time to a winning answer ("moy.") on every
+  period, next to the all-time record.
+
+## 8.12.0 — 2026-11-24
+
+- Plynlings now earn a hidden score from everything they do and everything done for them: meals
+  (finer food counts more), pets, baths, games, visits, forage, training and its levels, events seen
+  through, collections, cosmetics, badges, growing up, bonds formed (rivals included) and mornings
+  started well kept.
+- `/leaderboard` gains a **Plynlings** view ranking every Plynling by that score, each shown as
+  itself, or under its memorial once gone; the view buttons now sit on two rows.
+- A Plynling's memorial now follows how well it was looked after over its life rather than its age
+  alone. Plynlings already in the graveyard get a score rebuilt from their history and never a
+  plainer memorial than before.
+
+## 8.11.0 — 2026-11-24
+
+- New owner tool `/debug affinity`: a Plynling's raw affinity with each Plynling it has met, its
+  hidden compatibility and where that draws the pair.
+
+## 8.10.2 — 2026-11-24
+
+- The « Vivants » / « Disparus » tabs on `/plynling relations` lose their emoji.
+
+## 8.10.1 — 2026-11-24
+
+- `/inventory collection` breathes more: space between sets, a completed set keeps a progress bar
+  toward its next turn-in, items no longer in hand show ×0, and « Déposer » only appears when a
+  turn-in is possible.
+
+## 8.10.0 — 2026-11-24
+
+- `/plynling play` has four new quick games, all played with buttons: le sac de cailloux (higher or
+  lower), mémoire (repeat four mushrooms in order), le dernier caillou (whoever takes the last
+  pebble wins) and la chasse au trésor (find the buried acorn with hot and cold hints).
+- Plus ou moins moved from `/plynling play` to `/arcade guess`: six tries instead of seven, with an
+  optional stake that pays back ×1.4 when the number is found.
+
+## 8.9.1 — 2026-11-24
+
+- `/plynling relations` lists the living ones by default, highest affinity first; a « 🪦 Disparus »
+  button shows the dead ones.
+
+## 8.9.0 — 2026-11-24
+
+- A rare easter egg on her commands.
+- The Monday « Grosse tête de la semaine » announcement is posted in the bots channel instead of the
+  quiz channel.
+- SYNCS reacts to chat messages with an emote half as often, and joins in on other people's reactions
+  half as often.
 
 ## 8.8.0 — 2026-11-23
 

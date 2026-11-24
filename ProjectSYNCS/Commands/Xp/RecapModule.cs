@@ -10,7 +10,7 @@ namespace ProjectSYNCS.Commands;
 // real one; sent with AllowedMentions.None, since a TextDisplay is real content. Guild-only:
 // every query is scoped to Context.Guild.
 [CommandContextType(InteractionContextType.Guild)]
-public class RecapModule : InteractionModuleBase<SocketInteractionContext>
+public class RecapModule : SyncsModuleBase
 {
     // Month by default: a recap is about lately, and a week is often empty.
     public const StatsPeriod DefaultPeriod = StatsPeriod.Month;

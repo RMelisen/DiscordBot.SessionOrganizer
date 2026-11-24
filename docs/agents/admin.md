@@ -132,7 +132,9 @@ see `personality/listening.md`, *Answer stats*),
 `milestones` (this channel's message count and milestones, see *Channel message milestones*),
 plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), and
 `heal` (any member's living Plynling, yours by default: needs to 100 %, cured — journalled as a
-recovery, like `/admin plynling cure` — stress 0, the death warning re-armed), each comparing `Context.User.Id` to
+recovery, like `/admin plynling cure` — stress 0, the death warning re-armed), `affinity` (any
+member's shown Plynling, yours by default: every pair's raw affinity, gauge, hidden compatibility and
+the affinity it draws toward — the numbers players never see, `DebugModule.Affinity`), each comparing `Context.User.Id` to
 `AvailabilityService.OwnerId` inline and replying ephemerally — except `answers`, which posts its
 result in the open. `DebugModule` carries no
 `[CommandContextType]` (it never reads `Context.Guild`); `/debug plynling` checks for a DM itself.

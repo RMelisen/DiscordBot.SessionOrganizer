@@ -3963,6 +3963,17 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         foreach (var s in ItemCatalog.Sets.Where(s => revised.Contains(ItemEmojis.SetKey(s.Key))))
         foreach (var t in Enum.GetValues<CollectionTier>().Skip(1))
             if (!revised.Contains(ItemEmojis.BadgeKey(s.Key, t))) Fail($"{s.Key}: set redrawn but {ItemEmojis.BadgeKey(s.Key, t)} not revised");
+
+        // Stale emojis, deleted on start: the bot's own names that no shipped sprite claims, never
+        // a current one, never one outside its prefixes, and nothing at all without sprites.
+        var mushroomDir = Path.Combine(Path.GetDirectoryName(iconDir)!, "Mushrooms");
+        var all = ItemEmojis.Sources(mushroomDir, iconDir).ToList();
+        var inUse = all.Select(s => s.EmojiName).OfType<string>().ToList();
+        string[] old = { "tr_shy", "tr2_shy", "c_abeille", "b_generous", "ac_sac_a_dos", "shroom_nope" };
+        string[] foreign = { "syncs_happy", "pepe", "trophy", "c", "tr2" };
+        var stale = ItemEmojis.StaleNames(inUse.Concat(old).Concat(foreign), all);
+        if (!stale.ToHashSet().SetEquals(old)) Fail($"stale emojis: got [{string.Join(", ", stale)}], expected [{string.Join(", ", old)}]");
+        if (ItemEmojis.StaleNames(old, Array.Empty<IconSource>()).Count != 0) Fail("stale emojis: sprites missing must delete nothing");
     }
 
     // GetFactsAsync against a real SQLite: the navigations, the Plynling join and the projection must
@@ -5608,11 +5619,26 @@ await AuraChecks.Run(Fail);
 // 65. The RPG foundation (body stats, levels, Énergie, the drill): RpgChecks.cs.
 await RpgChecks.Run(Fail);
 
-// 66. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): PaintChecks.cs
+// 66. /plynling play's games: rules, simulated odds, text and cards: PlynlingPlayChecks.cs.
+PlynlingPlayChecks.Run(Fail);
+
+// 67. /arcade guess: rules, the payout's average, the card: ArcadeGuessChecks.cs.
+ArcadeGuessChecks.Run(Fail);
+
+// 68. The Plynling score: the hooks, once per pair, the mornings, the rebuild, the tombstone, the leaderboard
+// view (ScoreChecks.cs), and the tombstone calibration against the old ages (ScoreCalibrationChecks.cs,
+// `-- score-sim` prints the days).
+await ScoreChecks.Run(Fail);
+ScoreCalibrationChecks.Run(Fail, args);
+
+// 69. The online user guide names every member and staff command: GuideChecks.cs.
+GuideChecks.Run(Fail);
+
+// 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): PaintChecks.cs
 // (`-- art` compares all 14 shapes with today's pre-rendered files, not just the sample).
 PaintChecks.Run(Fail, args);
 
-// 67. Wearing two accessories (categories, sides, picks, try-ons, restyles): AccessoryFitChecks.cs.
+// 71. Wearing two accessories (categories, sides, picks, try-ons, restyles): AccessoryFitChecks.cs.
 AccessoryFitChecks.Run(Fail);
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");

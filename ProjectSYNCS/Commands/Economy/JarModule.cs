@@ -14,7 +14,7 @@ namespace ProjectSYNCS.Commands;
 // like any notice a command set up. Deferred, since every answer reads the database first.
 [Group("jar", "Le bocal à cailloux du serveur")]
 [CommandContextType(InteractionContextType.Guild)]
-public class JarModule : InteractionModuleBase<SocketInteractionContext>
+public class JarModule : SyncsModuleBase
 {
     private const int BarWidth = 10;
 

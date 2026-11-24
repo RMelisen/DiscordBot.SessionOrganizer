@@ -18,7 +18,7 @@ namespace ProjectSYNCS.Commands;
 // config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this it is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-public partial class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
+public partial class ScheduleModule : SyncsModuleBase
 {
     private readonly EventService _eventService;
     private readonly PollService _polls;
@@ -79,6 +79,7 @@ public partial class ScheduleModule : InteractionModuleBase<SocketInteractionCon
     // the when step (one click, day → hour → minutes, or typed).
     // Every step is a Components V2 message (root CLAUDE.md), the preview being the real card.
 
+    [NoPremiumPrank]
     [SlashCommand("create", "Planifier une nouvelle session")]
     public async Task ScheduleCreateAsync(
         [Summary("title", "Le nom de la session"), MaxLength(InputCaps.Title)] string title = "",

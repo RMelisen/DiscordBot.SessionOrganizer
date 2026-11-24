@@ -8,7 +8,7 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-public abstract partial class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
+public abstract partial class PlynlingModule : SyncsModuleBase
 {
     [SlashCommand("help", "Comment fonctionnent les Plynlings")]
     public Task HelpAsync() => RespondAsync(embed: BuildHelpEmbed(0), components: BuildHelpButtons(0), ephemeral: true);
@@ -22,10 +22,12 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
     // both under Discord's 6000-character cap. Each page is measured by the harness.
     public static Embed BuildHelpEmbed(int page = 0) => page == 1 ? BuildPersonalityHelp() : BuildCareHelp();
 
+    // Also PlynlingHelpHandler's on every page swap, so the guide link stays.
     public static MessageComponent BuildHelpButtons(int page) =>
         new ComponentBuilder()
             .WithButton("Le Plynling", "plyn:help:0", ButtonStyle.Secondary, new Emoji("🍄"), disabled: page == 0)
             .WithButton("Personnalité & événements", "plyn:help:1", ButtonStyle.Secondary, new Emoji("✨"), disabled: page == 1)
+            .WithButton(HelpModule.GuideButton("plynlings/"))
             .Build();
 
     private static Embed BuildPersonalityHelp() =>
@@ -93,8 +95,8 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "Au réveil, il peut tomber **malade**, surtout sale : il mange moitié moins, ne joue ni ne visite. " +
                 "**Soigner** (sa carte) : un médicament par jour, sinon il peut en mourir.")
             .AddField("Jouer & rendre visite",
-                "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
-                "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
+                "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux, " +
+                "le sac de cailloux, mémoire, le dernier caillou ou la chasse au trésor. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
                 "**`/plynling visit user:`** — Ton Plynling rend visite à quelqu'un : tu choisis ce qu'il fait, l'autre choisit " +
                 "dans les 2 h comment le sien réagit. Selon leur caractère, ça se passe bien ou mal. Une visite par jour entre deux personnes.\n" +
                 "À force de se voir, ils deviennent **amis**, **meilleurs amis**… ou **rivaux** et **ennemis**. " +
@@ -130,10 +132,10 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 "Seulement s'il a encore au moins 50 % de faim.\n" +
                 "**`/plynling thaw`** — Le dégèle. Ensuite, 7 jours avant de pouvoir le regeler.")
             .AddField("La mort",
-                "Tu reçois un **message privé** environ 3 h avant qu'il meure de faim (à 23 h la veille si ça tombe la nuit). " +
+                "Tu reçois un **message privé** environ 12 h avant qu'il meure de faim (à 23 h la veille si ça tombe la nuit). " +
                 "S'il meurt, tout le serveur l'apprend et il rejoint le cimetière.\n" +
-                "**`/plynling graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Plus il a vécu, " +
-                "plus sa tombe est belle.")
+                "**`/plynling graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Mieux on s'en " +
+                "occupe, plus sa tombe est belle.")
             .AddField("L'abandonner",
                 "**`/plynling abandon`** — Il part pour toujours : pas de tombe, pas de retour. Tu devras taper son nom " +
                 "pour confirmer. Tout le serveur l'apprendra, ça se verra sur `/shame`, et tu devras attendre 30 min " +

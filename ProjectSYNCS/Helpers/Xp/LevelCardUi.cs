@@ -121,6 +121,7 @@ public static class LevelCardUi
         LeaderboardView.Voice => "## Classement du vocal",
         LeaderboardView.Collections => "## Classement des collectionneurs",
         LeaderboardView.Patrons => "## Classement des mécènes",
+        LeaderboardView.Plynlings => "## Classement des Plynlings",
         _ => "## Classement",
     };
 
@@ -131,8 +132,19 @@ public static class LevelCardUi
         LeaderboardView.Voice => "Vocal",
         LeaderboardView.Collections => "Collections",
         LeaderboardView.Patrons => "Mécènes",
+        LeaderboardView.Plynlings => "Plynlings",
         _ => "Niveaux",
     };
+
+    /// <summary>
+    /// One row of the Plynlings view: rank, name (hostile text, sanitised), a candle once dead, its owner as a
+    /// mention (callers send with AllowedMentions.None, like every row), then its points.
+    /// </summary>
+    public static string PlynlingRow(int rank, Models.Plynling p, long points) =>
+        $"{RankMarker(rank)} **{PlynlingCardUi.SafeName(p.Name)}**{(p.DiedAt is null ? "" : " 🕯️")} · <@{p.OwnerId}>\n{Points(points)}";
+
+    // The Plynling score, the Plynlings view's number.
+    public static string Points(long n) => $"{Xp(n)} point{(n > 1 ? "s" : "")}";
 
     // Sets completed — a discovery and every turn-in each count one.
     public static string Completions(long n) => $"{Xp(n)} collection{(n > 1 ? "s" : "")} complétée{(n > 1 ? "s" : "")}";
@@ -160,6 +172,8 @@ public static class LevelCardUi
                 "Personne n'a encore complété de collection. Les carnets sont là, les objets aussi (ᵕ • ᴗ •)",
             LeaderboardView.Patrons =>
                 "Personne n'a encore rien versé au bocal. Les cailloux, ça ne se garde pas sous le matelas (ᵕ • ᴗ •)",
+            LeaderboardView.Plynlings =>
+                "Aucun Plynling n'a encore de points. Occupez-vous d'eux, je compte tout (ᵕ • ᴗ •)",
             _ => "Personne n'a encore gagné d'XP. Parlez, réagissez, faites du bruit ദ്ദി◝ ⩊ ◜.ᐟ",
         };
     }
