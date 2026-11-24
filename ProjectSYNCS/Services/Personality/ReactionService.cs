@@ -37,14 +37,14 @@ internal sealed class ReactionService
     // messages that qualify. The two together, rather than either alone, are what
     // keep it from either spamming a busy channel or feeling absent from a quiet one.
     private static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(10);
-    private const double ReactChance = 0.20;
+    private const double ReactChance = 0.10;
 
     // Odds of copying a reaction someone else just added. Rolled per reaction, and
     // deliberately not subject to Cooldown — see the note at the top of the class.
     // Rodhengard's reactions are worth joining twice as often: the same favouritism
     // the rest of the personality shows him.
-    private const double CopyChance = 0.10;
-    private const double OwnerCopyChance = 0.20;
+    private const double CopyChance = 0.05;
+    private const double OwnerCopyChance = 0.10;
 
     // Now and then a mood reaction is taken back a moment later, as if she changed her
     // mind. Only someone watching sees it.
