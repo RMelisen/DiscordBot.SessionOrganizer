@@ -334,7 +334,9 @@ a row holds five buttons), with a Tout / Trouvés / Manquants filter row on set 
 completed set's page a row-2 « Déposer » button (see *Tiers and turn-ins*). State is in the
 custom-ids under two verbs — `col:set:{user}:{filter}` (menu), `col:fil:{user}:{set}:{filter}`
 (buttons) — handled by `InventoryComponentHandler`; every click re-reads the inventory. « Trouvés »
-means *discovered*: an item traded away shows « plus en stock » and still counts. A rarity-split page
+means *discovered*: an item traded away shows « ×0 » and still counts. « Déposer » shows only when a
+turn-in is possible. A completed set's bar counts what is in hand toward the next turn-in, Diamant
+included (a turn-in still pays). A rarity-split page
 leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics

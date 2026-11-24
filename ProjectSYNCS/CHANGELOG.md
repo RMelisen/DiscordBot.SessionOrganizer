@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.10.1 — 2026-11-24
+
+- `/inventory collection` breathes more: space between sets, a completed set keeps a progress bar
+  toward its next turn-in, items no longer in hand show ×0, and « Déposer » only appears when a
+  turn-in is possible.
+
 ## 8.10.0 — 2026-11-24
 
 - `/plynling play` has four new quick games, all played with buttons: le sac de cailloux (higher or

@@ -192,8 +192,9 @@ public class InventoryModule : SyncsModuleBase
 
     //
     // A completed set's page also carries « Déposer » (`col:dep:`, a third verb): it spends one of
-    // each item for another completion — the way up the tiers. It is enabled from what the page
-    // shows (completed, one of each held); the handler re-checks the clicker and everything else.
+    // each item for another completion — the way up the tiers. It shows only when the page says a
+    // turn-in is possible (completed, one of each held); the handler re-checks the clicker and
+    // everything else.
     public static (Embed Embed, MessageComponent Components) BuildCollectionPage(ulong userId,
         IReadOnlyCollection<InventoryItem> held, IReadOnlyCollection<CollectionCompletion> completions,
         string page, CollectionFilter filter)
@@ -213,7 +214,7 @@ public class InventoryModule : SyncsModuleBase
             var items = ItemCatalog.InSet(s.Key).ToList();
             var have = items.Count(i => quantities.ContainsKey(i.Key));
             var description = done.TryGetValue(s.Key, out var count)
-                ? $"Complète ✅ · {CollectionTiers.Label(CollectionTiers.TierFor(count))}"
+                ? $"Complète · {CollectionTiers.Label(CollectionTiers.TierFor(count))}"
                 : $"{have}/{items.Count} trouvés";
             menu.AddOption(s.Name, s.Key, description, EmoteMarkup.Parse(s.Emoji), isDefault: s.Key == set?.Key);
         }
@@ -223,10 +224,9 @@ public class InventoryModule : SyncsModuleBase
             foreach (var f in Enum.GetValues<CollectionFilter>())
                 components.WithButton(FilterLabel(f), $"col:fil:{userId}:{set.Key}:{f}",
                     f == filter ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: f == filter, row: 1);
-            if (done.ContainsKey(set.Key))
+            if (done.ContainsKey(set.Key) && CanTurnIn(set.Key, quantities))
                 components.WithButton($"Déposer la collection (+{PebbleEconomy.Cailloux(set.Reward)})",
-                    $"col:dep:{userId}:{set.Key}:{filter}", ButtonStyle.Primary, new Emoji("📥"),
-                    disabled: !CanTurnIn(set.Key, quantities), row: 2);
+                    $"col:dep:{userId}:{set.Key}:{filter}", ButtonStyle.Primary, new Emoji("📥"), row: 2);
         }
         return (embed, components.Build());
     }
@@ -258,17 +258,15 @@ public class InventoryModule : SyncsModuleBase
             var items = ItemCatalog.InSet(s.Key).ToList();
             var have = items.Count(i => quantities.ContainsKey(i.Key));
             if (!done.TryGetValue(s.Key, out var count))
-                return $"**{s.Name}**\n`{LevelCardUi.ProgressBar(have, items.Count)}` {have}/{items.Count} · +{PebbleEconomy.Cailloux(s.Reward)}";
-            var ready = CanTurnIn(s.Key, quantities) ? " · 📥 **dépôt possible**" : "";
-            return $"**{s.Name}** ✅\n{TierLine(s, count)}{ready}";
+                return $"**{s.Name}**\n{RewardBar(s, have, items.Count)}";
+            return $"**{s.Name}**\n{TierLine(s, count)}\n{TurnInBar(s, items, quantities)}";
         });
+        // A blank line between sets, so each reads as its own block.
         return new EmbedBuilder()
             .WithTitle("Carnet de collection")
             .WithColor(Color.Purple)
             .WithDescription($"<@{userId}> · **{found}/{ItemCatalog.Collectibles.Count()}** objets trouvés · " +
-                             $"{done.Count}/{ItemCatalog.Sets.Count} collections complètes\n\n" + string.Join("\n", lines) +
-                             "\n\n-# Une collection complète se dépose : un exemplaire de chaque objet contre sa récompense, " +
-                             "et le palier suivant (Argent à 2, Or à 3, Platine à 5, Diamant à 10).")
+                             $"{done.Count}/{ItemCatalog.Sets.Count} collections complètes\n\n" + string.Join("\n\n", lines))
             .WithFooter("Trouve des objets de collection avec /plynling forage, les jeux, les visites " +
                         "ou en les échangeant avec des amis.")
             .Build();
@@ -291,20 +289,31 @@ public class InventoryModule : SyncsModuleBase
         return $"-# {places[0].Emoji} Se trouve {(others.Count > 0 ? "surtout " : "")}{ForagePlaces.At(places[0])}{also} — `/plynling forage place:`";
     }
 
+    // « `██████░░` 5/8 · +100 cailloux »: how far along the next payout is.
+    private static string RewardBar(CollectionSet set, int have, int total) =>
+        $"`{LevelCardUi.ProgressBar(have, total)}` {have}/{total} · +{PebbleEconomy.Cailloux(set.Reward)}";
+
+    // A completed set's bar counts what is in hand toward the next turn-in (one of each), not what
+    // was ever found — that one is full for good. Kept past Diamant: a turn-in still pays.
+    private static string TurnInBar(CollectionSet set, IReadOnlyList<ItemInfo> items,
+        IReadOnlyDictionary<string, int> quantities) =>
+        RewardBar(set, items.Count(i => quantities.GetValueOrDefault(i.Key) > 0), items.Count);
+
     private static Embed BuildSetPage(ulong userId, CollectionSet set, IReadOnlyDictionary<string, int> quantities,
         int completions, CollectionFilter filter)
     {
         var items = ItemCatalog.InSet(set.Key).ToList();
         var have = items.Count(i => quantities.ContainsKey(i.Key));
-        var status = completions > 0 ? "✅ complète" : $"complète : +{PebbleEconomy.Cailloux(set.Reward)}";
-        var standing = completions > 0
-            ? $"\n{TierLine(set, completions)}\n-# Déposer : un exemplaire de chaque objet contre +{PebbleEconomy.Cailloux(set.Reward)}."
-            : "";
+        // A blank line under the badge block, before where to look, so the header breathes.
+        var header = completions > 0
+            ? $"<@{userId}> · **{have}/{items.Count}** trouvés · complète\n{TierLine(set, completions)}\n" +
+              TurnInBar(set, items, quantities)
+            : $"<@{userId}> · **{have}/{items.Count}** trouvés · complète : +{PebbleEconomy.Cailloux(set.Reward)}\n" +
+              $"`{LevelCardUi.ProgressBar(have, items.Count)}`";
         var embed = new EmbedBuilder()
             .WithTitle(set.Name)
             .WithColor(Color.Purple)
-            .WithDescription($"<@{userId}> · **{have}/{items.Count}** trouvés · {status}\n" +
-                             $"`{LevelCardUi.ProgressBar(have, items.Count)}`{standing}\n{WhereLine(items)}");
+            .WithDescription(WhereLine(items) is { Length: > 0 } where ? $"{header}\n\n{where}" : header);
 
         bool Shown(ItemInfo i) => filter switch
         {
@@ -327,8 +336,8 @@ public class InventoryModule : SyncsModuleBase
         return embed.Build();
     }
 
-    // One item in the book. Found and held: its quantity; found once but traded or sold since:
-    // « plus en stock », since it still counts for the set. Never found: « ??? » with only its
+    // One item in the book. Found: its quantity, « ×0 » once traded or sold, since it still counts
+    // for the set. Never found: « ??? » with only its
     // rarity and season, since that is when to look. A page split by rarity leaves the rarity out
     // of each line — the field says it, and the line is kept short enough to fit 12 in 1024.
     public static string BookLine(ItemInfo item, IReadOnlyDictionary<string, int> quantities, bool withRarity)
@@ -337,9 +346,7 @@ public class InventoryModule : SyncsModuleBase
         var season = item.Season == Season.None ? "" : $" · {ItemCatalog.SeasonLabel(item.Season)}";
         if (!quantities.TryGetValue(item.Key, out var count))
             return $"❔ ???{rarity}{season}";
-        return count > 0
-            ? $"{item.Emoji} {item.Name} ×{count}{rarity}"
-            : $"{item.Emoji} {item.Name} · plus en stock{rarity}";
+        return $"{item.Emoji} {item.Name} ×{count}{rarity}";
     }
 
     // Static and Context-free, like every other builder here, so its size is checkable. Both pages
