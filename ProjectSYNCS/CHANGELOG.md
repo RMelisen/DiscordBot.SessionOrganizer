@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.9.0 — 2026-11-24
+
+- A Plynling can wear two accessories at once, from different categories; a clash replaces the other
+  item, and the wardrobe says what was replaced or moved.
+- Sides: the nœud and flower go on either side of the head, and held items in either hand.
+- The colour, place or side picked for an accessory is remembered per Plynling and restored when it is worn again.
+- Dressed pictures are now drawn by the bot on the card, the wardrobe, games, journal, visits and posts.
+
 ## 8.8.0 — 2026-11-23
 
 - The Citrouilles grave frame is gone from the game. Each copy owned is refunded 2 400 cailloux, and

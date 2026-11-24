@@ -339,11 +339,11 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is five keys on it.** `CosmeticCatalog` holds the 97
+**Cosmetics are items; what a Plynling wears is six keys on it.** `CosmeticCatalog` holds the 97
 (`cos.<slot>.<name>`, stored, **append-only** — three retired, see below) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
-no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `GraveKey`, `AuraKey` are read and written only through
+no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `Accessory2Key`, `GraveKey`, `AuraKey` are read and written only through
 `CosmeticSlots`. **`CosmeticSlot` is append-only**: the shop seeds each slot's draw on its number. The
 order players see is `CosmeticCatalog.SlotOrder` (Thème, Titre, Accessoire, Aura, Cadre); the Garde-robe's
 slot row is then 5 buttons, a row's maximum — a sixth slot needs a select there. Wearing uses nothing up; a dead row keeps its keys (its grave shows its cadre).
@@ -354,15 +354,25 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
 - On the card a thème costs one component (its banner); titre and accessoire ride in the heading
   text — and the accessoire is also **drawn on the Plynling's picture** (8.5.0, `PlynlingArt.SpriteOf`,
   see `plynling.md` *Art*).
+- **Two accessories** (8.9.0): a Plynling wears up to two, in `AccessoryKey` and `Accessory2Key` (the
+  Accessoire slot is one slot with two pickers, `cosm:pick2:{i}`). Each accessory has an
+  `AccessoryCategory` (`AccessoryFit.Category`): Chapeau, Sur la tête (sided), Yeux, Cou, Mains, Tenu
+  (sided). Two in the same category clash and the newcomer **replaces** the other; wearing a sided item on
+  the occupied side **moves** the other across; an item is never worn twice. The Garde-robe says so in
+  a notice (replaced, moved). **The two-slot rules live in `AccessoryFit`**; the only place that writes
+  both slots and the saved styles is `CosmeticSlots.Apply` (read the others through `Outfit`). The card
+  line reads « Porte … et … ». A new accessory needs a category in `AccessoryFit.Category`.
 - **Accessory styles** (`AccessoryStyles`): some accessories have one or two choices — a colour (nœud,
-  fleur, écharpe, casquette, ballon, moufles), a place at the neck (écharpe, collier, médaillon) — whose
-  first option is the default. The picked options are one string on the Plynling, `AccessoryStyle`
-  (« bleue_haut », null = default), written only by the Garde-robe's style selects
-  (`CosmeticService.StyleAsync`, free) and **cleared whenever the accessory changes**
-  (`CosmeticSlots.Set`, so a take-off by `InventoryService.TakeAsync` clears it too). `Outfit` carries
-  it, and a try-on of another accessory shows that one's default. Option keys are stored:
-  append-only, never renamed, never containing « _ »; a new option needs its drawing first (checks
-  section 62 compares the two).
+  fleur, écharpe, casquette, ballon, moufles), a place at the neck (écharpe, collier, médaillon), and
+  the **side** of the sided ones (« Côté » for nœud and fleur, « Main » for held items). A side is a
+  style, not a slot. The first option is the default. The picked options are one string per
+  worn accessory (`AccessoryStyle`, `Accessory2Style`; « bleue_haut », null = default), written by the
+  Garde-robe's style selects (`CosmeticService.StyleAsync`, free) and cleared when that slot's
+  accessory changes. **Styles are remembered per accessory per Plynling** in `SavedAccessoryStyles`
+  (`SavedStyles.Parse`/`Format` are the format): putting an item back on restores its last colour and
+  side. `Outfit` carries all of it, and a try-on of another accessory shows its remembered style or
+  default. Option keys are stored: append-only, never renamed, never containing « _ »; a new option
+  needs its drawing first (checks section 62 compares the two).
 - **Auras** (8.6.0, `cos.aura.*`): an animated effect drawn around the Plynling, worn **with** the
   accessory — `Outfit.With`/`Without` on one never touch the other. Three, fixed by design: Scintillements
   (the look the rarer species lost in 8.5.1, now for anyone) and Bulles in the weekly rotation — with two
@@ -376,7 +386,7 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. The
   Citrouilles cadre (`cos.grave.citrouilles`, autumn) left in 8.8.0, the owner's call;
   `RetirePumpkinGraveFrame` refunded 2 400 (the seasonal price) the same way and cleared `GraveKey`
-  on any Plynling, dead or alive. To retire another, copy one of those migrations. Their keys stay
+  on any Plynling, dead or alive. To retire another, copy one of those migrations — and clear **both** slots (`AccessoryKey`/`AccessoryStyle` **and** `Accessory2Key`/`Accessory2Style`). A retired key still occupies its slot until then. Their keys stay
   retired — never reuse them.
 
 **The shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` = the basics, then
@@ -412,7 +422,7 @@ redraws in place.
   and a wardrobe slot splits « Aucun » + what is owned into selects of 25 (`:0`, `:1`, … — titles and
   cadres pass 25); the handler reads that segment only on the shop. Checks section 59 measures it with everything owned.
   `cosm:buy`/`cosm:buyw:{week}:{key}`, `cosm:make`/`cosm:makew:{key}`, `cosm:wear:{tab}:{key}`,
-  `cosm:back:{tab}`, `cosm:style:{choice}:{key}` (the worn accessory's colour or place, on the Accessoire
+  `cosm:back:{tab}`, `cosm:pick2:{i}` (the second accessory picker), `cosm:style:{choice}:{key}` (the worn accessory's colour, place or side, on the Accessoire
   slot; refused if that accessory is no longer worn). The view (tab, slot, picked key) lives only in the
   ids, so a restart loses nothing.
   The old screens' `cos:` ids answer nothing, on purpose: a new prefix keeps every wildcard clear of them.
