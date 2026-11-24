@@ -452,8 +452,9 @@ SIDES = ("gauche", "droite")
 DEFAULT_SIDE = {"noeud": "gauche", "fleur": "droite", "ballon": "gauche"}
 
 
-def sided(make, colours, default):
-    """`make(swap, side)` in every colour and both sides, the default side first in each colour."""
+def sided(make, colours, acc):
+    """`make(swap, side)` in every colour and both sides, `acc`'s default side first in each colour."""
+    default = DEFAULT_SIDE[acc]
     order = (default,) + tuple(s for s in SIDES if s != default)
     return {f"{colour}_{side}": make(swap, side) for colour, swap in colours.items() for side in order}
 
@@ -478,14 +479,14 @@ def file_style(acc, style):
 # default, the one shown until the player picks another.
 ACCESSORIES = {
     "noeud": dict(family="cap", styles=sided(
-        lambda swap, side: on_cap(recolour(NOEUD, swap), 0.3, (3, 1), side != "gauche"), NOEUD_COLOURS, "gauche")),
+        lambda swap, side: on_cap(recolour(NOEUD, swap), 0.3, (3, 1), side != "gauche"), NOEUD_COLOURS, "noeud")),
     "echarpe": dict(family="neck", styles={               # colour, then place: « bleue_haut »
         f"{colour}_{place}": (lambda c, pl: lambda pen, b: echarpe(pen, b, neck_row(b, pl), c))(colour, place)
         for colour in SCARF_COLOURS for place, _ in NECK_PLACES}),
     "fleur": dict(family="cap", styles=sided(
-        lambda swap, side: on_cap(recolour(FLEUR, swap), 0.74, (2, 3), side != "droite"), FLEUR_COLOURS, "droite")),
+        lambda swap, side: on_cap(recolour(FLEUR, swap), 0.74, (2, 3), side != "droite"), FLEUR_COLOURS, "fleur")),
     "casquette": dict(family="hat", styles=styles(lambda swap: hat(recolour(CASQUETTE, swap)), CASQUETTE_COLOURS.items())),
-    "ballon": dict(family="held", styles=sided(lambda swap, side: held(recolour(BALLON, swap), None, side), BALLON_COLOURS, "gauche")),
+    "ballon": dict(family="held", styles=sided(lambda swap, side: held(recolour(BALLON, swap), None, side), BALLON_COLOURS, "ballon")),
     "lunettes": dict(family="eyes", styles={"": lunettes}),
     "haut_de_forme": dict(family="hat", styles={"": hat(HAUT_DE_FORME)}),
     "baguette": dict(family="held", styles=held_sides(BAGUETTE)),

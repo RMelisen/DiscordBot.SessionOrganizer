@@ -25,7 +25,7 @@
     </None>
     <!-- Item sprites the bot uploads as its own emojis on start (ApplicationEmojiService), and
          her seasonal profile pictures, still and animated (SeasonalAvatarService). -->
-    <None Include="Assets\**\*.png;Assets\**\*.gif">
+    <None Include="Assets\**\*.png;Assets\**\*.gif;Assets\**\*.webp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>

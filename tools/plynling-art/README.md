@@ -59,8 +59,8 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   them smaller or larger. Added without a version bump, like the angry faces.
 - `accessories.py` — the 21 cosmetic accessories, drawn on the Plynling's own picture. Each has a
   family that says where it sits — a hat on the cap (couronne, haut-de-forme, casquette, chapeau de paille, bonnet, couronne de fleurs), on the cap
-  (nœud, fleur), on the eyes, at the neck (écharpe, collier, médaillon), on the hands, or held in the
-  left hand (the heart, the sweat and the « z » are on the right) — and is placed from the drawing
+  (nœud, fleur), on the eyes, at the neck (écharpe, collier, médaillon), on the hands, or held in a
+  hand, the left by default (the heart, the sweat and the « z » are on the right) — and is placed from the drawing
   itself on every frame (the cap's real top, the first stem row under it, the arms), so one drawing
   fits every species and stage and follows the breath and the hop. Some come in **styles** the player
   picks: colours (nœud, fleur, écharpe, casquette, ballon, moufles, bonnet) and a place at the neck (haut,
@@ -105,3 +105,7 @@ images by URL — a new version must be a new filename, never an overwrite. The 
 retired rarity tiers — no species is drawn as rarer than another). Frame 0 of every loop is the
 still, so a client that cannot animate WebP shows a picture that makes sense. A new species'
 drawing function must take `frame` and route through `finish` with its pose, or it will not move.
+
+## Layers for runtime drawing
+
+`python export.py layers` writes `ProjectSYNCS/Assets/Plynlings/` (deleted first; 7 392 files, about 5.5 MB), the pictures the bot lays over each other instead of reading a pre-dressed file: `base/<shape>_<face>[_dirty]`, `acc/<shape>_<face>_<acc>[_<full style>]` (clean faces only: dirty shares the clean layer), `aura/<shape>_<face>_<aura>[_tall]` (raw, unmasked particles; `_tall` is the 320 px hat canvas, adults only) and `marks/<shape>_<face>` (heart, sweat, « z », frost; no file for content and sad). Every file is an 8x lossless loop on the shared 125 ms timing, its layers sitting at the foot of the largest canvas in play. `sprites.marks()` draws the mood extras alone.

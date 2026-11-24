@@ -20,8 +20,15 @@ aura (auras.py): « _aura_<aura> » last. 18 648 files, also new names (checks s
     python export.py          # everything, after deleting the old files
     python export.py auras    # only the aura files, nothing deleted
     python export.py accessories bonnet lanterne   # only these accessories' files, with their auras
+    python export.py layers   # the layers the bot draws dressed pictures from, into ProjectSYNCS/Assets/Plynlings
+
+The layers (export_layers) are the same pictures taken apart: the plain sprite, each accessory
+alone, each aura's raw particles and the mood extras alone, every one an 8x lossless loop on the
+shared timing, drawn on a transparent canvas at the picture's foot (a hat on an adult: the 320 px
+hat canvas, every other layer 256 px). The bot lays them over each other at runtime.
 """
 import os
+import shutil
 import sys
 
 from PIL import Image
@@ -30,13 +37,15 @@ from common import SPECIES
 from memorials import memorial
 from motion import FRAMES, FRAME_MS
 from accessories import file_style, looks, loop, tall, wear
-from auras import AURA_STATES, AURAS, surround
-from sprites import build
+from auras import AURA_STATES, AURAS, _Spray, _bounds, surround
+from accessories import HAT_AT, HAT_CANVAS
+from sprites import build, marks
 
 ART_VERSION = 5
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))
+LAYERS = os.path.normpath(os.path.join(HERE, "..", "..", "ProjectSYNCS", "Assets", "Plynlings"))
 STATES = ["happy", "content", "sad", "hungry", "starving", "frozen", "sleeping", "angry", "sick"]
 # The card's living faces that also get a « _dirty » version (dirt.py): a Plynling whose hygiene is
 # below 33 %. Not frozen (the ice hides it), not angry and not the visit pictures (visits stay
@@ -170,8 +179,77 @@ def export_auras(only=None):
     return count
 
 
+def save_layer(frames, folder, name):
+    frames = [big(f) for f in frames]
+    path = os.path.join(LAYERS, folder, f"{name}.webp")
+    frames[0].save(path, save_all=True, append_images=frames[1:], duration=FRAME_MS, loop=0,
+                   lossless=True, method=6)
+
+
+def raw_aura(body, state, aura, frame, tall_canvas):
+    """The aura's particles alone, unmasked: sprayed over an empty frame, so every pixel lands.
+    The bot keeps only those that fall where the picture under them is nearly empty."""
+    size = HAT_CANVAS if tall_canvas else 32
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    ox, oy = HAT_AT if tall_canvas else (0, 0)
+    AURAS[aura](_Spray(out, Image.new("RGBA", (size, size), (0, 0, 0, 0)), ox, oy), _bounds(body), frame)
+    return out
+
+
+def export_layers():
+    """base/, acc/, aura/ and marks/ under ProjectSYNCS/Assets/Plynlings (see the module doc).
+    Dirty faces get a base of their own only: an accessory, an aura or a mark is the same drawing
+    on the clean and the dirty sprite (checked when the layers were made)."""
+    if os.path.isdir(LAYERS):
+        shutil.rmtree(LAYERS)
+    for folder in ("base", "acc", "aura", "marks"):
+        os.makedirs(os.path.join(LAYERS, folder))
+    counts = {"base": 0, "acc": 0, "aura": 0, "marks": 0}
+    skipped_marks = set()
+    every = looks()
+    for sp in SPECIES:
+        for stage in (["adult", "baby"] if sp in STAGED else ["adult"]):
+            shape = f"{sp}{'_baby' if stage == 'baby' else ''}"
+            for state in STATES:
+                if state == "angry":
+                    continue
+                frames = loop(state, sp, FRAMES, stage)
+                save_layer([im for im, _ in frames], "base", f"{shape}_{state}")
+                counts["base"] += 1
+                if state in DIRTY_STATES:
+                    save_layer([build(state, sp, f, stage=stage, dirty=True) for f in range(FRAMES)],
+                               "base", f"{shape}_{state}_dirty")
+                    counts["base"] += 1
+                for acc, style in every:
+                    layer = []
+                    for im, body in frames:
+                        blank = Image.new("RGBA", im.size, (0, 0, 0, 0))
+                        layer.append(wear(blank, acc, body, state, style or None))
+                    save_layer(layer, "acc", f"{shape}_{state}_{acc}" + (f"_{style}" if style else ""))
+                    counts["acc"] += 1
+                if state in AURA_STATES:
+                    for aura in AURAS:
+                        for tall_canvas in ([False, True] if stage == "adult" else [False]):
+                            save_layer([raw_aura(body, state, aura, f, tall_canvas) for f, (_, body) in enumerate(frames)],
+                                       "aura", f"{shape}_{state}_{aura}" + ("_tall" if tall_canvas else ""))
+                            counts["aura"] += 1
+                mk = [marks(state, sp, f, stage) for f in range(FRAMES)]
+                if any(m.getbbox() for m in mk):
+                    save_layer(mk, "marks", f"{shape}_{state}")
+                    counts["marks"] += 1
+                else:
+                    skipped_marks.add(state)
+    total = sum(counts.values())
+    size = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(LAYERS) for f in fs)
+    print(counts, f"no marks for: {sorted(skipped_marks)}")
+    print(f"{total} files, {size / 1e6:.1f} MB written to {LAYERS}")
+    return total
+
+
 if __name__ == "__main__":
-    if sys.argv[1:] == ["auras"]:
+    if sys.argv[1:] == ["layers"]:
+        export_layers()
+    elif sys.argv[1:] == ["auras"]:
         os.makedirs(OUT, exist_ok=True)
         print(f"{export_auras()} files written to {OUT}")
     elif sys.argv[1:2] == ["accessories"] and len(sys.argv) > 2:
