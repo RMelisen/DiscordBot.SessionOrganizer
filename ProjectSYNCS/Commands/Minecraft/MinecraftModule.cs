@@ -10,7 +10,7 @@ namespace ProjectSYNCS.Commands;
 // checks can measure them. Read-only answers are ephemeral, to keep channels clean.
 [Group("minecraft", "Le serveur Minecraft : son mode d'emploi, où elle en est, et l'y inviter")]
 [CommandContextType(InteractionContextType.Guild)]
-public class MinecraftModule : InteractionModuleBase<SocketInteractionContext>
+public class MinecraftModule : SyncsModuleBase
 {
     private readonly MinecraftBodyService _minecraft;
     private readonly MinecraftDataService _data;

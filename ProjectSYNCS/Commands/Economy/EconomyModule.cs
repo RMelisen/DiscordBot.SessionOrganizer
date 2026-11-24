@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Commands;
 
 // The cailloux commands. Guild-only: a wallet belongs to one server.
 [CommandContextType(InteractionContextType.Guild)]
-public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
+public class EconomyModule : SyncsModuleBase
 {
     private readonly PebbleService _pebbles;
     private readonly ResponsePicker _picker;

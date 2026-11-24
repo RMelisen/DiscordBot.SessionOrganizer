@@ -8,7 +8,7 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-public abstract partial class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
+public abstract partial class PlynlingModule : SyncsModuleBase
 {
     [SlashCommand("help", "Comment fonctionnent les Plynlings")]
     public Task HelpAsync() => RespondAsync(embed: BuildHelpEmbed(0), components: BuildHelpButtons(0), ephemeral: true);

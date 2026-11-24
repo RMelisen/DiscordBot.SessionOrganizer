@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.7.0 — 2026-11-24
+
+- A rare easter egg on her commands.
+
 ## 8.6.2 — 2026-11-24
 
 - The Monday « Grosse tête de la semaine » announcement is posted in the bots channel instead of the

@@ -13,7 +13,7 @@ namespace ProjectSYNCS.Commands;
 // deferred reply can't turn a refusal private afterwards.
 [Group("arcade", "Les jeux de SYNCS, avec des cailloux en jeu")]
 [CommandContextType(InteractionContextType.Guild)]
-public partial class ArcadeModule : InteractionModuleBase<SocketInteractionContext>
+public partial class ArcadeModule : SyncsModuleBase
 {
     private readonly ArcadeTables _tables;
     private readonly ArcadeRunner _runner;

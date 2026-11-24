@@ -50,3 +50,22 @@ word smeared with combining strokes, sometimes the end cut off) and is edited ba
 3. The roll comes before the daily claim, so a lost roll doesn't use up the day. Skipped during a
    breakdown. The restore runs off the gateway handler. Absent from `README.md` and `/help`.
 
+
+## Premium easter egg
+
+`PremiumPrankService`: about one slash command in 500 (`Helpers/Personality/PremiumPrank`) gets a
+public fake paywall (`PremiumPaywallLines`) as its answer, edited 5–7 s later into « je rigole, je
+suis gratuite » (`PremiumRevealLines`), and only then is the command run.
+
+1. **The joke spends the interaction's one first answer**, so the command's own answers are
+   rerouted by `Commands/Core/SyncsModuleBase`, the base of every slash-command module:
+   `RespondAsync` becomes a follow-up, `DeferAsync` does nothing, and « the original response »
+   (edit, fetch, delete) is that follow-up, never the joke. Only the module's own methods are
+   rerouted.
+2. **`[NoPremiumPrank]` exempts a command or a module**, and is required on every command that can
+   open a modal (a modal must be the first answer), that answers through `Context.Interaction`
+   (`/config`, `/blame`), or whose use must not show publicly (`/confess`). A forgotten modal gets a
+   private apology instead of an exception.
+3. The roll comes before the command lookup. Slash commands only (no buttons, modals, context menus
+   or typed shortcuts). Skipped in silence mode. The wait runs off the gateway handler. Absent from
+   `README.md` and `/help`.

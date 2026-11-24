@@ -44,8 +44,9 @@ namespace ProjectSYNCS.Commands;
 // AvailabilityService.OwnerId, so on a server where the owner holds no ManageGuild
 // role Discord would block him from a gate meant to admit him. IsStaff in every
 // handler below is the only real check.
+[NoPremiumPrank]
 [Group("config", "Configurer le bot pour ce serveur (admins/modérateurs)")]
-public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
+public class ConfigModule : SyncsModuleBase
 {
     private const string Denied =
         "Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)";
@@ -84,7 +85,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("excluded-channels", "Les salons où rien ne compte (ni XP, ni mur de la honte)")]
-    public class ExcludedChannelsModule : InteractionModuleBase<SocketInteractionContext>
+    public class ExcludedChannelsModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -140,7 +141,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("moderator-role", "Le rôle autorisé à voter avec /shame")]
-    public class ModeratorRoleModule : InteractionModuleBase<SocketInteractionContext>
+    public class ModeratorRoleModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -175,7 +176,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("plynling-role", "Le rôle de tous les maîtres d'un Plynling vivant")]
-    public class PlynlingRoleModule : InteractionModuleBase<SocketInteractionContext>
+    public class PlynlingRoleModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
         private readonly PlynlingRoleService _roles;
@@ -228,7 +229,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("quiz-role", "Le rôle de la grosse tête du quiz de la semaine")]
-    public class QuizRoleModule : InteractionModuleBase<SocketInteractionContext>
+    public class QuizRoleModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
         private readonly QuizCrownService _crown;
@@ -282,7 +283,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("shame-voters", "Les personnes autorisées à voter avec /shame")]
-    public class ShameVotersModule : InteractionModuleBase<SocketInteractionContext>
+    public class ShameVotersModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -341,7 +342,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("game-channel", "Le salon où les Plynlings sont annoncés")]
-    public class GameChannelModule : InteractionModuleBase<SocketInteractionContext>
+    public class GameChannelModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -387,7 +388,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("bots-channel", "Le salon où elle poste ce qui compte peu (Quokka, la nuit)")]
-    public class BotsChannelModule : InteractionModuleBase<SocketInteractionContext>
+    public class BotsChannelModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -431,7 +432,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("levelup-channel", "Le salon des cartes de passage de niveau")]
-    public class LevelUpChannelModule : InteractionModuleBase<SocketInteractionContext>
+    public class LevelUpChannelModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -468,7 +469,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("main-channel", "Le salon où elle dit bonjour et vit la nuit (serveur principal)")]
-    public class MainChannelModule : InteractionModuleBase<SocketInteractionContext>
+    public class MainChannelModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -522,7 +523,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("quiz-channel", "Le salon où elle pose ses questions de quiz")]
-    public class QuizChannelModule : InteractionModuleBase<SocketInteractionContext>
+    public class QuizChannelModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -563,7 +564,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("confess-channel", "Le salon où tombent les confessions anonymes (/confess)")]
-    public class ConfessChannelModule : InteractionModuleBase<SocketInteractionContext>
+    public class ConfessChannelModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -604,7 +605,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("freegames-channel", "Le salon où elle annonce les jeux Steam gratuits à garder")]
-    public class FreeGamesChannelModule : InteractionModuleBase<SocketInteractionContext>
+    public class FreeGamesChannelModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 
@@ -645,7 +646,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [Group("idle-channels", "Les salons qui doivent tous se taire avant qu'elle parle dans le vide")]
-    public class IdleChannelsModule : InteractionModuleBase<SocketInteractionContext>
+    public class IdleChannelsModule : SyncsModuleBase
     {
         private readonly GuildConfigService _config;
 

@@ -27,7 +27,7 @@ namespace ProjectSYNCS.Commands;
 // config.yaml ships register_globally: true, and a global command is DM-enabled by
 // default, so without this the command is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-public class LevelModule : InteractionModuleBase<SocketInteractionContext>
+public class LevelModule : SyncsModuleBase
 {
     // Five. Ten was readable but long, and the view switcher makes it impossible
     // anyway: a row with an avatar costs three components (Section + TextDisplay +

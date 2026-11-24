@@ -12,7 +12,7 @@ namespace ProjectSYNCS.Commands;
 // reads the database first; taking the lead is public, the rest private.
 [Group("shoutout", "Les dédicaces dans son bonjour du matin")]
 [CommandContextType(InteractionContextType.Guild)]
-public class ShoutoutModule : InteractionModuleBase<SocketInteractionContext>
+public class ShoutoutModule : SyncsModuleBase
 {
     private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 

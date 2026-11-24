@@ -8,7 +8,7 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-public abstract partial class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
+public abstract partial class PlynlingModule : SyncsModuleBase
 {
     // ---- rendering --------------------------------------------------------------
 

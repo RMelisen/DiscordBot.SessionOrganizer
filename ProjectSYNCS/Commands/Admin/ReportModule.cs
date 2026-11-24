@@ -17,7 +17,7 @@ namespace ProjectSYNCS.Commands;
 // Deliberately no [DefaultMemberPermissions]: a permission bit can't say "ManageGuild, plus the
 // owner" (see AdminModule). SessionPermissions.IsStaff in every handler is the gate.
 [Group("report", "Mes rapports : sessions, sondages, communauté, et moi (admins/modérateurs)")]
-public class ReportModule : InteractionModuleBase<SocketInteractionContext>
+public class ReportModule : SyncsModuleBase
 {
     public const StatsPeriod DefaultPeriod = StatsPeriod.Month;
 

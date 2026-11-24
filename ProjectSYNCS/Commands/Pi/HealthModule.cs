@@ -12,7 +12,7 @@ namespace ProjectSYNCS.Commands;
 // skips the cooldown and also gets the state file's path. Also the first check after a deploy: it shows whether /sys and /proc are readable
 // from inside the add-on's container.
 [CommandContextType(InteractionContextType.Guild)]
-public class HealthModule : InteractionModuleBase<SocketInteractionContext>
+public class HealthModule : SyncsModuleBase
 {
     private readonly PiHealthService _health;
     private readonly ResponsePicker _picker;

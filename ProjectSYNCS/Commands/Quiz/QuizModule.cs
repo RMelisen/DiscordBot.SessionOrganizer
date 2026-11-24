@@ -16,7 +16,7 @@ namespace ProjectSYNCS.Commands;
 // register_globally: true (a global command is DM-enabled by default).
 [CommandContextType(InteractionContextType.Guild)]
 [Group("quiz", "Le quiz de SYNCS")]
-public class QuizModule : InteractionModuleBase<SocketInteractionContext>
+public class QuizModule : SyncsModuleBase
 {
     // A month, like /shame: all-time would freeze the first winners at the top for good.
     private const StatsPeriod DefaultPeriod = StatsPeriod.Month;

@@ -11,7 +11,8 @@ namespace ProjectSYNCS.Commands;
 // sees who used the command; only the owner can look the author up, with /debug confession.
 // She doesn't comment on confessions: her chiming in would make them feel less anonymous.
 [CommandContextType(InteractionContextType.Guild)]
-public class ConfessModule : InteractionModuleBase<SocketInteractionContext>
+[NoPremiumPrank]
+public class ConfessModule : SyncsModuleBase
 {
     private readonly GuildConfigService _config;
     private readonly ConfessionService _confessions;

@@ -5,7 +5,7 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-public partial class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
+public partial class ScheduleModule : SyncsModuleBase
 {
     // ---- « Préparer la session », under her answer to a chat request -----------------------------
     // ChatterService offered it (ChatOffers): the title and time read from the message. The click opens

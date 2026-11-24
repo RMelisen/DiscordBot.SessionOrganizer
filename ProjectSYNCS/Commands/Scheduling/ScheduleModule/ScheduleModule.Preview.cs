@@ -13,7 +13,7 @@ using System.Text;
 
 namespace ProjectSYNCS.Commands;
 
-public partial class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
+public partial class ScheduleModule : SyncsModuleBase
 {
     // ---- The preview: the real card, everything a modal can't hold, « Publier » ----
     // Everything lives in the draft, so the custom-ids carry nothing.

@@ -20,7 +20,7 @@ of that name in the file below.
 | The rest of listening, and its stats | *Two-step messages*, *Reply context*, *Late replies*, *Edited or deleted after she answered*, *Under her cards*, *Conversation streaks*, *Her records, quoted*, *Requests she acts on*, *Messages she passes on*, *Answer stats — `/debug answers`* | `personality/listening.md` |
 | Emote reactions and pictures | *Reactions and emotes*, *Sticker follow-ups* | `personality/reactions.md` |
 | Who she likes, fears and names | *Favouritism*, *Shutdown threats*, *Talked about*, *`RivalryService`* | `personality/people.md` |
-| Easter eggs (keep out of `/help`, README, changelog) | *Quoicoubeh*, *Tron / Trouille*, *Glitch* | `personality/easter-eggs.md` |
+| Easter eggs (keep out of `/help`, README, changelog) | *Quoicoubeh*, *Tron / Trouille*, *Glitch*, *Premium easter egg* | `personality/easter-eggs.md` |
 | What she does unprompted | *Morning hello*, *Ambient life*, *Her seat in voice*, *Welcome*, *Her body* | `personality/ambient.md` |
 | Her fun commands | *`/yesno`*, *`/rate`*, *`/ship`*, *`/blame`*, *`/wouldyourather`* | `personality/fun-commands.md` |
 

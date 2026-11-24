@@ -12,7 +12,7 @@ namespace ProjectSYNCS.Commands;
 // plain verdict, then she edits it into a denial and someone else. Guild-only: it reads who is in
 // the server's voice channels.
 [CommandContextType(InteractionContextType.Guild)]
-public class BlameModule : InteractionModuleBase<SocketInteractionContext>
+public class BlameModule : SyncsModuleBase
 {
     private readonly ResponsePicker _picker;
     private readonly ILogger<BlameModule> _logger;
@@ -23,6 +23,7 @@ public class BlameModule : InteractionModuleBase<SocketInteractionContext>
         _logger = logger;
     }
 
+    [NoPremiumPrank]
     [SlashCommand("blame", "C'est la faute de qui ? Je tranche, parmi les gens en vocal")]
     public async Task BlameAsync(
         [Summary("what", "La faute de quoi : la défaite, le ping, le retard…")]

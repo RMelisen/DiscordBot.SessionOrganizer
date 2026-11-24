@@ -138,6 +138,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ChouchouBook>();
         // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
         services.AddSingleton<GlitchService>();
+        // The premium easter egg, called from BotService's interaction dispatch.
+        services.AddSingleton<PremiumPrankService>();
         // The sticker follow-ups: one instance, reached from BotChat's static hook.
         services.AddSingleton<StickerService>();
         // What her own recent posts were, so a reply to one is answered about it: in memory.

@@ -134,6 +134,9 @@ culture: without `Fr` or `InvariantCulture`, quote it (`{d:dd'/'MM}`).
 
 ### Interactions and custom-ids
 
+- **Slash-command modules derive from `SyncsModuleBase`**, not `InteractionModuleBase`, and answer
+  through its methods. A command that opens a modal or answers through `Context.Interaction` carries
+  `[NoPremiumPrank]` (personality, *Premium easter egg*), or a pranked use breaks.
 - **`[ComponentInteraction]` / `[ModalInteraction]` inside a `[Group]` need
   `ignoreGroupNames: true`**, or the handler silently never fires.
 - **Custom-ids are a contract across files** (`PollModule` builds `schedule:finalize:…` for

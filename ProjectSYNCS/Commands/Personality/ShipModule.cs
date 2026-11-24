@@ -11,7 +11,7 @@ namespace ProjectSYNCS.Commands;
 // Shipping), so the same pair always gets the same score, in either order; a few pairs get fixed
 // verdicts. Like /rate, no [CommandContextType]: nothing here needs Context.Guild, so it works in a
 // DM too (names then come from the global profile).
-public partial class ShipModule : InteractionModuleBase<SocketInteractionContext>
+public partial class ShipModule : SyncsModuleBase
 {
     private readonly ResponsePicker _picker;
 

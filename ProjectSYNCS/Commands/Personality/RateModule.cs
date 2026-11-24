@@ -9,7 +9,7 @@ namespace ProjectSYNCS.Commands;
 // Rating), so it never changes, whoever asks; a few names get fixed verdicts. One command, its own
 // module, like /yesno — and like /yesno no [CommandContextType]: nothing here reads Context.Guild,
 // so it works in a DM too.
-public class RateModule : InteractionModuleBase<SocketInteractionContext>
+public class RateModule : SyncsModuleBase
 {
     private readonly ResponsePicker _picker;
 

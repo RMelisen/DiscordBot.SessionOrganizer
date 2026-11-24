@@ -21,7 +21,7 @@ namespace ProjectSYNCS.Commands;
 // The modal handlers are *not* attributed here — two copies of one custom-id would be two
 // owners — and are wired up by PlynlingLongModule only.
 [CommandContextType(InteractionContextType.Guild)]
-public abstract partial class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
+public abstract partial class PlynlingModule : SyncsModuleBase
 {
     private readonly PlynlingService _plynlings;
     private readonly PlynlingRoleService _roles;
@@ -89,6 +89,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
     // A command rather than a card button, and confirmed by typing the name: nobody should
     // lose a Plynling to a misclick. It is meant to cost a little pride — a public
     // announcement, L'Indigne on /shame, and 30 minutes before adopting again.
+    [NoPremiumPrank]
     [SlashCommand("abandon", "Abandonner ton Plynling — pour toujours, et tout le monde le saura")]
     public async Task AbandonAsync()
     {
@@ -441,6 +442,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
 
     // Free text, like a Tomodachi Life word: it only ever appears through generic story
     // templates, or upgraded to a catalog passion when PlynlingPassions.Resolve recognises it.
+    [NoPremiumPrank]
     [SlashCommand("passion", "Apprendre une passion à ton Plynling (ou effacer celle apprise)")]
     public async Task PassionAsync()
     {

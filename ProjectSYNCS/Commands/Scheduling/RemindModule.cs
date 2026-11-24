@@ -9,7 +9,7 @@ namespace ProjectSYNCS.Commands;
 // /remindme and /reminders. Delivery is PersonalReminderService's (its own 1-minute loop). No
 // [CommandContextType]: nothing reads Context.Guild unguarded, so both work in a DM too — the
 // reminder then simply has no channel to fall back to.
-public class RemindModule : InteractionModuleBase<SocketInteractionContext>
+public class RemindModule : SyncsModuleBase
 {
     private readonly PersonalReminderStore _store;
     private readonly ResponsePicker _picker;

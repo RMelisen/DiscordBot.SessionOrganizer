@@ -23,7 +23,7 @@ public enum InventoryPage { Items, Wardrobe }
 // Guild-only: every query is scoped to Context.Guild.Id.
 [CommandContextType(InteractionContextType.Guild)]
 [Group("inventory", "Tes objets : garde-manger, collection, échanges")]
-public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
+public class InventoryModule : SyncsModuleBase
 {
     private readonly InventoryService _inventory;
     private readonly TradeOffers _trades;

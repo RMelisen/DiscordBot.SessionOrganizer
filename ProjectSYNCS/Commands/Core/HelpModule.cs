@@ -23,7 +23,7 @@ namespace ProjectSYNCS.Commands;
 // every embed of a message, so a second embed would not have bought any room — another
 // page does. The command list is the first page, cailloux and items the second, the
 // how-tos the third.
-public class HelpModule : InteractionModuleBase<SocketInteractionContext>
+public class HelpModule : SyncsModuleBase
 {
     [SlashCommand("help", "Comment utiliser le bot d'organisation de sessions")]
     public Task HelpAsync() => RespondAsync(embed: BuildEmbed(CommandsPage), components: BuildButtons(CommandsPage), ephemeral: true);
