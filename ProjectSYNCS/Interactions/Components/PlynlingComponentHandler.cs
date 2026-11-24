@@ -171,12 +171,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
         var relations = await _plynlings.GetRelationsAsync(plynling.Id);
         var page = int.TryParse(pageStr, out var p) ? p : 0;
-        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
-        {
-            m.Components = PlynlingJournalCards.BuildJournal(plynling, badges, moments, page, now, relations);
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        await ((SocketMessageComponent)Context.Interaction).UpdateCardAsync(
+            PlynlingJournalCards.BuildJournal(plynling, badges, moments, page, now, relations));
     }
 
     // ---- /plynling visit, one message from the first pick to the ending (PlynlingVisitCards). The ids
@@ -357,21 +353,11 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
     // A visit message closed without a visit, answering the click itself (no defer: no database work).
     private Task CloseVisitAsync(string text) =>
-        ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
-        {
-            m.Components = PlynlingVisitCards.BuildClosed(text);
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+        ((SocketMessageComponent)Context.Interaction).UpdateCardAsync(PlynlingVisitCards.BuildClosed(text));
 
-    // The visit message's next state, after a defer. An edit never pings.
-    private Task EditVisitAsync(MessageComponent card) =>
-        ((SocketMessageComponent)Context.Interaction).ModifyOriginalResponseAsync(m =>
-        {
-            m.Components = card;
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
+    // The visit message's next state, after a defer. An edit never pings; the visitor's drawn picture
+    // goes with it, and the ending (which shows none) takes the knock's off.
+    private Task EditVisitAsync(MessageComponent card) => Context.Interaction.ModifyCardAsync(card);
 
     // ◀ ▶ on a told story. Anyone may page — the card is public, like the story. After a restart
     // the story is gone: the card stays on its last beat and the one who clicked is told privately.
@@ -499,14 +485,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         }
 
         var card = PlynlingPlayCards.BuildGame(session, plynling, now, endLine);
-        void Redraw(MessageProperties m)
-        {
-            m.Components = card;
-            m.Flags = MessageFlags.ComponentsV2;      // re-asserted on every edit of a V2 message
-            m.AllowedMentions = AllowedMentions.None;
-        }
-        if (Context.Interaction is SocketModal modal) await modal.UpdateAsync(Redraw);
-        else await ((SocketMessageComponent)Context.Interaction).UpdateAsync(Redraw);
+        if (Context.Interaction is SocketModal modal) await modal.UpdateCardAsync(card);
+        else await ((SocketMessageComponent)Context.Interaction).UpdateCardAsync(card);
     }
 
     // /plynling list's pages. Two verbs for the two arrows; both land here and redraw the

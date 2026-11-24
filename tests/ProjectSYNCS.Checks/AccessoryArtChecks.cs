@@ -29,6 +29,7 @@ public static class AccessoryArtChecks
         StylesMatchTheArt();
         SpriteOfReadsTheOutfit();
         CardsAttachTheirPicture();
+        GamesJournalVisitsAndPostsAttachTheirPicture();
         RetiredAreGone();
         RetireMigrationRefunds();
         StyleResets();
@@ -197,6 +198,8 @@ public static class AccessoryArtChecks
             sunflower.Species = PlynlingSpecies.Tournesol;
             Expect(Of(sunflower) == PlynlingArt.Sprite(PlynlingSpecies.Tournesol, PlynlingStage.Adult, PlynlingMood.Content),
                 "a sunflower (no art) with a nœud: " + Of(sunflower));
+            // Only this check draws a dressed sunflower: its failed draw is logged once, then quiet.
+            Expect(logged.Count == 1, $"a sunflower with a nœud logged {logged.Count} lines, expected 1: {string.Join(" | ", logged)}");
         }
         finally { PlynlingPainter.Log = log; }
     }
@@ -212,33 +215,77 @@ public static class AccessoryArtChecks
         dressed.AuraKey = "cos.aura.bulles";
         var held = new Dictionary<string, int> { ["cos.accessory.noeud"] = 1, ["cos.accessory.ballon"] = 1, ["cos.aura.bulles"] = 1 };
 
-        void Attaches(string what, Discord.MessageComponent card, bool expectFile)
-        {
-            var media = Media(card.Components).ToList();
-            var named = media.Where(u => u.StartsWith("attachment://", StringComparison.Ordinal)).Distinct().ToList();
-            var files = PlynlingPainter.FilesFor(card);
-            try
-            {
-                var names = files.Select(f => f.FileName).ToList();
-                if (expectFile)
-                    Expect(named.Count == 1 && named[0].StartsWith("attachment://pl__", StringComparison.Ordinal),
-                        $"{what}: its picture is {string.Join(", ", media)}, not one attachment://pl__…");
-                else
-                    Expect(named.Count == 0, $"{what}: names {string.Join(", ", named)}");
-                Expect(names.Count == named.Count && named.All(u => names.Contains(u["attachment://".Length..])),
-                    $"{what}: the card names [{string.Join(", ", named)}], FilesFor attaches [{string.Join(", ", names)}]");
-            }
-            finally { foreach (var f in files) f.Dispose(); }
-        }
-
-        Attaches("the card", PlynlingModule.BuildCard(dressed, now, null), expectFile: true);
-        Attaches("the Garde-robe", CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory),
+        AttachesCheck("the card", PlynlingModule.BuildCard(dressed, now, null), expectFile: true);
+        AttachesCheck("the Garde-robe", CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Accessory),
             new CosmeticScreenData(dressed, held, 0), now, null), expectFile: true);
-        Attaches("a try-on in the shop", CosmeticCards.Build(new CosmeticView(CosmeticTab.Shop, Picked: "cos.accessory.couronne"),
+        AttachesCheck("a try-on in the shop", CosmeticCards.Build(new CosmeticView(CosmeticTab.Shop, Picked: "cos.accessory.couronne"),
             new CosmeticScreenData(dressed, held, 0), now, null), expectFile: true);
-        Attaches("a bare card", PlynlingModule.BuildCard(Living(null), now, null), expectFile: false);
-        Attaches("a bare Garde-robe", CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe),
+        AttachesCheck("a bare card", PlynlingModule.BuildCard(Living(null), now, null), expectFile: false);
+        AttachesCheck("a bare Garde-robe", CosmeticCards.Build(new CosmeticView(CosmeticTab.Wardrobe),
             new CosmeticScreenData(Living(null), new Dictionary<string, int>(), 0), now, null), expectFile: false);
+    }
+
+    // The card's attachment:// pictures are exactly the files FilesFor attaches (none when `expectFile` is false).
+    private static void AttachesCheck(string what, Discord.MessageComponent card, bool expectFile)
+    {
+        var media = Media(card.Components).ToList();
+        var named = media.Where(u => u.StartsWith("attachment://", StringComparison.Ordinal)).Distinct().ToList();
+        var files = PlynlingPainter.FilesFor(card);
+        try
+        {
+            var names = files.Select(f => f.FileName).ToList();
+            if (expectFile)
+                Expect(named.Count == 1 && named[0].StartsWith("attachment://pl__", StringComparison.Ordinal),
+                    $"{what}: its picture is {string.Join(", ", media)}, not one attachment://pl__…");
+            else
+                Expect(named.Count == 0, $"{what}: names {string.Join(", ", named)}");
+            Expect(names.Count == named.Count && named.All(u => names.Contains(u["attachment://".Length..])),
+                $"{what}: the card names [{string.Join(", ", named)}], FilesFor attaches [{string.Join(", ", names)}]");
+        }
+        finally { foreach (var f in files) f.Dispose(); }
+    }
+
+    // The game, the journal (both pages), the visit's choice, knock and ending, and the announcements
+    // for a dressed Plynling: whatever picture each shows by attachment://, FilesFor attaches it.
+    private static void GamesJournalVisitsAndPostsAttachTheirPicture()
+    {
+        var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
+        var dressed = Living("cos.accessory.noeud", "bleu_droite");
+        dressed.Accessory2Key = "cos.accessory.ballon";
+        var bare = Living(null);
+        bare.Name = "Nu";
+        dressed.OwnerId = 1;
+        bare.OwnerId = 2;
+
+        foreach (var (p, expectFile, tag) in new[] { (dressed, true, "dressed"), (bare, false, "bare") })
+        {
+            var session = new ProjectSYNCS.Services.PlynlingGameSession("abc", 1, 1, 1,
+                new PlynlingGameState(PlynlingGame.HideAndSeek, new Random(1)), now);
+            AttachesCheck($"a game ({tag})", PlynlingPlayCards.BuildGame(session, p, now, null), expectFile);
+            AttachesCheck($"a game's end ({tag})", PlynlingPlayCards.BuildGame(session, p, now, "fin"), expectFile);
+            foreach (var page in new[] { 0, 1 })
+                AttachesCheck($"a journal page {page} ({tag})",
+                    PlynlingJournalCards.BuildJournal(p, new List<PlynlingBadge>(), new List<PlynlingJournalEntry>(), page, now), expectFile);
+
+            var scene = VisitCatalog.Scenes[0];
+            var host = Living(null);
+            host.OwnerId = 3;
+            var expires = now.AddHours(2);
+            AttachesCheck($"a visit's choice ({tag})", PlynlingVisitCards.BuildChoice(scene, p, host, 3, expires, false, now), expectFile);
+            AttachesCheck($"a visit's knock ({tag})",
+                PlynlingVisitCards.BuildKnock(scene, scene.Options[0], p, host, 3, expires, now), expectFile);
+            var outcome = new ProjectSYNCS.Services.VisitOutcome(p, host, Array.Empty<BadgeInfo>(), Array.Empty<BadgeInfo>(), true,
+                PlynlingBond.Acquaintances, PlynlingBond.Friends, Confession.None, 1.0);
+            AttachesCheck($"a visit's ending ({tag})",
+                PlynlingVisitCards.BuildEnding(scene, scene.Options[0], scene.Reactions[0], outcome, now), expectFile: false);
+
+            AttachesCheck($"a resurrection post ({tag})",
+                ProjectSYNCS.Services.PlynlingAnnouncer.BuildPost("x", PlynlingArt.SpriteOf(p, now)), expectFile);
+            AttachesCheck($"an abandon post ({tag})",
+                ProjectSYNCS.Services.PlynlingAnnouncer.BuildPost("x", PlynlingArt.SpriteOf(p, now, PlynlingMood.Sad)), expectFile);
+        }
+        AttachesCheck("a death post", ProjectSYNCS.Services.PlynlingAnnouncer.BuildPost("x",
+            PlynlingArt.Memorial(PlynlingSpecies.Amanite, PlynlingCatalog.MemorialTier(TimeSpan.FromDays(60)))), expectFile: false);
     }
 
     // Every picture a card shows: thumbnails, gallery items and files, anywhere in the tree.

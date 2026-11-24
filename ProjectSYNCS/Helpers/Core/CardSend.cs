@@ -31,6 +31,14 @@ public static class CardSend
     public static Task ModifyCardAsync(this IDiscordInteraction interaction, MessageComponent card) =>
         WithFilesAsync(card, files => interaction.ModifyOriginalResponseAsync(m => Fill(m, card, files)));
 
+    /// <summary>The message a button or select sits on, answered by rewriting it in place.</summary>
+    public static Task UpdateCardAsync(this IComponentInteraction interaction, MessageComponent card) =>
+        WithFilesAsync(card, files => interaction.UpdateAsync(m => Fill(m, card, files)));
+
+    /// <summary>The message a modal was opened from, answered by rewriting it in place.</summary>
+    public static Task UpdateCardAsync(this IModalInteraction interaction, MessageComponent card) =>
+        WithFilesAsync(card, files => interaction.UpdateAsync(m => Fill(m, card, files)));
+
     /// <summary>A posted message, rewritten in place.</summary>
     public static Task ModifyCardAsync(this IMessageChannel channel, ulong messageId, MessageComponent card) =>
         WithFilesAsync(card, files => channel.ModifyMessageAsync(messageId, m => Fill(m, card, files)));
@@ -53,7 +61,17 @@ public static class CardSend
 
     private static async Task WithFilesAsync(MessageComponent card, Func<IReadOnlyList<FileAttachment>, Task> send)
     {
-        var files = PlynlingPainter.FilesFor(card);
+        // Drawing never breaks a send: a throw here sends the card with no picture instead.
+        IReadOnlyList<FileAttachment> files;
+        try
+        {
+            files = PlynlingPainter.FilesFor(card);
+        }
+        catch (Exception ex)
+        {
+            PlynlingPainter.Log($"[CardSend] could not attach the pictures: {ex.GetType().Name}: {ex.Message}");
+            files = Array.Empty<FileAttachment>();
+        }
         try
         {
             await send(files);

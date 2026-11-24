@@ -161,8 +161,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         }
 
         var session = _play.Start(Context.Guild.Id, Context.User.Id, plynling.Id, now, Random.Shared);
-        await RespondAsync(components: PlynlingPlayCards.BuildGame(session, plynling, now, null),
-            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.RespondCardAsync(PlynlingPlayCards.BuildGame(session, plynling, now, null));
     }
 
     // An invitation, not a visit: the visitor picks what its Plynling does, then the other owner picks
@@ -240,8 +239,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         }
         var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
         var relations = await _plynlings.GetRelationsAsync(plynling.Id);
-        await RespondAsync(components: PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations),
-            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+        await Context.Interaction.RespondCardAsync(PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations));
     }
 
     // Everyone it has met and what they are to it — the living one, or else the latest grave.
