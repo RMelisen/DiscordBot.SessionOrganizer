@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.11.0 — 2026-11-24
+
+- New owner tool `/debug affinity`: a Plynling's raw affinity with each Plynling it has met, its
+  hidden compatibility and where that draws the pair.
+
 ## 8.10.2 — 2026-11-24
 
 - The « Vivants » / « Disparus » tabs on `/plynling relations` lose their emoji.
