@@ -258,7 +258,8 @@ public abstract partial class PlynlingModule : SyncsModuleBase
             return;
         }
         var relations = await _plynlings.GetRelationsAsync(plynling.Id);
-        await RespondAsync(embed: PlynlingJournalCards.BuildRelationsEmbed(plynling, relations), allowedMentions: AllowedMentions.None);
+        await RespondAsync(embed: PlynlingJournalCards.BuildRelationsEmbed(plynling, relations),
+            components: PlynlingJournalCards.BuildRelationsTabs(plynling, relations), allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("list", "Tous les Plynlings vivants du serveur, du plus vieux au plus jeune")]

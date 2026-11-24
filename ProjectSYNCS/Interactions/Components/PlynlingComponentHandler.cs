@@ -179,6 +179,27 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         });
     }
 
+    // ---- /plynling relations' two tabs (living / dead), re-read on every click.
+    [ComponentInteraction("plyn:rel:*:*", ignoreGroupNames: true)]
+    public async Task OnRelationsTabAsync(string idStr, string tab)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var plynling = int.TryParse(idStr, out var id) ? await _plynlings.GetByIdAsync(id, now) : null;
+        if (plynling is null)
+        {
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);   // abandoned since
+            return;
+        }
+        var relations = await _plynlings.GetRelationsAsync(plynling.Id);
+        var dead = tab == "dead";
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        {
+            m.Embed = PlynlingJournalCards.BuildRelationsEmbed(plynling, relations, dead);
+            m.Components = PlynlingJournalCards.BuildRelationsTabs(plynling, relations, dead) ?? new ComponentBuilder().Build();
+            m.AllowedMentions = AllowedMentions.None;
+        });
+    }
+
     // ---- /plynling visit, one message from the first pick to the ending (PlynlingVisitCards). The ids
     // carry the visitor's Plynling, the invited owner and the expiry, then the scene and the choices: a
     // key no longer in VisitCatalog reads as expired. Every click after the first defers before any

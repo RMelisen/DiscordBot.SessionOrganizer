@@ -95,30 +95,51 @@ public static class PlynlingJournalCards
     public const int RelationsListed = 20;
 
     /// <summary>
-    /// /plynling relations: everyone it has met, closest first (partner, best friends, friends,
-    /// acquaintances, rivals, enemies), then by affinity. An embed, so the owners' mentions
-    /// never ping. At most <see cref="RelationsListed"/>, then how many more.
+    /// /plynling relations: the living ones it has met by default, the dead ones on the « 🪦 » tab,
+    /// highest affinity first (a couple sliding toward +40 can sit below a best friend), then
+    /// closest bond. An embed, so the owners' mentions never ping. At most
+    /// <see cref="RelationsListed"/>, then how many more.
     /// </summary>
-    public static Embed BuildRelationsEmbed(Plynling p, IReadOnlyList<(PlynlingRelation Relation, Plynling Other)> relations)
+    public static Embed BuildRelationsEmbed(Plynling p, IReadOnlyList<(PlynlingRelation Relation, Plynling Other)> relations,
+        bool dead = false)
     {
         var name = PlynlingCardUi.SafeName(p.Name);
         var ordered = relations
-            .OrderBy(r => PlynlingBonds.Closeness(r.Relation.Bond))
-            .ThenByDescending(r => r.Relation.Affinity)
+            .Where(r => (r.Other.DiedAt is not null) == dead)
+            .OrderByDescending(r => r.Relation.Affinity)
+            .ThenBy(r => PlynlingBonds.Closeness(r.Relation.Bond))
             .ThenBy(r => r.Other.Id)
             .ToList();
         var lines = ordered.Take(RelationsListed).Select(r =>
             $"{PlynlingBonds.Emoji(r.Relation.Bond)} **{PlynlingCardUi.SafeName(r.Other.Name)}** {r.Other.Gender.Symbol()} " +
-            $"(à <@{r.Other.OwnerId}>) — {PlynlingBonds.Role(r.Relation.Bond, r.Other.Gender)}" +
-            (r.Other.DiedAt is null ? "" : " · 🪦")).ToList();
+            $"(à <@{r.Other.OwnerId}>) — {PlynlingBonds.Role(r.Relation.Bond, r.Other.Gender)}").ToList();
         if (ordered.Count > RelationsListed) lines.Add($"*… et {ordered.Count - RelationsListed} autres*");
 
+        var empty = relations.Count == 0
+            ? $"**{name}** n'a encore rencontré personne. `/plynling visit` pour lui faire des amis !"
+            : dead ? "*Aucune de ses relations n'est morte.*"
+            : "*Aucune de ses relations n'est encore en vie.*";
         return new EmbedBuilder()
-            .WithTitle($"💞 Les relations de {name}")
+            .WithTitle(dead ? $"🪦 Les relations disparues de {name}" : $"💞 Les relations de {name}")
             .WithColor(new Color(PlynlingCatalog.Info(p.Species).Accent))
-            .WithDescription(lines.Count == 0
-                ? $"**{name}** n'a encore rencontré personne. `/plynling visit` pour lui faire des amis !"
-                : string.Join("\n", lines))
+            .WithDescription(lines.Count == 0 ? empty : string.Join("\n", lines))
+            .Build();
+    }
+
+    /// <summary>
+    /// The two tabs under /plynling relations, the shown one blurple and disabled. None when it
+    /// has never lost anyone: a « 🪦 » tab that can only be empty is noise.
+    /// </summary>
+    public static MessageComponent? BuildRelationsTabs(Plynling p,
+        IReadOnlyList<(PlynlingRelation Relation, Plynling Other)> relations, bool dead = false)
+    {
+        var lost = relations.Count(r => r.Other.DiedAt is not null);
+        if (lost == 0 && !dead) return null;
+        return new ComponentBuilder()
+            .WithButton($"💞 Vivants ({relations.Count - lost})", $"plyn:rel:{p.Id}:alive",
+                dead ? ButtonStyle.Secondary : ButtonStyle.Primary, disabled: !dead)
+            .WithButton($"🪦 Disparus ({lost})", $"plyn:rel:{p.Id}:dead",
+                dead ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: dead)
             .Build();
     }
 
