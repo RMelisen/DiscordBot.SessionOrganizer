@@ -191,7 +191,6 @@ public static class PlynlingText
     public static string VisitedToday(ulong otherId) =>
         $"Vos Plynlings se sont déjà vus aujourd'hui, avec <@{otherId}>. Revenez demain !";
     public const string NotYourGame = "Ce n'est pas ta partie. Lance la tienne avec `/plynling play`.";
-    public const string GuessRange = "Un nombre entier entre 1 et 100, s'il te plaît.";
 
     // The name is already sanitised by the caller.
     public static string GiftFound(string name, long amount) =>

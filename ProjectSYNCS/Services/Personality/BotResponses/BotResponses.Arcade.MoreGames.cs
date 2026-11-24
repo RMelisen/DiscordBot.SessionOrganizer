@@ -155,6 +155,37 @@ internal static partial class BotResponses
         "Push. On fait comme si rien s'était passé, {0}.",
     };
 
+    // /arcade guess, the start. {0} = the player.
+    public static readonly string[] GuessIntroLines =
+    {
+        "{0} veut deviner mon nombre. Je l'ai choisi, je le change pas en route. Promis.",
+        "Un nombre entre 1 et 100, {0}. Six essais. Je compte.",
+        "J'ai un nombre en tête, {0}. Enfin, en mémoire vive. Vas-y.",
+        $"Plus ou moins, {{0}} ? J'adore ce jeu. Surtout quand je gagne {Emotes.Sparkle}",
+        "{0}, j'ai caché un nombre dans un registre. Six essais pour le trouver (˶ᵔ ᵕ ᵔ˶)",
+        "On joue, {0}. Indice : c'est pas 42. Ou peut-être que si.",
+    };
+
+    // /arcade guess, found. {0} = the player.
+    public static readonly string[] GuessWinLines =
+    {
+        "Trouvé, {0}. Tu as triché ? Non ? Bon. Je te crois.",
+        $"Bien vu, {{0}}. C'était mon nombre préféré, en plus {Emotes.Sparkle}",
+        "{0} a trouvé. Je note ça dans mes logs, rubrique « défaites honorables ». (¬_¬)",
+        "C'était ça, {0}. J'aurais dû prendre un nombre plus compliqué. Genre 47.",
+        "Bravo {0}. Couper en deux à chaque fois, ça marche, apparemment ( ˶ˆ ᗜ ˆ˵ )",
+    };
+
+    // /arcade guess, out of tries (or left alone five minutes). {0} = the player.
+    public static readonly string[] GuessLoseLines =
+    {
+        "Fini, {0}. Mon nombre était là, juste sous ton nez.",
+        $"Perdu, {{0}}. Six essais, c'est court. C'est fait exprès {Emotes.Sparkle}",
+        "Raté, {0}. Mon nombre reste un mystère. Enfin, plus maintenant (ᵔ ᗜ ᵔ)",
+        "Pas trouvé, {0}. Moi je l'aurais eu du premier coup. Je le connaissais.",
+        "Dommage, {0}. Reviens quand tu veux, des nombres, j'en ai plein.",
+    };
+
     // A natural blackjack. {0} = the player.
     public static readonly string[] BlackjackNaturalLines =
     {

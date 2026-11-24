@@ -443,21 +443,38 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             ? PlayMoveAsync(id, s => s.Throw((RpsThrow)t, Random.Shared))
             : RespondAsync(PlynlingText.Unknown, ephemeral: true);
 
-    // « Deviner » opens the modal; the guess itself arrives in OnGuessAsync.
-    [ComponentInteraction("plyn:guess:*", ignoreGroupNames: true)]
-    public async Task OnGuessButtonAsync(string id)
-    {
-        var session = _play.Get(id, DateTimeOffset.UtcNow);
-        if (session is null) await RespondAsync(PlynlingText.GameOver, ephemeral: true);
-        else if (session.OwnerId != Context.User.Id) await RespondAsync(PlynlingText.NotYourGame, ephemeral: true);
-        else await RespondWithModalAsync<GuessModal>($"plyn:guessm:{id}");
-    }
+    // The bag's and the pile's buttons carry the step they were drawn at: a second click from the
+    // same card (a double click) would otherwise play blind, against a pebble nobody has seen yet.
+    [ComponentInteraction("plyn:bag:*:*:*", ignoreGroupNames: true)]
+    public Task OnBagAsync(string id, string call, string stepStr) =>
+        call is "up" or "down" && int.TryParse(stepStr, out var step)
+            ? PlayMoveAsync(id, s => { if (s.Step == step) s.Bag(call == "up", Random.Shared); })
+            : RespondAsync(PlynlingText.Unknown, ephemeral: true);
 
-    [ModalInteraction("plyn:guessm:*", ignoreGroupNames: true)]
-    public Task OnGuessAsync(string id, GuessModal modal) =>
-        int.TryParse(modal.Guess.Trim(), out var n) && n is >= PlynlingGameState.GuessMin and <= PlynlingGameState.GuessMax
-            ? PlayMoveAsync(id, s => s.Guess(n))
-            : RespondAsync(PlynlingText.GuessRange, ephemeral: true);
+    // « J'ai retenu ! »: hides the sequence and opens the six picks.
+    [ComponentInteraction("plyn:memogo:*", ignoreGroupNames: true)]
+    public Task OnMemoriseAsync(string id) => PlayMoveAsync(id, s => s.Memorise());
+
+    // A pick before « J'ai retenu ! » can't come from the card (it has no such button then): an old
+    // or forged one is a no-op rather than a throw.
+    [ComponentInteraction("plyn:memo:*:*", ignoreGroupNames: true)]
+    public Task OnMemoryPickAsync(string id, string slotStr) =>
+        int.TryParse(slotStr, out var slot) && slot is >= 0 and < PlynlingGameState.MemoryOptions
+            ? PlayMoveAsync(id, s => { if (s.Memorised) s.Pick(slot); })
+            : RespondAsync(PlynlingText.Unknown, ephemeral: true);
+
+    // A click from a stale card (another step, or a take larger than the pile) is ignored, the card redrawn.
+    [ComponentInteraction("plyn:nim:*:*:*", ignoreGroupNames: true)]
+    public Task OnNimAsync(string id, string takeStr, string stepStr) =>
+        int.TryParse(takeStr, out var n) && n is >= 1 and <= PlynlingGameState.NimMaxTake && int.TryParse(stepStr, out var step)
+            ? PlayMoveAsync(id, s => { if (s.Step == step && n <= s.Pile) s.Take(n, Random.Shared); })
+            : RespondAsync(PlynlingText.Unknown, ephemeral: true);
+
+    [ComponentInteraction("plyn:dig:*:*", ignoreGroupNames: true)]
+    public Task OnDigAsync(string id, string cellStr) =>
+        int.TryParse(cellStr, out var cell) && cell is >= 0 and < PlynlingGameState.GridSize * PlynlingGameState.GridSize
+            ? PlayMoveAsync(id, s => s.Dig(cell))
+            : RespondAsync(PlynlingText.Unknown, ephemeral: true);
 
     // One move: checked (the game still running, the owner pressing), applied under the game's
     // lock — so a double click plays once, and exactly one move finishes it — then, if that move
@@ -526,8 +543,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             m.Flags = MessageFlags.ComponentsV2;      // re-asserted on every edit of a V2 message
             m.AllowedMentions = AllowedMentions.None;
         }
-        if (Context.Interaction is SocketModal modal) await modal.UpdateAsync(Redraw);
-        else await ((SocketMessageComponent)Context.Interaction).UpdateAsync(Redraw);
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(Redraw);
     }
 
     // /plynling list's pages. Two verbs for the two arrows; both land here and redraw the

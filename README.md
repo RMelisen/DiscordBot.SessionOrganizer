@@ -35,7 +35,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
 | `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
-| `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · puissance4 · morpion · lottery` | Her games, mostly for cailloux | everyone |
+| `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · guess · puissance4 · morpion · lottery` | Her games, mostly for cailloux | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · train · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
@@ -477,9 +477,12 @@ looks after her.
   and the first time its owner looks at it each day it has a one-in-two chance of having found
   5–15 cailloux for them. A sad one (below 30 %) gets 25 % less. At 0 % it sulks and refuses to
   eat until someone plays with it or pets it — unless it is starving, when hunger wins.
-- **Play:** `/plynling play` starts one of three mini-games at random with your own Plynling —
-  cache-cache (find it behind one of three rocks, two tries), pierre-papier-ciseaux (first to
-  two) or plus ou moins (a number from 1 to 100 in seven guesses, with every earlier guess listed). Once an hour; it always
+- **Play:** `/plynling play` starts one of six quick mini-games at random with your own Plynling,
+  all played with buttons — cache-cache (find it behind one of three rocks, two tries),
+  pierre-papier-ciseaux (first to two), le sac de cailloux (call the next numbered pebble higher or
+  lower, three right in a row), mémoire (four mushrooms to repeat in order), le dernier caillou
+  (take 1 to 3 pebbles in turn; whoever takes the last wins) or la chasse au trésor (find the
+  buried acorn on a 4×4 grid in three digs, with « brûlant / chaud / froid » hints). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling to someone's. One message holds the whole
   visit: a little scene somewhere in the village (skimming stones on the river, the queue at the
@@ -659,6 +662,9 @@ is gone).
   guess wins 15 cailloux; one try each; the author can't play. Ten minutes, then she tells.
 - **`/arcade temperature`** — guess her CPU temperature (10 each, 10 minutes, at least two
   players): the closest guess takes the pot minus 10 %. Only on the Pi, where she can feel it.
+- **`/arcade guess [stake]`** — plus ou moins: she thinks of a number from 1 to 100 and you have six
+  guesses, each answered « plus » or « moins ». Stake up to 500 cailloux (or nothing): found, she
+  pays back 1.4 times the stake. Five idle minutes lose.
 - **`/arcade puissance4 [opponent] [stake]`** · **`/arcade morpion …`** — against someone (who
   accepts first) or against her. Five minutes per move, or you lose. At morpion she never loses.
   At Puissance 4 she's beatable — though one game in five she might drop two pieces at once, and

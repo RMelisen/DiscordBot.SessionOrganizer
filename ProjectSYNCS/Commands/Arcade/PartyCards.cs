@@ -17,6 +17,9 @@ public static class PartyCards
 
     private static string Cailloux(long n) => PebbleEconomy.Cailloux(n);
 
+    // The bot sets no culture (prod is invariant): a decimal shown to players says « 1,4 » explicitly.
+    private static readonly System.Globalization.CultureInfo French = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+
     // ---- Race -------------------------------------------------------------------------------------
 
     public static Embed RaceLobby(RaceGame r)
@@ -144,6 +147,43 @@ public static class PartyCards
             .WithButton("Rester", $"bj:stand:{g.Id}", ButtonStyle.Secondary)
             .WithButton("Doubler", $"bj:double:{g.Id}", ButtonStyle.Danger, disabled: g.Player.Count != 2 || g.Doubled)
             .Build();
+
+    // ---- Guess (plus ou moins) --------------------------------------------------------------------
+
+    public static Embed GuessCard(GuessGame g, string? result = null)
+    {
+        var text = new StringBuilder(g.Line)
+            .Append($"\n\nJe pense à un nombre entre {NumberGuess.Min} et {NumberGuess.Max}.");
+        if (g.Guesses.Count > 0)
+        {
+            var history = g.Guesses.Select(x => x.Hint switch
+            {
+                NumberGuess.Hint.Higher => $"{x.Guess} ⬆",
+                NumberGuess.Hint.Lower => $"{x.Guess} ⬇",
+                _ => $"**{x.Guess}** ✅",
+            });
+            text.Append($"\n{string.Join(" · ", history)}");
+            var (last, hint) = g.Guesses[^1];
+            if (hint != NumberGuess.Hint.Correct)
+                text.Append($"\n{last} ? **C'est {(hint == NumberGuess.Hint.Higher ? "plus" : "moins")} !**");
+        }
+        if (result is not null)
+            text.Append($"\n\nC'était **{g.Secret}**.\n{result}");
+        else
+            text.Append($"\n-# {g.TriesLeft} essai{(g.TriesLeft > 1 ? "s" : "")} restant{(g.TriesLeft > 1 ? "s" : "")}");
+        return new EmbedBuilder()
+            .WithTitle("🔢 Plus ou moins")
+            .WithDescription(text.ToString())
+            .WithFooter(g.Stake > 0
+                ? $"Mise : {Cailloux(g.Stake)} · trouvé en {NumberGuess.Tries} essais, je paie ×{NumberGuess.Payout.ToString("0.#", French)}"
+                : $"Pour le plaisir : {NumberGuess.Tries} essais, rien en jeu")
+            .WithColor(result is null ? Party : Color.DarkGrey)
+            .Build();
+    }
+
+    public static MessageComponent GuessButtons(GuessGame g, bool over = false) => over
+        ? new ComponentBuilder().Build()
+        : new ComponentBuilder().WithButton("Deviner", $"num:try:{g.Id}", ButtonStyle.Primary, new Emoji("🔢")).Build();
 
     // ---- Bomb -------------------------------------------------------------------------------------
 

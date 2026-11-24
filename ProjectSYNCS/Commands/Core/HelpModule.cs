@@ -81,7 +81,7 @@ public class HelpModule : SyncsModuleBase
                 "**`/arcade race`** — Une course de Plynlings, avec des paris.\n" +
                 "**`/arcade crash`** · **`bomb`** · **`blackjack`** — La fusée, la patate chaude, et une main contre moi.\n" +
                 "**`/arcade quote`** — Qui a dit ça ? Un vieux message du serveur, à attribuer.\n" +
-                "**`/arcade temperature`** — Devine la température de mon processeur.\n" +
+                "**`/arcade temperature`** · **`guess`** — Devine la température de mon processeur, ou mon nombre en 6 essais.\n" +
                 "**`/arcade puissance4`** · **`morpion`** — Contre quelqu'un, ou contre moi.\n" +
                 "**`/arcade lottery`** — La loterie : 20 cailloux le ticket, tirage dimanche à 21 h. Le gagnant prend 75 %.\n" +
                 "Et parfois, Quokka passe dans le salon des bots : frappe-le pour des cailloux.")

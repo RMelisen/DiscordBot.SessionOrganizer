@@ -93,8 +93,8 @@ public abstract partial class PlynlingModule : SyncsModuleBase
                 "Au réveil, il peut tomber **malade**, surtout sale : il mange moitié moins, ne joue ni ne visite. " +
                 "**Soigner** (sa carte) : un médicament par jour, sinon il peut en mourir.")
             .AddField("Jouer & rendre visite",
-                "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
-                "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
+                "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux, " +
+                "le sac de cailloux, mémoire, le dernier caillou ou la chasse au trésor. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
                 "**`/plynling visit user:`** — Ton Plynling rend visite à quelqu'un : tu choisis ce qu'il fait, l'autre choisit " +
                 "dans les 2 h comment le sien réagit. Selon leur caractère, ça se passe bien ou mal. Une visite par jour entre deux personnes.\n" +
                 "À force de se voir, ils deviennent **amis**, **meilleurs amis**… ou **rivaux** et **ennemis**. " +

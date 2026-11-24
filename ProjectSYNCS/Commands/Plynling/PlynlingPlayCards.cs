@@ -14,7 +14,7 @@ public static class PlynlingPlayCards
     /// A game at its current step: the Plynling's sprite, the game's text, and its buttons
     /// while it is being played. <paramref name="endLine"/> is her reaction and the reward,
     /// once it is over. Every button carries the game's id; the verbs differ per game
-    /// (plyn:hide / plyn:rps / plyn:guess), and within a row the ids differ by their last part.
+    /// (plyn:hide / rps / bag / memogo / memo / nim / dig), and within a row the ids differ by their last part.
     /// </summary>
     public static MessageComponent BuildGame(PlynlingGameSession session, Plynling plynling, DateTimeOffset now, string? endLine)
     {
@@ -30,28 +30,89 @@ public static class PlynlingPlayCards
                 .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(sprite)).WithDescription(info.Name))
                 .AddComponent(new TextDisplayBuilder(text))));
 
-        if (state.Status == GameStatus.Playing)
+        // The treasure hunt keeps its grid once over, every cell disabled and the gland shown: the
+        // reveal reads better on the field than in a sentence.
+        if (state.Game == PlynlingGame.TreasureHunt)
         {
-            var row = new ActionRowBuilder();
-            switch (state.Game)
-            {
-                case PlynlingGame.HideAndSeek:
-                    for (var rock = 0; rock < PlynlingGameState.Rocks; rock++)
-                        row.WithButton($"{rock + 1}",$"plyn:hide:{session.Id}:{rock}", ButtonStyle.Primary);
-                    break;
-                case PlynlingGame.RockPaperScissors:
-                    row.WithButton("✊ Pierre", $"plyn:rps:{session.Id}:{(int)RpsThrow.Rock}", ButtonStyle.Primary)
-                       .WithButton("✋ Papier", $"plyn:rps:{session.Id}:{(int)RpsThrow.Paper}", ButtonStyle.Primary)
-                       .WithButton("✌️ Ciseaux", $"plyn:rps:{session.Id}:{(int)RpsThrow.Scissors}", ButtonStyle.Primary);
-                    break;
-                default:
-                    row.WithButton("🔢 Deviner", $"plyn:guess:{session.Id}", ButtonStyle.Primary);
-                    break;
-            }
-            builder.AddComponent(row);
+            foreach (var row in TreasureRows(session.Id, state)) builder.AddComponent(row);
+            return builder.Build();
+        }
+        if (state.Status != GameStatus.Playing) return builder.Build();
+
+        var id = session.Id;
+        switch (state.Game)
+        {
+            case PlynlingGame.HideAndSeek:
+                var rocks = new ActionRowBuilder();
+                for (var rock = 0; rock < PlynlingGameState.Rocks; rock++)
+                    rocks.WithButton($"{rock + 1}", $"plyn:hide:{id}:{rock}", ButtonStyle.Primary);
+                builder.AddComponent(rocks);
+                break;
+            case PlynlingGame.RockPaperScissors:
+                builder.AddComponent(new ActionRowBuilder()
+                    .WithButton("✊ Pierre", $"plyn:rps:{id}:{(int)RpsThrow.Rock}", ButtonStyle.Primary)
+                    .WithButton("✋ Papier", $"plyn:rps:{id}:{(int)RpsThrow.Paper}", ButtonStyle.Primary)
+                    .WithButton("✌️ Ciseaux", $"plyn:rps:{id}:{(int)RpsThrow.Scissors}", ButtonStyle.Primary));
+                break;
+            case PlynlingGame.PebbleBag:
+                builder.AddComponent(new ActionRowBuilder()
+                    .WithButton("Plus haut", $"plyn:bag:{id}:up:{state.Step}", ButtonStyle.Primary, new Emoji("⬆️"))
+                    .WithButton("Plus bas", $"plyn:bag:{id}:down:{state.Step}", ButtonStyle.Primary, new Emoji("⬇️")));
+                break;
+            case PlynlingGame.Memory when !state.Memorised:
+                builder.AddComponent(new ActionRowBuilder().WithButton("J'ai retenu !", $"plyn:memogo:{id}", ButtonStyle.Primary, new Emoji("👀")));
+                break;
+            case PlynlingGame.Memory:
+                // Six options in two rows of three; a right pick stays, disabled, so the row doesn't jump.
+                var picked = state.Sequence.Take(state.Progress).ToHashSet();
+                for (var start = 0; start < state.Options.Count; start += 3)
+                {
+                    var row = new ActionRowBuilder();
+                    for (var slot = start; slot < Math.Min(start + 3, state.Options.Count); slot++)
+                    {
+                        var key = state.Options[slot];
+                        var done = picked.Contains(key);
+                        row.WithButton(PlynlingGameUi.MushroomLabel(key), $"plyn:memo:{id}:{slot}",
+                            done ? ButtonStyle.Secondary : ButtonStyle.Primary, EmoteOf(PlynlingGameUi.MushroomEmoji(key)), disabled: done);
+                    }
+                    builder.AddComponent(row);
+                }
+                break;
+            case PlynlingGame.LastPebble:
+                var takes = new ActionRowBuilder();
+                for (var n = 1; n <= PlynlingGameState.NimMaxTake; n++)
+                    takes.WithButton($"{n}", $"plyn:nim:{id}:{n}:{state.Step}", ButtonStyle.Primary, disabled: n > state.Pile);
+                builder.AddComponent(takes);
+                break;
         }
         return builder.Build();
     }
+
+    // The 4×4 field: undug cells blurple « · » (a pick), dug ones grey and disabled with their hint, and once the game is
+    // over every cell disabled with the gland shown where it was.
+    private static IEnumerable<ActionRowBuilder> TreasureRows(string id, PlynlingGameState state)
+    {
+        var over = state.Status != GameStatus.Playing;
+        for (var r = 0; r < PlynlingGameState.GridSize; r++)
+        {
+            var row = new ActionRowBuilder();
+            for (var c = 0; c < PlynlingGameState.GridSize; c++)
+            {
+                var cell = r * PlynlingGameState.GridSize + c;
+                var customId = $"plyn:dig:{id}:{cell}";
+                if (state.Dug.TryGetValue(cell, out var hint))
+                    row.WithButton(null, customId, ButtonStyle.Secondary, new Emoji(PlynlingGameUi.HintEmoji(hint)), disabled: true);
+                else if (over && cell == state.Treasure)
+                    row.WithButton(null, customId, ButtonStyle.Secondary, new Emoji(PlynlingGameUi.HintEmoji(DigHint.Found)), disabled: true);
+                else
+                    row.WithButton("·", customId, over ? ButtonStyle.Secondary : ButtonStyle.Primary, disabled: over);
+            }
+            yield return row;
+        }
+    }
+
+    // A custom emoji's markup (<:name:id>) or a Unicode emoji, as a button wants it.
+    private static IEmote EmoteOf(string markup) => Emote.TryParse(markup, out var emote) ? emote : new Emoji(markup);
 
     /// <summary>
     /// What a visit changed, closing its story: the confession, the bond, badges, finds, and the

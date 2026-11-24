@@ -42,6 +42,33 @@ public sealed class BlackjackGame : ArcadeGame
     public string Line { get; set; } = string.Empty;
 }
 
+// /arcade guess. The number stays here, never in a custom-id.
+public sealed class GuessGame : ArcadeGame
+{
+    public required ulong PlayerId { get; init; }
+    public long Stake { get; init; }
+    public int Secret { get; init; }
+    public List<(int Guess, NumberGuess.Hint Hint)> Guesses { get; } = new();
+    public DateTimeOffset LastActionAt { get; set; } = DateTimeOffset.UtcNow;
+    public string Line { get; set; } = string.Empty;
+
+    public int TriesLeft => NumberGuess.Tries - Guesses.Count;
+    public bool Won => Guesses.Count > 0 && Guesses[^1].Hint == NumberGuess.Hint.Correct;
+    public bool Over => Won || TriesLeft <= 0;
+
+    // The modal opening counts as activity: typing a guess must not run into the idle limit.
+    public void Touch() => LastActionAt = DateTimeOffset.UtcNow;
+
+    public NumberGuess.Hint Guess(int n)
+    {
+        if (Over) throw new InvalidOperationException("This game is over.");
+        var hint = NumberGuess.Judge(n, Secret);
+        Guesses.Add((n, hint));
+        LastActionAt = DateTimeOffset.UtcNow;
+        return hint;
+    }
+}
+
 public sealed class BombGame : ArcadeGame
 {
     public required ulong OrganizerId { get; init; }

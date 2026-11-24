@@ -161,7 +161,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
             return;
         }
 
-        var session = _play.Start(Context.Guild.Id, Context.User.Id, plynling.Id, now, Random.Shared);
+        var session = _play.Start(Context.Guild.Id, Context.User.Id, plynling.Id, now, Random.Shared, PlynlingGameUi.LoadedMushrooms());
         await RespondAsync(components: PlynlingPlayCards.BuildGame(session, plynling, now, null),
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }

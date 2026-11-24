@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.10.0 — 2026-11-24
+
+- `/plynling play` has four new quick games, all played with buttons: le sac de cailloux (higher or
+  lower), mémoire (repeat four mushrooms in order), le dernier caillou (whoever takes the last
+  pebble wins) and la chasse au trésor (find the buried acorn with hot and cold hints).
+- Plus ou moins moved from `/plynling play` to `/arcade guess`: six tries instead of seven, with an
+  optional stake that pays back ×1.4 when the number is found.
+
 ## 8.9.1 — 2026-11-24
 
 - `/plynling relations` lists the living ones by default, highest affinity first; a « 🪦 Disparus »

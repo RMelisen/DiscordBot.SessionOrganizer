@@ -224,6 +224,50 @@ public sealed class PartyRunner
             PartyCards.BlackjackButtons(g, over: true));
     }
 
+    // ---- Guess (plus ou moins) --------------------------------------------------------------------
+
+    // Five idle minutes lose the game: the stake is gone, the number shown.
+    public void WatchGuess(int id) => _arcade.Run($"guess {id}", async () =>
+    {
+        while (true)
+        {
+            await Task.Delay(Watch);
+            var idle = _tables.With<GuessGame, bool?>(id, g => g is null ? null : DateTimeOffset.UtcNow - g.LastActionAt > NumberGuess.IdleLimit);
+            if (idle is null) return;
+            if (idle == true)
+            {
+                var g = _tables.With<GuessGame, GuessGame?>(id, x => x);
+                if (g is not null && _tables.End(id))
+                {
+                    var embed = await FinishGuessAsync(g);
+                    await _arcade.EditAsync(g, embed, PartyCards.GuessButtons(g, over: true));
+                }
+                return;
+            }
+        }
+    });
+
+    /// <summary>
+    /// Settles a finished (or abandoned) game and returns its last card. The caller has already
+    /// claimed the end. Only a win that gains cailloux feeds the arcade badge (NumberGuess.CountsForBadge).
+    /// </summary>
+    public async Task<Embed> FinishGuessAsync(GuessGame g)
+    {
+        var won = g.Won;                // the end is claimed: no guess can land any more
+        var net = NumberGuess.Net(won, g.Stake);
+        var settled = await _arcade.SettleAsync(g.GuildId, new[] { (g.PlayerId, g.Stake) }, p => p.ToDictionary(x => x, _ => net));
+        if (NumberGuess.CountsForBadge(won, g.Stake) && settled.Payers.Count > 0)
+            _badges.Increment(g.GuildId, g.PlayerId, MemberBadges.Keys.Arcade);
+
+        var line = Pick(won ? BotResponses.GuessWinLines : BotResponses.GuessLoseLines, $"<@{g.PlayerId}>");
+        var money = g.Stake == 0 ? ""
+            : settled.Payers.Count == 0 ? "\n-# Plus de quoi couvrir la mise : rien ne bouge."
+            : net > 0 ? $"\n-# <@{g.PlayerId}> gagne **{PebbleEconomy.Cailloux(net)}**."
+            : net < 0 ? $"\n-# <@{g.PlayerId}> perd **{PebbleEconomy.Cailloux(-net)}**."
+            : "\n-# La mise est rendue.";
+        return PartyCards.GuessCard(g, line + money);
+    }
+
     // ---- Bomb -------------------------------------------------------------------------------------
 
     public void ScheduleBomb(BombGame bomb) => _arcade.Run($"bomb {bomb.Id}", async () =>

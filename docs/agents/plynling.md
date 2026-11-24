@@ -218,7 +218,18 @@ not undo the abandonment.
 
 ## `/plynling play`
 
-**Secrets never leave the process.** The hidden rock, the throw and the number live in
+**Quick, buttons only** (the owner's call, 8.10.0): six games drawn at random — cache-cache,
+pierre-papier-ciseaux, le sac de cailloux, mémoire, le dernier caillou, la chasse au trésor. **No
+modal and no timer**: plus ou moins left for `/arcade guess` because a typed guess per move dragged.
+A new game keeps one click per move and a win rate near the others' (~45–60 % for a careful
+player); section 66 of the checks simulates each one's odds. **Mémoire draws only from mushrooms
+whose own emoji is loaded** (`PlynlingGameUi.LoadedMushrooms`): before Ready they are all 🍄, and
+`PlynlingPlayService.Start` leaves it out. `PlynlingGame` is in memory only, never stored.
+**A double click must not play blind**: the game's `Gate` only serialises clicks. Where a move
+depends on what the card showed (the bag's pebble, the pile), the buttons carry `PlynlingGameState.Step`
+and a stale one is ignored; Mémoire ignores a mushroom already found, a dug cell digs nothing.
+
+**Secrets never leave the process.** The hidden rock, the throw, the gland and the pebbles live in
 `PlynlingPlayService` (singleton, sessions by short id, 10-minute expiry), never in a custom-id
 (readable from the client). Rules are pure in `Helpers/Plynling/PlynlingGames` with the `Random` passed in;
 text in `Helpers/Plynling/PlynlingGameUi`; card `PlynlingPlayCards.BuildGame`. Each move runs under the

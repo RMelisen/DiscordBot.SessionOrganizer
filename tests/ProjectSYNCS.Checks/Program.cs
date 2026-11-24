@@ -5606,5 +5606,11 @@ await AuraChecks.Run(Fail);
 // 65. The RPG foundation (body stats, levels, Énergie, the drill): RpgChecks.cs.
 await RpgChecks.Run(Fail);
 
+// 66. /plynling play's games: rules, simulated odds, text and cards: PlynlingPlayChecks.cs.
+PlynlingPlayChecks.Run(Fail);
+
+// 67. /arcade guess: rules, the payout's average, the card: ArcadeGuessChecks.cs.
+ArcadeGuessChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;
