@@ -1,7 +1,8 @@
 """The auras a Plynling wears: an animated effect around it (cosmetics, docs/agents/economy.md).
 
-Three effects, each a function of the frame over the shared 16-frame idle loop (motion.py), so
-frame 15 flows back into frame 0. They are drawn last — over the plain or dressed frame — and only
+Six effects (one per season among them: Pétales, Lucioles, Feuilles mortes, Flocons), each a
+function of the frame over the shared 16-frame idle loop (motion.py), so frame 15 flows back into
+frame 0. They are drawn last — over the plain or dressed frame — and only
 on empty pixels (or the faint ground shadow), so a particle never covers the body, the face or an
 accessory: one passing behind the Plynling simply disappears. Where they sit is read from the
 body's own regions at rest, so one drawing fits the 7 species and their 7 babies and doesn't
@@ -11,7 +12,7 @@ angry faces (AURA_STATES).
 On an adult in a hat the frame is the taller hat canvas (accessories.HAT_CANVAS), the sprite at
 HAT_AT: positions are in the sprite's coordinates, offset by HAT_AT, so the aura surrounds the body.
 
-    python tools/plynling-art/auras.py <outdir>     # the preview sheets and animations
+    python tools/plynling-art/auras.py <outdir> [aura…]   # the preview sheets and animations (every aura, or these)
 """
 
 import math

@@ -349,7 +349,7 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is six keys on it.** `CosmeticCatalog` holds the 97
+**Cosmetics are items; what a Plynling wears is six keys on it.** `CosmeticCatalog` holds the 100
 (`cos.<slot>.<name>`, stored, **append-only** — three retired, see below) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
@@ -392,14 +392,20 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   default. Option keys are stored: append-only, never renamed, never containing « _ »; a new option
   needs its drawing first (checks section 62 compares the two).
 - **Auras** (8.6.0, `cos.aura.*`): an animated effect drawn around the Plynling, worn **with** the
-  accessory — `Outfit.With`/`Without` on one never touch the other. Three, fixed by design: Scintillements
+  accessory — `Outfit.With`/`Without` on one never touch the other. Six: Scintillements
   (the look the rarer species lost in 8.5.1, now for anyone) and Bulles in the weekly rotation — with two
-  rotating auras and `RotatingPerSlot` 2, both are on sale every week until more exist — and Pétales, a
-  *Chef-d'œuvre* from primevères and cerises, **spring-only** (a recipe mixing seasons can't be measured by
-  section 61, which simulates one season). Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
+  rotating auras and `RotatingPerSlot` 2, both are on sale every week until more exist — and **one per
+  season**: Pétales, a *Chef-d'œuvre* from primevères and cerises, **spring-only** (a recipe mixing seasons
+  can't be measured by section 61, which simulates one season), then Lucioles d'été (summer; the crafted cadre took « Lucioles », and section 61 wants
+  a crafted name unique), Feuilles mortes
+  (autumn, key `cos.aura.feuilles`: `cos.grave.feuilles` is the cadre) and Flocons (winter), seasonal shop
+  items (8.17.0). Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
   « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line. Not drawn on
   the sick and frozen faces: the try-on then says « Son aura ne se voit pas tant qu'il est malade ou gelé. »
-  Art and file cost: `plynling.md` *Art*.
+  Art and file cost: `plynling.md` *Art*. **A new aura costs ~126 layer files and no pre-rendered ones**
+  (the seasonal three were the first): draw it in `auras.py`, add its key to `AURAS` (never to
+  `PRERENDERED_AURAS`), `python export.py layers`, a 16×16 icon in `tools/item-art/icons.py`, a catalogue
+  line, and its `Entry` in section 64.
 - **Retired cosmetics**: the sac à dos and the casque audio left the catalogue in 8.5.0; the data
   migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. The
   Citrouilles cadre (`cos.grave.citrouilles`, autumn) left in 8.8.0, the owner's call;

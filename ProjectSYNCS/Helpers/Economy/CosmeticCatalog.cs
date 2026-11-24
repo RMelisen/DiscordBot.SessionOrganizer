@@ -265,8 +265,8 @@ public static class CosmeticCatalog
 
         // An aura's Name is bare and plural (« Bulles »): the card says « Entouré de bulles ».
         void Aura(string key, string emoji, string name, CosmeticSource source, ItemRarity rarity = C, long craftPrice = 0,
-            (string, int)[]? recipe = null, bool trophy = false) =>
-            list.Add(new CosmeticInfo($"cos.aura.{key}", CosmeticSlot.Aura, source, rarity, Season.None, emoji, name, null,
+            (string, int)[]? recipe = null, bool trophy = false, Season season = Season.None) =>
+            list.Add(new CosmeticInfo($"cos.aura.{key}", CosmeticSlot.Aura, source, rarity, season, emoji, name, null,
                 null,
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Aura, source, rarity), recipe ?? none, trophy));
 
@@ -422,6 +422,12 @@ public static class CosmeticCatalog
         // a recipe in one season (CraftingChecks.ExpectedForages).
         Aura("petales", "🌸", "Pétales", Cr, craftPrice: 300, trophy: true,
             recipe: new[] { ("col.primevere", 8), ("col.cerise", 2) });
+        // One for each other season, beside Pétales for spring; sold in their season only. Drawn by the
+        // bot from the layers alone: no pre-rendered « _aura_ » files exist for them (auras.PRERENDERED_AURAS).
+        // « Lucioles d'été »: a crafted cadre is already called « Lucioles », and a crafted name is unique.
+        Aura("lucioles", "🌟", "Lucioles d'été", S, season: Season.Summer);
+        Aura("feuilles", "🍁", "Feuilles mortes", S, season: Season.Autumn);
+        Aura("flocons", "❄️", "Flocons", S, season: Season.Winter);
 
         return list;
     }

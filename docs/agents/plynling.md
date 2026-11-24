@@ -401,7 +401,10 @@ every Ready and on `JoinedGuild`.
   **The cost multiplies**: a new accessory look now costs 4 files per face and shape (plain +
   three auras), a new aura ~6 200 files (~65 MB: moving particles compress worse than a still
   accessory), and a `Version` bump re-exports ~30 800 files (~250 MB).
-  Checks section 64 reads the folder like section 62.
+  Checks section 64 reads the folder like section 62. **Auras added since 8.17.0 (Lucioles, Feuilles
+  mortes, Flocons) have no pre-rendered files**: only `auras.PRERENDERED_AURAS` (the first three) are
+  exported as `_aura_` files, and section 70 compares the painter against those three only; the others
+  live in the layers alone.
 
 ## Families — dormant
 

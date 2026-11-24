@@ -601,13 +601,13 @@ looks after her.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
-- **Cosmetics:** 97 things a Plynling can wear — a **thème** that recolours its card and adds a
+- **Cosmetics:** 100 things a Plynling can wear — a **thème** that recolours its card and adds a
   banner, a **titre** under its name (in its gender), up to three **accessoires** (« porte 🧣 une
   écharpe, … et … », from different categories, a clash replaces the other; two held items at most,
   one per hand), drawn on the Plynling's
   picture — some in a colour, a place or a side you pick for free in the wardrobe, and remembered
   for next time — an **aura** worn with it, animated around the Plynling (twinkling
-  stars, soap bubbles, falling petals), and a **cadre** for its grave. `/inventory cosmetics` is one screen
+  stars, soap bubbles, and one per season: falling petals, fireflies, autumn leaves, snowflakes), and a **cadre** for its grave. `/inventory cosmetics` is one screen
   with three tabs: the **wardrobe**, the **shop** (a few basics always on sale, two items per slot
   that change every Monday, and seasonal ones, 300 to 5 000 cailloux) and **crafting**: fourteen
   *Ouvrages* made from duplicates of one place's common finds (a week or so of foraging), and thirteen

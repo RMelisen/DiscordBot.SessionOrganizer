@@ -102,8 +102,12 @@ public static class PaintChecks
     }
 
 
+    // The auras today's pre-rendered « _aura_ » files exist for (PRERENDERED_AURAS in auras.py). Later
+    // ones are drawn from the layers alone, with nothing to compare against: section 64 checks their layers.
+    private static readonly string[] PrerenderedAuras = { "scintillements", "bulles", "petales" };
+
     private static string[] Auras() => CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Aura)
-        .Select(c => c.Key[AuraPrefix.Length..]).ToArray();
+        .Select(c => c.Key[AuraPrefix.Length..]).Where(PrerenderedAuras.Contains).ToArray();
 
     private static readonly Regex Safe = new("^[A-Za-z0-9_.-]+$");
 

@@ -5,7 +5,7 @@ using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 
-// 64. Auras, the fifth slot: the three entries and the slot order, worn with an accessory (each
+// 64. Auras, the fifth slot: the six entries (one per season among them) and the slot order, worn with an accessory (each
 // try-on and take-off keeps the other), the shop's existing weekly draw unchanged by the new slot,
 // losing the last copy takes it off, and the bot's looks carry the aura on the aura faces only, with
 // every aura layer they read under Assets/Plynlings.
@@ -153,8 +153,9 @@ public static class AuraChecks
         var missing = wanted.Where(f => f.StartsWith("aura", StringComparison.Ordinal) && !File.Exists(Path.Combine(AccessoryArtChecks.LayersRoot, f)))
             .OrderBy(f => f).ToList();
         var auraLayers = wanted.Count(f => f.StartsWith("aura", StringComparison.Ordinal));
-        // 7 shapes × 2 stages × 6 faces × 3 auras, and the adults' tall twins.
-        Expect(auraLayers == 7 * 6 * 3 * 3, $"{auraLayers} aura layers named, expected {7 * 6 * 3 * 3}");
+        // 7 shapes × 2 stages × 6 faces × every aura, and the adults' tall twins.
+        var expectedLayers = 7 * 6 * 3 * CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count();
+        Expect(auraLayers == expectedLayers, $"{auraLayers} aura layers named, expected {expectedLayers}");
         Expect(looks > 20_000, $"only {looks} aura looks were built");
         Expect(missing.Count == 0, $"{missing.Count} aura layer(s) missing, e.g. {string.Join(", ", missing.Take(3))}");
     }
@@ -205,7 +206,21 @@ public static class AuraChecks
         Entry("cos.aura.scintillements", CosmeticSource.Rotating, ItemRarity.Rare, 2400, false, "Scintillements");
         Entry("cos.aura.bulles", CosmeticSource.Rotating, ItemRarity.Uncommon, 1200, false, "Bulles");
         Entry("cos.aura.petales", CosmeticSource.Crafted, ItemRarity.Common, 300, true, "Pétales");
-        Expect(CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count() == 3, $"{CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count()} auras, want 3");
+        Entry("cos.aura.lucioles", CosmeticSource.Seasonal, ItemRarity.Common, CosmeticCatalog.SeasonalPrice, false, "Lucioles d'été");
+        Entry("cos.aura.feuilles", CosmeticSource.Seasonal, ItemRarity.Common, CosmeticCatalog.SeasonalPrice, false, "Feuilles mortes");
+        Entry("cos.aura.flocons", CosmeticSource.Seasonal, ItemRarity.Common, CosmeticCatalog.SeasonalPrice, false, "Flocons");
+        Expect(CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count() == 6, $"{CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count()} auras, want 6");
+        // One aura per season: Pétales crafted from spring flowers, the three others sold in their season only.
+        foreach (var (key, season) in new[] { ("cos.aura.lucioles", Season.Summer), ("cos.aura.feuilles", Season.Autumn), ("cos.aura.flocons", Season.Winter) })
+        {
+            Expect(CosmeticCatalog.ByKey(key)?.Season == season, $"{key}: season {CosmeticCatalog.ByKey(key)?.Season}");
+            foreach (var month in new[] { 1, 4, 7, 10 })
+            {
+                var at = new DateTimeOffset(2026, month, 15, 12, 0, 0, TimeSpan.Zero);
+                var onSale = CosmeticCatalog.Shop(at).Any(c => c.Key == key);
+                Expect(onSale == (ItemCatalog.SeasonAt(at) == season), $"{key} {(onSale ? "on sale" : "missing")} on {at:yyyy-MM-dd}");
+            }
+        }
         var petales = CosmeticCatalog.ByKey("cos.aura.petales");
         Expect(petales is not null && petales.Recipe.Select(r => r.ItemKey).OrderBy(k => k).SequenceEqual(new[] { "col.cerise", "col.primevere" }),
             "Pétales: the recipe is not primevère + cerise");

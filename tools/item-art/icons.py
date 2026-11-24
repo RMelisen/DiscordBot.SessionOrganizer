@@ -1996,7 +1996,7 @@ icon("auras", "cos.aura.feuilles", "Feuilles mortes", "🍁",
      "............#...",
      "................")
 
-icon("auras", "cos.aura.lucioles", "Lucioles", "🌟",
+icon("auras", "cos.aura.lucioles", "Lucioles d'été", "🌟",
      "................",
      ".....##.........",
      "....#kk#....#...",

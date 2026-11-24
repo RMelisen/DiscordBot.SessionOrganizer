@@ -15,7 +15,8 @@ filenames, so they add to the folder without touching a single existing file. Mu
 PlynlingArt.Sprite and AccessoryStyles in the bot (checks section 62 reads this folder).
 
 The aura faces (auras.AURA_STATES), plain and in every accessory look, are exported once more per
-aura (auras.py): « _aura_<aura> » last. 18 648 files, also new names (checks section 64).
+pre-rendered aura (auras.PRERENDERED_AURAS: the first three): « _aura_<aura> » last. 18 648 files,
+also new names (checks section 64). Auras added since (the seasonal ones) exist only as layers.
 
     python export.py          # everything, after deleting the old files
     python export.py auras    # only the aura files, nothing deleted
@@ -38,7 +39,7 @@ from common import SPECIES
 from memorials import memorial
 from motion import FRAMES, FRAME_MS
 from accessories import file_style, looks, loop, tall, wear
-from auras import AURA_STATES, AURAS, _Spray, _bounds, surround
+from auras import AURA_STATES, AURAS, PRERENDERED_AURAS, _Spray, _bounds, surround
 from accessories import HAT_AT, HAT_CANVAS
 from sprites import build, marks
 
@@ -196,7 +197,7 @@ def export_auras(only=None, species=None):
                         dressed = [(wear(im, acc, body, state, style or None) if acc else im, body) for im, body in frames]
                         on_hat = bool(acc) and tall(acc, stage)
                         look = f"_with_{acc}{f'_{file_style(acc, style)}' if file_style(acc, style) else ''}" if acc else ""
-                        for aura in AURAS:
+                        for aura in PRERENDERED_AURAS:
                             save_loop([surround(im, body, state, aura, f, tall=on_hat) for f, (im, body) in enumerate(dressed)],
                                       f"{base}{look}_aura_{aura}")
                             count += 1

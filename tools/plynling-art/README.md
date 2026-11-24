@@ -70,10 +70,14 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   stays clean on a muddy Plynling and takes the ice tint on a frozen one. Every placement and colour
   was approved by the owner species by species — redraw through the preview sheets
   (`python accessories.py <outdir>`) and show them before exporting.
-- `auras.py` — the 3 cosmetic auras, animated around the Plynling over the 16-frame loop:
+- `auras.py` — the 6 cosmetic auras, animated around the Plynling over the 16-frame loop:
   Scintillements (twinkling stars, the look the rarer species lost in v5), Bulles (bubbles rising and
-  popping, two of three on the left, away from the mood marks) and Pétales (petals falling along the
-  sides). Drawn last, over the plain or dressed frame, **only on empty pixels** (or the faint ground
+  popping, two of three on the left, away from the mood marks), Pétales (petals falling along the
+  sides), and the seasonal three: Lucioles (fireflies wandering in little figures of eight, glowing
+  and going out), Feuilles mortes (orange, red and gold leaves swinging wide as they fall, flipping
+  edge-on) and Flocons (snowflakes falling at the sides, the big ones turning). Only
+  `PRERENDERED_AURAS` (the first three) get pre-rendered `_aura_` files; the others exist only as
+  layers. Drawn last, over the plain or dressed frame, **only on empty pixels** (or the faint ground
   shadow), so a particle never covers the body, the face or an accessory; placed from the body's box at
   rest, so it fits every shape and doesn't breathe with it; around the body on the hat canvas too. Only on
   `AURA_STATES` (happy, content, sad, hungry, starving, sleeping) — must match `AuraMoods` in the bot.

@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.17.0 — 2026-11-24
+
+- Three seasonal auras in the cosmetics shop, each on sale in its season: Lucioles d'été (summer), Feuilles mortes (autumn) and Flocons (winter), beside Pétales for spring.
+
 ## 8.16.2 — 2026-11-24
 
 - The Coprin's falling drop is black ink now, like its melting rim.
