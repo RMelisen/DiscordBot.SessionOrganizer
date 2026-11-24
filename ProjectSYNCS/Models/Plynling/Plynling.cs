@@ -78,7 +78,7 @@ public class Plynling
     // When the owner's last self-freeze ended — the 7-day cooldown counts from here.
     public DateTimeOffset? LastSelfThawAt { get; set; }
 
-    // The single ~3h warning DM. Re-armed when feeding pushes death back past the lead.
+    // The single ~12h warning DM. Re-armed when feeding pushes death back past the lead.
     public bool WarningSent { get; set; }
 
     // What it has done, kept for the achievements and the journal: games played with its

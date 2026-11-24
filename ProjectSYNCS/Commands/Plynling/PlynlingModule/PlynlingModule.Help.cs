@@ -130,7 +130,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
                 "Seulement s'il a encore au moins 50 % de faim.\n" +
                 "**`/plynling thaw`** — Le dégèle. Ensuite, 7 jours avant de pouvoir le regeler.")
             .AddField("La mort",
-                "Tu reçois un **message privé** environ 3 h avant qu'il meure de faim (à 23 h la veille si ça tombe la nuit). " +
+                "Tu reçois un **message privé** environ 12 h avant qu'il meure de faim (à 23 h la veille si ça tombe la nuit). " +
                 "S'il meurt, tout le serveur l'apprend et il rejoint le cimetière.\n" +
                 "**`/plynling graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Mieux on s'en " +
                 "occupe, plus sa tombe est belle.")

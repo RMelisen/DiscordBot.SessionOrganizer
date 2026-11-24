@@ -187,6 +187,6 @@ Rien ne s'arrête quand tu n'es pas là :
 - **Sans bonheur**, il est triste, mange moins bien, puis boude.
 - **Sale**, il déprime plus vite et tombe malade plus souvent.
 - **Malade et pas soigné**, il peut en mourir.
-- **Sans manger**, il meurt au bout de 3 jours. Je t'envoie un message privé environ 3 heures avant (à 23 h la veille si ça tombe la nuit) : garde tes messages privés ouverts.
+- **Sans manger**, il meurt au bout de 3 jours. Je t'envoie un message privé environ 12 heures avant (à 23 h la veille si ça tombe la nuit) : garde tes messages privés ouverts.
 
 Tu pars quelques jours ? Gèle-le : une commande, et je n'ai plus à m'inquiéter pour lui. Et si le pire arrive, c'est sur [La fin, et après](mort.md).

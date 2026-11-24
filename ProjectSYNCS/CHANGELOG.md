@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.13.3 — 2026-11-24
+
+- The Plynling starvation warning DM now comes 12 hours before death instead of 3 (still at
+  23:00 the evening before when it would land at night).
+
 ## 8.13.2 — 2026-11-24
 
 - `/help` gains a « 📖 Guide complet » button opening the full user guide online: a French website

@@ -320,7 +320,7 @@ namespace ProjectSYNCS.Services;
 //       PlynlingThoughtTypedLines · PlynlingDreamTypedLines ... /plynling view's thought bubble, awake / asleep
 //     Sickness and death
 //       PlynlingSickWarningLines ...... DM when it falls sick
-//       PlynlingWarningLines ......... the ~3h DM before death
+//       PlynlingWarningLines ......... the ~12h DM before death
 //       PlynlingIllnessDeathLines · PlynlingDeathLines · PlynlingAbandonLines · PlynlingResurrectLines
 //                              ... public, game channel
 //     Staff actions — PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms

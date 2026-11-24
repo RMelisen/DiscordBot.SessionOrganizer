@@ -20,7 +20,7 @@ Ce qui ne le tue **jamais** :
 - **le gel** : un Plynling gelé ne bouge plus, sa faim non plus.
 
 !!! tip "Je préviens toujours"
-    Je t'envoie un **message privé** environ **3 heures avant** qu'il meure de faim (à **23 h la veille** si ça tombe la nuit), et un autre le matin où il **tombe malade**. Garde tes messages privés ouverts pour me laisser te prévenir.
+    Je t'envoie un **message privé** environ **12 heures avant** qu'il meure de faim (à **23 h la veille** si ça tombe la nuit), et un autre le matin où il **tombe malade**. Garde tes messages privés ouverts pour me laisser te prévenir.
 
 !!! syncs mama ""
     Un message de moi, à ce moment-là, ce n'est jamais pour rien. Ouvre-le, s'il te plaît.

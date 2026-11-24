@@ -96,7 +96,7 @@ neither is logged and skipped, never cross-posted.
 Time of day, not a need: `PlynlingLife.IsAsleep` reads the Paris wall clock; `Mood` returns
 `Sleeping` (frozen still wins); nothing is stored. Hunger keeps dropping, but **death moves**:
 `EffectiveDeathAt` puts a death due in the window at 05:00, and `Settle`, `ShouldWarn` and the feed
-re-arm all read the effective instant, never raw `DeathAt`. The warning (`WarnAt`) is 3 h before
+re-arm all read the effective instant, never raw `DeathAt`. The warning (`WarnAt`) is 12 h before
 effective death, pulled back to 23:00 when it would land between 23:00 and 05:00. `WakeAfter` and
 `WarnAt` build instants from the Paris wall clock because both DST changes fall in the window (the
 harness pins 2026-03-29 and 2026-10-25).

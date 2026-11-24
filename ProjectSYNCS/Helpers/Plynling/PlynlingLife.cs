@@ -20,7 +20,7 @@ public static class PlynlingLife
     public static readonly TimeSpan HygieneLife = TimeSpan.FromDays(3);
     public static readonly TimeSpan SelfFreezeMax = TimeSpan.FromDays(14);
     public static readonly TimeSpan SelfFreezeCooldown = TimeSpan.FromDays(7);
-    public static readonly TimeSpan WarningLead = TimeSpan.FromHours(3);
+    public static readonly TimeSpan WarningLead = TimeSpan.FromHours(12);
     public static readonly TimeSpan PetCooldown = TimeSpan.FromHours(4);
     public static readonly TimeSpan BathCooldown = TimeSpan.FromHours(6);
     public static readonly TimeSpan AbandonCooldown = TimeSpan.FromMinutes(30);
