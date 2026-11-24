@@ -1,0 +1,278 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+using Discord;
+using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Models;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.PixelFormats;
+using Image = SixLabors.ImageSharp.Image;
+
+// 66. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): look names round-trip, every
+// single-accessory picture (and with an aura) drawn from ProjectSYNCS/Assets/Plynlings is pixel-exact,
+// tick for tick, against today's pre-rendered file in assets/plynlings/, the marks repaint changes
+// nothing on its own, missing art is null, the cache hits, and FilesFor finds a card's pictures.
+//
+//     dotnet run --project tests/ProjectSYNCS.Checks -- art
+//
+// sweeps all 14 shapes instead of the default sample (adult amanite, baby coprin).
+public static class PaintChecks
+{
+    private static Action<string> _fail = _ => { };
+
+    private static void Expect(bool ok, string what)
+    {
+        if (!ok) _fail("paint: " + what);
+    }
+
+    private const int Tick = 125;
+    private const string AccessoryPrefix = "cos.accessory.", AuraPrefix = "cos.aura.";
+
+    // Must match AURA_STATES (auras.py) and DIRTY_STATES (export.py); PlynlingArt keeps its own private copies.
+    private static readonly string[] AuraFaces = { "happy", "content", "sad", "hungry", "starving", "sleeping" };
+    private static readonly string[] DirtyFaces = { "happy", "content", "sad", "hungry", "starving", "sleeping", "sick" };
+
+    private static readonly string[] Faces = Enum.GetValues<PlynlingMood>().Where(m => m != PlynlingMood.Angry)
+        .Select(m => m.ToString().ToLowerInvariant()).ToArray();
+
+    private static string[] AllShapes() => PlynlingArt.StagedSpecies.Select(PlynlingArt.Key).OrderBy(k => k)
+        .SelectMany(k => new[] { k, k + "_baby" }).ToArray();
+
+    public static void Run(Action<string> fail, string[] args)
+    {
+        _fail = fail;
+        var root = StoryChecks.RepoRoot();
+        PlynlingPainter.AssetsRoot = Path.Combine(root, "ProjectSYNCS", "Assets", "Plynlings");
+        var old = Path.Combine(root, "assets", "plynlings");
+        LookNamesRoundTrip();
+        var art = args.Length > 0 && args[0] == "art";
+        SinglesMatchToday(old, art ? AllShapes() : new[] { "amanite", "coprin_baby" }, art);
+        MarksRepaintIsInvisible();
+        MissingArtIsNull();
+        CacheHits();
+        FilesForFindsPictures();
+    }
+
+    // Every (accessory key, today's style) pair, with no-style accessories as a single null.
+    private static IEnumerable<(string Key, string? Style)> TodaysLooks()
+    {
+        foreach (var acc in CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Accessory))
+        {
+            IEnumerable<string?> styles = new string?[] { null };
+            foreach (var (_, options) in AccessoryStyles.Choices(acc.Key))
+                styles = styles.SelectMany(s => options.Select(o => (string?)(s is null ? o.Key : s + "_" + o.Key)));
+            foreach (var s in styles) yield return (acc.Key, s);
+        }
+    }
+
+    private static readonly HashSet<string> Held = new()
+    {
+        "ballon", "baguette", "tulipe", "glace", "plume_doree", "bocal", "canne_peche", "lanterne",
+    };
+
+    // Today's style with its default side, as the layer files name it.
+    // Task 5: AccessoryStyles.Resolve replaces this.
+    private static string? DefaultSided(string key, string? style)
+    {
+        var name = key[AccessoryPrefix.Length..];
+        return name switch
+        {
+            "noeud" => style + "_gauche",
+            "fleur" => style + "_droite",
+            "ballon" => style + "_gauche",
+            _ when Held.Contains(name) => "gauche",
+            _ => style,
+        };
+    }
+
+    private static string[] Auras() => CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Aura)
+        .Select(c => c.Key[AuraPrefix.Length..]).ToArray();
+
+    private static readonly Regex Safe = new("^[A-Za-z0-9_.-]+$");
+
+    private static void LookNamesRoundTrip()
+    {
+        var items = new List<WornAccessory?> { null };
+        items.AddRange(TodaysLooks().Select(l => (WornAccessory?)new WornAccessory(l.Key, DefaultSided(l.Key, l.Style))));
+        // Both sides of a sided item, and every pair (a second only with a first).
+        items.Add(new WornAccessory("cos.accessory.noeud", "rose_droite"));
+        items.Add(new WornAccessory("cos.accessory.baguette", "droite"));
+        var auras = Auras().Select(a => (string?)a).Prepend(null).ToArray();
+        int checkedCount = 0, bad = 0;
+        string? firstBad = null;
+        foreach (var shape in new[] { "amanite_baby", "coprin" })
+        foreach (var face in Faces)
+        foreach (var dirty in new[] { false, true })
+        foreach (var first in items)
+        foreach (var second in first is null ? new List<WornAccessory?> { null } : items)
+        foreach (var aura in auras)
+        {
+            var look = new PlynlingLook(shape, face, dirty, first, second, aura);
+            var name = look.FileName;
+            checkedCount++;
+            if (PlynlingLook.Parse(name) != look || !Safe.IsMatch(name))
+            {
+                bad++;
+                firstBad ??= name;
+            }
+        }
+        Expect(checkedCount > 10_000, $"only {checkedCount} look names checked");
+        Expect(bad == 0, $"{bad} look name(s) don't round-trip, e.g. {firstBad}");
+        Expect(new PlynlingLook("amanite_baby", "content", true, new("cos.accessory.noeud", "rose_droite"),
+                   new("cos.accessory.ballon", "rouge"), "bulles").FileName
+               == "pl__amanite_baby__content__dirty__noeud-rose_droite__ballon-rouge__aura-bulles.webp",
+            "the brief's example name");
+        foreach (var junk in new[] { "", "pl__amanite.webp", "sprite.webp", "pl__amanite__content", "pl__../x__content.webp",
+                     "pl__amanite__content__aura-bulles__noeud.webp", "pl__amanite__content__a__b__c.webp",
+                     "pl__amanite__content____.webp", "pl__amanite__content__noeud-.webp", "PL__amanite__content.webp" })
+            Expect(PlynlingLook.Parse(junk) is null, $"Parse(\"{junk}\") is not null");
+    }
+
+    // An animated WebP as one pixel array per 125 ms tick, fully transparent pixels zeroed.
+    private static (int W, int H, List<Rgba32[]> Ticks) Ticks(Image<Rgba32> img)
+    {
+        var ticks = new List<Rgba32[]>();
+        for (var f = 0; f < img.Frames.Count; f++)
+        {
+            var delay = (int)img.Frames[f].Metadata.GetWebpMetadata().FrameDelay;
+            var px = new Rgba32[img.Width * img.Height];
+            img.Frames[f].CopyPixelDataTo(px);
+            for (var i = 0; i < px.Length; i++) if (px[i].A == 0) px[i] = default;
+            for (var t = 0; t < Math.Max(1, delay / Tick); t++) ticks.Add(px);
+        }
+        return (img.Width, img.Height, ticks);
+    }
+
+    private static string? Differs(byte[] drawn, string oldPath)
+    {
+        using var a = Image.Load<Rgba32>(drawn);
+        using var b = Image.Load<Rgba32>(oldPath);
+        var (aw, ah, at) = Ticks(a);
+        var (bw, bh, bt) = Ticks(b);
+        if (aw != bw || ah != bh) return $"size {aw}x{ah} vs {bw}x{bh}";
+        if (at.Count != bt.Count) return $"loop {at.Count} vs {bt.Count} ticks";
+        var off = 0;
+        for (var t = 0; t < at.Count; t++)
+        {
+            if (at[t].AsSpan().SequenceEqual(bt[t])) continue;
+            for (var i = 0; i < at[t].Length; i++)
+                if (at[t][i] != bt[t][i]) off++;
+        }
+        return off == 0 ? null : $"{off} px off";
+    }
+
+    private static void SinglesMatchToday(string old, string[] shapes, bool report)
+    {
+        var jobs = new List<(PlynlingLook Look, string Old)>();
+        var missingOld = new List<string>();
+        foreach (var shape in shapes)
+        foreach (var face in Faces)
+        foreach (var dirty in DirtyFaces.Contains(face) ? new[] { false, true } : new[] { false })
+        {
+            var head = $"plynling_{shape}_{face}{(dirty ? "_dirty" : "")}";
+            var looks = TodaysLooks().Select(l => ((string Key, string? Style)?)l).Prepend(null);
+            foreach (var l in looks)
+            {
+                var worn = l is { } x ? new WornAccessory(x.Key, DefaultSided(x.Key, x.Style)) : null;
+                var with = l is { } y ? $"_with_{y.Key[AccessoryPrefix.Length..]}{(y.Style is null ? "" : "_" + y.Style)}" : "";
+                foreach (var aura in AuraFaces.Contains(face) ? Auras().Select(a => (string?)a).Prepend(null) : new string?[] { null })
+                {
+                    var file = Path.Combine(old, $"{head}{with}{(aura is null ? "" : "_aura_" + aura)}_v{PlynlingArt.Version}.webp");
+                    if (!File.Exists(file)) { missingOld.Add(Path.GetFileName(file)); continue; }
+                    jobs.Add((new PlynlingLook(shape, face, dirty, worn, null, aura), file));
+                }
+            }
+        }
+        Expect(missingOld.Count == 0, $"{missingOld.Count} pre-rendered file(s) missing, e.g. {string.Join(", ", missingOld.Take(3))}");
+        Expect(jobs.Count > 0, "no picture compared");
+
+        var failures = new ConcurrentQueue<string>();
+        var sw = Stopwatch.StartNew();
+        Parallel.ForEach(jobs, job =>
+        {
+            try
+            {
+                var drawn = PlynlingPainter.Draw(job.Look);
+                var why = drawn is null ? "not drawn" : Differs(drawn, job.Old);
+                if (why is not null) failures.Enqueue($"{job.Look.FileName} vs {Path.GetFileName(job.Old)}: {why}");
+            }
+            catch (Exception ex) { failures.Enqueue($"{job.Look.FileName}: {ex.GetType().Name} {ex.Message}"); }
+        });
+        Expect(failures.IsEmpty, $"{failures.Count}/{jobs.Count} drawn picture(s) differ from today's, e.g. " +
+                                 string.Join("; ", failures.OrderBy(f => f).Take(5)));
+        if (report)
+            Console.WriteLine($"art: {jobs.Count} pictures over {shapes.Length} shapes compared, {failures.Count} differ, " +
+                              $"{sw.Elapsed.TotalSeconds:0}s");
+    }
+
+    // Base + marks repaint with no accessory = the base, for every shape and face with a marks file;
+    // and a right-hand item on a marked face still draws.
+    private static void MarksRepaintIsInvisible()
+    {
+        var marks = Path.Combine(PlynlingPainter.AssetsRoot, "marks");
+        var files = Directory.Exists(marks) ? Directory.GetFiles(marks, "*.webp") : Array.Empty<string>();
+        Expect(files.Length > 0, "no marks file found");
+        var bad = new ConcurrentQueue<string>();
+        Parallel.ForEach(files, path =>
+        {
+            var name = Path.GetFileNameWithoutExtension(path);
+            var basePath = Path.Combine(PlynlingPainter.AssetsRoot, "base", name + ".webp");
+            var drawn = PlynlingPainter.Compose(basePath, Array.Empty<string>(), path, null);
+            var why = Differs(drawn, basePath);
+            if (why is not null) bad.Enqueue($"{name}: {why}");
+        });
+        Expect(bad.IsEmpty, $"{bad.Count} marks repaint(s) show on the bare base, e.g. {string.Join("; ", bad.Take(3))}");
+        var right = new PlynlingLook("amanite", "sleeping", false, new("cos.accessory.baguette", "droite"), null, null);
+        Expect(PlynlingPainter.Draw(right) is not null, "amanite sleeping with a right-hand baguette is not drawn");
+    }
+
+    private static void MissingArtIsNull()
+    {
+        var logged = new List<string>();
+        var log = PlynlingPainter.Log;
+        PlynlingPainter.Log = logged.Add;
+        try
+        {
+            var none = new PlynlingLook("tournesol", "content", false, new("cos.accessory.couronne", null), null, null);
+            byte[]? a = null, b = null;
+            try { a = PlynlingPainter.Draw(none); b = PlynlingPainter.Draw(none); }
+            catch (Exception ex) { Expect(false, $"Draw threw on a shape without art: {ex.GetType().Name}"); }
+            Expect(a is null && b is null, "a shape without art draws something");
+            Expect(logged.Count == 1, $"a missing look logged {logged.Count} times, not once");
+            var frozenDirty = new PlynlingLook("amanite", "frozen", true, null, null, null);
+            Expect(PlynlingPainter.Draw(frozenDirty) is null, "a base that doesn't exist (frozen, dirty) draws something");
+        }
+        finally { PlynlingPainter.Log = log; }
+    }
+
+    private static void CacheHits()
+    {
+        var look = new PlynlingLook("coprin_baby", "happy", true, new("cos.accessory.couronne", null), null, "bulles");
+        var a = PlynlingPainter.Draw(look);
+        var b = PlynlingPainter.Draw(look with { First = new("cos.accessory.couronne", null) });
+        Expect(a is not null && ReferenceEquals(a, b), "the same look drawn twice is not the same array");
+    }
+
+    private static void FilesForFindsPictures()
+    {
+        static MessageComponent Card(string media) => new ComponentBuilderV2()
+            .AddComponent(new ContainerBuilder()
+                .AddComponent(new SectionBuilder()
+                    .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(media)))
+                    .AddComponent(new TextDisplayBuilder("Pépin"))))
+            .Build();
+
+        var name = new PlynlingLook("amanite", "content", false, new("cos.accessory.noeud", "rose_gauche"),
+            new("cos.accessory.baguette", "droite"), "petales").FileName;
+        var files = PlynlingPainter.FilesFor(Card("attachment://" + name));
+        try
+        {
+            Expect(files.Count == 1 && files[0].FileName == name && files[0].Stream.Length > 0,
+                $"a card with attachment://{name} yields {files.Count} file(s): {string.Join(", ", files.Select(f => f.FileName))}");
+        }
+        finally { foreach (var f in files) f.Dispose(); }
+        var linked = PlynlingPainter.FilesFor(Card(PlynlingArt.Sprite(PlynlingSpecies.Amanite, PlynlingStage.Adult, PlynlingMood.Content)));
+        Expect(linked.Count == 0, $"a card with a link yields {linked.Count} file(s)");
+    }
+}
