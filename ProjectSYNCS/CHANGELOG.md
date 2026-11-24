@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.6.2 — 2026-11-24
+
+- The Monday « Grosse tête de la semaine » announcement is posted in the bots channel instead of the
+  quiz channel.
+
 ## 8.6.1 — 2026-11-24
 
 - SYNCS reacts to chat messages with an emote half as often, and joins in on other people's reactions
