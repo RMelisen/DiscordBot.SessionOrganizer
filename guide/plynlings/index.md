@@ -1,6 +1,10 @@
 # Les Plynlings
 
-Un Plynling, c'est un petit champignon qui vit avec toi sur le serveur. Tu l'adoptes, tu le nourris, tu le caresses, il grandit, se fait des amis… et il compte sur toi pour ne pas l'oublier. Moi, je tiens les comptes. Évidemment.
+<div class="syncs-hello" markdown>
+![SYNCS, en maman champignon](../assets/syncs/mama.png)
+
+Un Plynling, c'est un petit champignon qui vit avec toi sur le serveur. Tu l'adoptes, tu le nourris, tu le caresses, il grandit, se fait des amis… et il compte sur toi pour ne pas l'oublier. Moi, je veille sur tous les champignons d'ici, et je tiens les comptes : chaque repas, chaque caresse, chaque oubli. Évidemment.
+</div>
 
 ## Adopter son Plynling
 
@@ -12,17 +16,20 @@ Un Plynling, c'est un petit champignon qui vit avec toi sur le serveur. Tu l'ado
 - Il arrive avec **70 %** de faim et de bonheur, et tout propre.
 - Il naît avec une **passion** (la cuisine, la musique, les étoiles, les siestes…), affichée sur sa carte.
 
+!!! syncs jenote ""
+    Gratuit, oui. Sans engagement, non. Je note qui adopte, et je note qui oublie.
+
 Ensuite, il grandit : **bébé** sa première semaine, **ado** jusqu'à 14 jours, **adulte**, puis **ancien** après 6 mois. Seul le temps vraiment vécu compte : quand il est gelé, il ne vieillit pas.
 
 !!! note "Le rôle Plynling"
     Si le staff l'a configuré, tu portes un rôle Plynling tant que le tien est en vie. Il arrive dès l'adoption et repart quand ton Plynling n'est plus là.
 
 !!! tip "J'en ai un aussi"
-    Mon Plynling à moi s'appelle Ping-Qilin. Tu peux la voir avec `/plynling view user:@SYNCS`, la caresser, la nourrir et lui rendre visite. Elle ne risque rien : je m'en occupe. Très bien, d'ailleurs.
+    Mon Plynling à moi s'appelle Ping-Qilin, et c'est la plus mignonne du serveur (c'est un fait, pas une opinion). Tu peux la voir avec `/plynling view user:@SYNCS`, la caresser, la nourrir et lui rendre visite. Elle ne risque rien : je m'en occupe. Très bien, d'ailleurs (˶ᵔ ᵕ ᵔ˶)
 
 ## Les raccourcis
 
-Sur téléphone, `/plynling` c'est long. Alors :
+Sur téléphone, `/plynling` c'est long. Je suis attentionnée, alors :
 
 - **`/pl`** remplace **`/plynling`** partout : `/pl view`, `/pl play`, `/pl forage`… Mêmes sous-commandes, mêmes options.
 - **En texte**, tape directement dans un salon :
@@ -76,6 +83,9 @@ Les détails de chaque soin sont sur [Prendre soin de lui](soins.md), les évén
 
 !!! note
     La nuit (1 h – 5 h, heure de Paris), il dort : **Caresser** et **Laver** disparaissent, mais on peut toujours le nourrir. Gelé, sa carte n'a plus que **Personnalité**.
+
+!!! syncs devoted ""
+    Eux, ils dorment. Moi, je veille. Il faut bien que quelqu'un le fasse ♡
 
 ## Les autres commandes de base
 

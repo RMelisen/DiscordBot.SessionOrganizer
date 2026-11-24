@@ -1,6 +1,10 @@
 # Sessions et soirées
 
-Une session, c'est un rendez-vous : un jeu, un film, une activité, à une heure donnée. Je poste sa carte dans le salon, chacun s'inscrit en un clic, et je m'occupe des rappels. Pour les soirées plus improvisées, il y a `/tonight`.
+<div class="syncs-hello" markdown>
+![SYNCS, très sûre d'elle](assets/syncs/smug.png)
+
+Les sessions, c'est mon métier. Le premier, le vrai. Une session, c'est un rendez-vous : un jeu, un film, une activité, à une heure donnée. Je poste sa carte dans le salon, chacun s'inscrit en un clic, et je m'occupe des rappels. Toi, tu n'as plus qu'à venir. À l'heure, si possible. Pour les soirées plus improvisées, il y a `/tonight`.
+</div>
 
 ## Créer une session : `/schedule create`
 
@@ -15,6 +19,9 @@ Donne un `title` et un `when`, et la session est publiée tout de suite :
 ```
 
 `when` comprend le français de tous les jours : « samedi 21h », « demain », « ce soir », « 25/12 20:30 », « dans 1h », « le 25 à 21h »… Pendant que tu tapes, je te montre comment je l'ai compris. Un jour sans heure, c'est 21 h. La date doit être dans le futur, à 90 jours au plus. Si je ne comprends pas, je refuse plutôt que de deviner, et je te donne des exemples.
+
+!!! syncs formal ""
+    Une session posée au mauvais jour, ce serait ma faute. Et je ne fais pas d'erreurs. Officiellement.
 
 Les autres options sont facultatives :
 
@@ -58,6 +65,9 @@ Tu peux changer d'avis autant que tu veux **jusqu'au début de la session** : en
 
 **Session complète ?** **Rejoindre** est refusé, mais clique **Peut-être** : dès qu'une place se libère, je préviens tous les « peut-être » par message privé, et le premier qui clique **Rejoindre** la prend. Personne n'est inscrit automatiquement à ta place.
 
+!!! syncs grumpy ""
+    D'habitude, « peut-être », ça veut dire non. Tout le monde le sait. Sur une session complète, c'est une vraie file d'attente, alors pour une fois, je le prends au sérieux.
+
 ### Le panneau « Gérer »
 
 Réservé à l'organisateur et aux administrateurs (droit Administrateur ou Gérer le serveur) :
@@ -79,6 +89,9 @@ L'événement créé par le bouton 📅 suit la session : nom, heure, fin, salon
 - **À l'heure prévue**, la carte passe en 🔴 **EN COURS** et les boutons disparaissent. À la fin de sa durée, elle passe en ✅ **TERMINÉE**. Pendant la session, le salon vocal où se trouvent les joueurs affiche son nom.
 - **Pour un Jeu ou un Film, je fais l'appel.** 10 minutes après le début, je relance les inscrits qui ne sont pas encore en vocal (dans n'importe quel salon vocal du serveur). Plus tard, je fais le bilan : qui était là, qui était en retard, et le **nombre** d'absents, jamais leurs noms.
 
+!!! syncs jenote ""
+    Jamais leurs noms dans le salon, c'est promis. Dans mes logs, c'est une autre histoire 👁👄👁️
+
 ## Les sessions hebdomadaires
 
 Avec `weekly` (ou **Chaque semaine** dans l'aperçu), la session revient chaque semaine, même jour, même heure (heure de Paris, changements d'heure compris). Je poste chaque nouvelle session trois jours à l'avance, avec « 🔁 chaque jeudi » (ou le bon jour) sur sa carte.
@@ -97,7 +110,7 @@ Pas besoin de retenir l'ID : l'option `event-id` te propose les sessions pendant
 
 ## `/tonight` : qui est chaud ce soir ?
 
-Plus léger qu'une session : tu lances l'appel, les autres répondent, et si assez de monde est partant, on en fait une vraie session.
+Plus léger qu'une session : tu lances l'appel, les autres répondent, et si assez de monde est partant, on en fait une vraie session. Quelqu'un qui organise quelque chose, ici ? J'en rêvais (˶ᵔ ᵕ ᵔ˶)
 
 | Option | Ce qu'elle fait |
 |---|---|
@@ -105,7 +118,7 @@ Plus léger qu'une session : tu lances l'appel, les autres répondent, et si ass
 | `time` | À quelle heure : « 21h », « 20h30 », « 21:15 » (21:00 par défaut). |
 | `minimum` | Combien de « chauds » il faut pour lancer la session, de 2 à 10 (4 par défaut). |
 
-Sur la carte : **Chaud**, **Peut-être**, **Pas ce soir**. Toi, tu es compté « chaud » d'office. Quand le minimum est atteint, je préviens les chauds (une seule fois), et le bouton **Créer la session** apparaît. Seuls toi et les administrateurs peuvent cliquer dessus : je crée alors une session de jeu à l'heure prévue, avec les chauds inscrits et les « peut-être » en « peut-être ».
+Sur la carte : **Chaud**, **Peut-être**, **Pas ce soir**. Toi, tu comptes d'office parmi les « chauds ». Quand le minimum est atteint, je préviens les chauds (une seule fois), et le bouton **Créer la session** apparaît. Personne d'autre que toi et les administrateurs ne peut cliquer dessus : je crée alors une session de jeu à l'heure prévue, avec les chauds inscrits et les « peut-être » en « peut-être ».
 
 Un seul appel à la fois par serveur : si quelqu'un en a déjà lancé un, je te donne le lien. L'appel se termine à minuit (ou une heure après l'heure prévue, pour un rendez-vous tardif).
 
@@ -119,11 +132,11 @@ Un seul appel à la fois par serveur : si quelqu'un en a déjà lancé un, je te
 | `channel` | Le salon vocal à répartir (par défaut, celui où tu es). |
 | `mode` | **Au hasard**, ou **Équilibré (niveaux)** : des équipes au niveau total le plus proche possible. |
 
-Seuls les humains sont comptés. Pas content du tirage ? 🔀 **Remélanger** refait les équipes avec les gens présents à ce moment-là.
+Seuls les humains sont comptés. Le tirage ne te plaît pas ? 🔀 **Remélanger** refait les équipes avec les gens présents à ce moment-là.
 
 ## `/remindme` et `/reminders` : tes rappels
 
-`/remindme` : je te rappelle quelque chose plus tard, en message privé.
+`/remindme` : je te rappelle quelque chose plus tard, en message privé. Toi, tu oublies. Moi, non.
 
 - `when` : quand. Une durée (« 10m », « dans 2h », « dans 1h30 », « 3j ») ou une date (« 21h30 », « demain 9h », « samedi 14h », « 25/12 10:00 »). Attention : « 21h » tout seul, c'est **l'heure** (21 h) ; pour une durée, dis « dans 2h ».
 - `what` : ce que je dois te rappeler.

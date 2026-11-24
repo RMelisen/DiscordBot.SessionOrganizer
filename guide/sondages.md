@@ -1,6 +1,10 @@
 # Sondages, votes et tirages
 
-Pas d'accord sur le jour ? Sur le jeu ? Je fais voter tout le monde. Et quand il y a quelque chose à gagner, c'est moi qui tire au sort : au moins, personne ne pourra m'accuser de favoritisme.
+<div class="syncs-hello" markdown>
+![SYNCS, qui note tout](assets/syncs/jenote.png)
+
+Pas d'accord sur le jour ? Sur le jeu ? Ici, personne ne se décide jamais, alors je fais voter tout le monde, et je compte. Et quand il y a quelque chose à gagner, c'est moi qui tire au sort : au moins, personne ne pourra m'accuser de favoritisme.
+</div>
 
 ## Deux sortes de sondages
 
@@ -71,6 +75,9 @@ La carte affiche aussi l'heure de fin et l'**ID** du sondage, en bas.
 
 À l'heure affichée sur la carte, le sondage **se clôture tout seul** : la carte affiche le résultat, et je réponds dessous avec le gagnant, en mentionnant l'organisateur. Un vote passé l'heure est refusé, même si la carte n'a pas encore été mise à jour.
 
+!!! syncs smug ""
+    Ceux qui votent à la dernière seconde, je les vois venir. Une seconde de trop, et c'est non ( ˶ˆ ᗜ ˆ˵ )
+
 Si l'organisateur clôture lui-même avec **Clôturer**, la carte affiche le résultat, sans réponse de ma part.
 
 ### D'un sondage à une session
@@ -81,6 +88,9 @@ Une fois un `/when` clôturé, tant qu'un de ses créneaux est encore à venir, 
 - Ceux qui avaient voté pour ce créneau sont inscrits en « peut-être » sur la session, sans message privé.
 - Une fois la session créée, la carte du sondage mène à elle, et on ne peut pas en créer une deuxième.
 
+!!! syncs love ""
+    Un sondage qui devient une vraie session. C'est mon moment préféré, je l'avoue ♡
+
 ## Le sondage du weekend
 
 Chaque **mercredi soir**, je poste moi-même un sondage dans le salon principal : vendredi, samedi ou dimanche, à 21 h. Il se termine deux jours plus tard. Je ne le fais pas si une session est déjà prévue ce weekend, si une session hebdomadaire tombe dessus, ou si quelqu'un a déjà un `/when` en cours.
@@ -89,6 +99,9 @@ Chaque **mercredi soir**, je poste moi-même un sondage dans le salon principal 
 
 - si **une soirée gagne nettement** (seule en tête, avec au moins 2 votes), j'en fais une session toute seule (« Soirée du samedi », par exemple), avec ses votants en « peut-être » ;
 - en cas d'égalité ou avec un seul vote, j'annonce la ou les soirées en tête avec le bouton **Créer une session**. Comme c'est mon sondage, **n'importe qui ayant voté pour une soirée gagnante** peut la créer, et en devient l'organisateur.
+
+!!! syncs sulk ""
+    Je le poste chaque mercredi. Même quand personne n'y répond. Ce n'est pas grave. Je vais bien.
 
 ## Les tirages au sort : `/giveaway`
 

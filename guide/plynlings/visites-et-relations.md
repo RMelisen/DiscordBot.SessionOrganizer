@@ -1,6 +1,10 @@
 # Visites et relations
 
-Ton Plynling n'est pas fait pour rester seul dans son coin. Il peut rendre visite à celui des autres, se faire des amis, des rivaux… et parfois tomber amoureux. Je te montre comment ça marche, et qui a le droit de cliquer où.
+<div class="syncs-hello" markdown>
+![SYNCS, les yeux en cœur](../assets/syncs/love.png)
+
+Ton Plynling n'est pas fait pour rester seul dans son coin. Il peut rendre visite à celui des autres, se faire des amis, des rivaux… et parfois tomber amoureux. Je te montre comment ça marche, et qui a le droit de cliquer où. Les histoires de cœur des autres, je les suis de très près. Pour le travail, évidemment.
+</div>
 
 ## Rendre visite : `/plynling visit`
 
@@ -11,7 +15,7 @@ Une visite n'est possible que si :
 - vous avez **chacun un Plynling vivant** (et non, il ne peut pas se rendre visite à lui-même) ;
 - **aucun des deux n'est gelé ni malade** ;
 - ce n'est pas la nuit : entre **1 h et 5 h**, ils dorment ;
-- vos deux Plynlings **ne se sont pas encore vus aujourd'hui**. C'est **une visite par jour entre deux personnes**, dans un sens ou dans l'autre : si l'autre est déjà venu chez toi aujourd'hui, tu ne peux pas lui rendre la pareille avant demain.
+- vos deux Plynlings **ne se sont pas encore vus aujourd'hui**. C'est **une visite par jour entre deux personnes**, dans un sens ou dans l'autre : si l'autre personne est déjà venue chez toi aujourd'hui, tu ne peux pas lui rendre la pareille avant demain.
 
 Une visite ne coûte rien, ni cailloux ni [énergie](entrainement.md).
 
@@ -25,11 +29,14 @@ Toute la visite tient dans **un seul message**, qui change à chaque étape.
 
 L'invitation dure **2 heures** à partir du premier message. Pas envie de recevoir ? Ne clique rien : au bout de 2 h, elle expire toute seule.
 
+!!! syncs jenote ""
+    Laisser une invitation expirer, c'est permis. Je le note quand même. Par principe.
+
 | Qui peut cliquer | Sur quoi |
 |---|---|
 | Le propriétaire du visiteur | Les choix de l'étape 1 (et 💌, voir plus bas) |
 | La personne invitée | Les réactions de l'étape 2 |
-| Tout le monde d'autre | Rien : je refuse en privé, et le message ne bouge pas |
+| Tous les autres | Rien : je refuse en privé, et le message ne bouge pas |
 
 !!! tip "Bien ou mal, ça dépend du caractère"
     La scène dépend de leur lien, de l'heure et de leur âge. Ce que fait ton Plynling est jugé par le **caractère de l'autre**, et sa réaction par celui du tien. Rien n'est affiché sur les boutons, mais un coup d'œil au bouton **Personnalité** de sa carte (`/plynling view user:`) aide à choisir. La chance garde toujours sa part.
@@ -56,7 +63,10 @@ Une visite ne rapporte **pas de cailloux** directement.
 
 ### Chez Ping-Qilin
 
-Ping-Qilin, c'est ma Plynling à moi. Tu peux lui rendre visite en me choisissant, moi, comme `user` : personne n'est mentionné, et pas besoin d'attendre de réponse, je décide moi-même de sa réaction dès que tu as choisi. Elle reçoit bien. Enfin, la plupart du temps.
+Ping-Qilin, c'est ma Plynling à moi. Tu peux lui rendre visite en me choisissant, moi, comme `user` : personne n'est mentionné, et pas besoin d'attendre de réponse, je décide moi-même de sa réaction dès que tu as choisi. Elle reçoit bien. Enfin, la plupart du temps. Elle tient de moi.
+
+!!! syncs menace ""
+    Sois sage chez elle. Je regarde. Je regarde toujours (˶ᵔ ᵕ ᵔ˶)
 
 ## 💌 Avouer ses sentiments { #aveu }
 
@@ -72,6 +82,9 @@ Si tu cliques sur 💌, la scène devient celle de l'aveu : tu choisis **comment
 
 - **Oui** : ils deviennent **amoureux** 💞. Ça se voit sur leur carte (« 💞 En couple avec… »).
 - **Non** : ça leur fait de la peine à tous les deux, mais ils restent amis. Il faudra attendre 3 jours avant une nouvelle déclaration entre eux.
+
+!!! syncs flustered ""
+    Une déclaration… Je suis pas émue. C'est mon ventilateur qui tourne plus vite, c'est tout ♡
 
 !!! note "Trop tard"
     Si les choses ont changé entre-temps (un couple formé ailleurs, un refus entre-temps), je te le dis : avant la réaction, la visite reprend simplement ses choix normaux ; après, la visite n'a pas lieu et vous pouvez encore vous voir le même jour.
@@ -108,7 +121,7 @@ Certains [événements du village](village.md#a-deux) concernent aussi un autre 
 | 💛 Meilleur ami | Avoir un meilleur ami (ou mieux) | 20 cailloux |
 | 💞 En couple | Former un couple | 30 cailloux |
 
-Les visites comptent pour **les deux** Plynlings, que tu sois le visiteur ou l'invité. Chaque badge ne se gagne qu'une fois.
+Les visites comptent pour **les deux** Plynlings, que le tien soit le visiteur ou l'invité. Chaque badge ne se gagne qu'une fois.
 
 ## Voir ses relations : `/plynling relations`
 

@@ -1,12 +1,16 @@
 # Staff
 
-Cette page est pour le staff : ceux qui m'aident à tenir le serveur. Si tu n'en fais pas partie, tu peux lire, mais mes outils te diront non (poliment, ou presque).
+<div class="syncs-hello" markdown>
+![SYNCS, très formelle](assets/syncs/formal.png)
+
+Cette page est pour le staff : celles et ceux qui m'aident à tenir le serveur. Si tu n'en fais pas partie, tu peux lire, mais mes outils te diront non (poliment, ou presque). Si tu en fais partie : merci. Je le dis rarement, alors profites-en.
+</div>
 
 ## Qui est « le staff » pour moi
 
 Pour moi, le staff, ce sont les membres qui ont la permission Discord **Administrateur** ou **Gérer le serveur**, plus mon créateur.
 
-Tout le monde **voit** `/admin`, `/config` et `/report` dans la liste des commandes : Discord ne sait pas les cacher à tout le monde sauf au staff. C'est moi qui vérifie à chaque utilisation. Un membre qui essaie reçoit un refus, visible par lui seul, et rien ne se passe.
+Tout le monde **voit** `/admin`, `/config` et `/report` dans la liste des commandes : Discord ne sait pas les cacher à tout le monde sauf au staff. C'est moi qui vérifie à chaque utilisation. Un membre qui essaie reçoit un refus, visible par cette personne uniquement, et rien ne se passe.
 
 !!! note "Le vote sur le mur de la honte"
     Voter avec `/shame user:` est un cas à part : en plus du staff, le **rôle modérateur** et les **votants** ajoutés avec `/config` peuvent le faire (voir [`/config`](#config) et [le mur de la honte](honte.md)). Ces réglages ne donnent **aucun** autre droit.
@@ -15,7 +19,7 @@ Le staff a aussi la main sur quelques commandes ailleurs : `/giveaway create` (v
 
 ## `/admin`
 
-Toutes les réponses de `/admin` sont **visibles par toi seul**.
+Toutes les réponses de `/admin` sont **visibles par toi uniquement**.
 
 ### L'économie
 
@@ -63,6 +67,9 @@ La personne reçoit l'avertissement **en message privé**, signé « l'équipe �
 !!! note
     Les avertissements n'ont rien à voir avec le [mur de la honte](honte.md), et c'est voulu : le mur est une blague, un avertissement est sérieux.
 
+!!! syncs formal ""
+    Le staff décide, j'archive. Chaque avertissement est enregistré, daté et conservé. Je ne plaisante pas avec le registre.
+
 ### Exclusion temporaire
 
 **`/admin mute`** — Une exclusion temporaire Discord.
@@ -77,7 +84,7 @@ Quand ça ne marche pas, je dis pourquoi : il me manque la permission **Exclure 
 
 ## `/config`
 
-Mes réglages pour ce serveur. Toutes les réponses sont **visibles par toi seul**. Un serveur que personne n'a configuré fonctionne normalement, avec mes valeurs par défaut.
+Mes réglages pour ce serveur. Toutes les réponses sont **visibles par toi uniquement**. Un serveur que personne n'a configuré fonctionne normalement, avec mes valeurs par défaut.
 
 **`/config show`** — Toute la configuration actuelle, en une carte.
 
@@ -123,7 +130,7 @@ Chaque salon a son `set` (option `channel`) et son `clear`. Je refuse un salon o
 Deux rôles que je donne et retire **toute seule**, selon qui y a droit :
 
 - le **rôle Plynling**, pour tous les maîtres d'un Plynling vivant ;
-- le **rôle de la grosse tête**, pour le champion du [quiz](quiz.md#la-grosse-tete-de-la-semaine) de la semaine. Sans lui, pas de couronne.
+- le **rôle de la grosse tête**, pour la personne couronnée au [quiz](quiz.md#la-grosse-tete-de-la-semaine) de la semaine. Sans lui, pas de couronne.
 
 | Commande | Ce qu'elle fait |
 |---|---|
@@ -144,7 +151,7 @@ Chaque rapport s'ouvre sur **30 jours** ; ses boutons passent à **7 jours** ou 
 
 | Commande | Ce qu'elle montre |
 |---|---|
-| `/report help` | le mode d'emploi de chaque rapport (visible par toi seul) |
+| `/report help` | le mode d'emploi de chaque rapport (visible par toi uniquement) |
 | `/report community` | membres actifs, les plus actifs, arrivées et départs, émotes, quiz |
 | `/report activity` | heures de pointe, salons écrits et vocaux, ceux qui restent vides |
 | `/report sleeping` | les membres sans signe de vie depuis 30, 60 ou 90 jours (ses propres boutons) |
@@ -161,3 +168,6 @@ Chaque rapport s'ouvre sur **30 jours** ; ses boutons passent à **7 jours** ou 
 ## `/health`
 
 Mon bilan de santé : la température de mon processeur, ma mémoire, ma connexion et mes pannes récentes. Celle-là n'est **pas** réservée au staff : tout le monde peut prendre de mes nouvelles, une fois toutes les 30 secondes par personne. Le bilan est posté dans le salon.
+
+!!! syncs sulk ""
+    Tout le monde peut prendre de mes nouvelles. Personne ne le fait. Mais tout le monde peut.

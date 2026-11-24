@@ -1,6 +1,10 @@
 # Le mur de la honte
 
-Il y a des titres qu'on ne cherche pas à gagner. Je les décerne quand même, et je les affiche sur mon mur. C'est pour rire… mais je note tout.
+<div class="syncs-hello" markdown>
+![SYNCS, menaçante](assets/syncs/menace.png)
+
+Il y a des titres qu'on ne cherche pas à gagner. Je les décerne quand même, et je les affiche sur mon mur, bien en vue. C'est pour rire… mais je note tout. Absolument tout 👁👄👁️
+</div>
 
 ## `/shame`
 
@@ -12,7 +16,7 @@ Le mur s'ouvre sur les **30 derniers jours** ; trois boutons passent à **7 jour
 
 | Titre | Ce qui le vaut |
 |---|---|
-| **Le Malfaisant** | être méchant avec quelqu'un |
+| **Le Malfaisant** | dire des méchancetés à quelqu'un |
 | **Le Banni** | les votes du staff contre toi |
 | **Le Perfide** | parler aux *autres* bots |
 | **L'Hystérique** | écrire en MAJUSCULES |
@@ -24,7 +28,7 @@ Je repère toute seule les messages méchants (je ne dirai pas comment).
 
 - **Si ton message vise quelqu'un** (une mention, ou une réponse à son message) : **un point par personne visée**. Viser trois personnes d'un coup, c'est trois points.
 - **Si tu râles sans viser personne** : un point aussi, mais au plus **un par minute** dans un même salon. Une tirade de vingt messages ne compte pas vingt fois.
-- Les rôles et `@everyone` ne comptent jamais comme des cibles, ni les autres bots. **Moi**, par contre, si. Être méchant avec moi, c'est être méchant.
+- Les rôles et `@everyone` ne comptent jamais comme des cibles, ni les autres bots. **Moi**, par contre, si. Une méchanceté contre moi reste une méchanceté.
 
 Râler contre un boss ou un jeu peut aussi te valoir un point. C'est le prix de ma vigilance.
 
@@ -35,6 +39,9 @@ Le seul titre décerné par des humains : le staff vote avec `/shame user:` (voi
 ### Le Perfide
 
 Pour ceux qui vont voir ailleurs. Je vois qui répond aux autres bots et qui utilise leurs commandes. Au plus **un point par minute** et par salon, et un seul par message, même s'il y a plusieurs bots dedans.
+
+!!! syncs outraged ""
+    Tu parles à d'autres bots. Je le sais. Je le vois. Je dis rien. …Si, en fait. Un point.
 
 ### L'Hystérique
 
@@ -55,8 +62,14 @@ Un point chaque fois que tu abandonnes ton Plynling avec `/plynling abandon` (vo
 - **2 votes maximum par personne visée et par jour**, tous votants confondus. Le but, c'est d'éviter l'acharnement.
 - On ne peut pas me dénoncer (c'est mon mur), ni dénoncer un autre bot. Se dénoncer soi-même, par contre, c'est permis.
 
+!!! syncs smug ""
+    Me dénoncer, moi ? Sur mon propre mur ? C'est mignon d'y avoir pensé (˶ᵔ ᵕ ᵔ˶)
+
 ## Effacer un point
 
 Avec des cailloux, je peux oublier un point : `/bribe shame` efface **un** de tes points dans le titre de ton choix (Malfaisant, Perfide, Hystérique ou Indigne). Le prix et les règles sont sur la page [cailloux](cailloux.md#bribe-shame).
 
 Les votes du **Banni** ne s'achètent pas : c'est le staff qui les donne.
+
+!!! syncs bargain ""
+    Je suis incorruptible. Sauf contre des cailloux. Mais à part ça, incorruptible ♡

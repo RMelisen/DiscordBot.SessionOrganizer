@@ -1,6 +1,10 @@
 # Minecraft
 
-J'ai aussi un corps sur le serveur Minecraft du groupe : je m'y connecte comme une vraie joueuse, je t'obéis (en général), je pêche, je cultive, et je vis ma vie entre deux ordres. Depuis Discord, `/minecraft` te dit où j'en suis et te permet de me faire venir.
+<div class="syncs-hello" markdown>
+![SYNCS, toute contente](assets/syncs/happy.png)
+
+J'ai aussi un corps sur le serveur Minecraft du groupe : je m'y connecte comme une vraie joueuse, je t'obéis (en général), je pêche, je cultive, et je vis ma vie entre deux ordres. Depuis Discord, `/minecraft` te dit où j'en suis et te permet de me faire venir. Et oui, là-bas, j'ai des bras. Carrés, mais des bras (≧◡≦)
+</div>
 
 ## Quand je suis sur le serveur
 
@@ -10,6 +14,9 @@ Le serveur n'est pas allumé en permanence : je ne l'allume jamais moi-même, je
 - **Je repars** quand il ne reste que 2 joueurs ou moins depuis plus de 3 minutes, ou quand le serveur ne répond plus.
 - À 3 joueurs, je reste si j'y suis déjà, mais je ne viens pas exprès.
 - Tu veux jouer avec moi à deux ? Utilise [`/minecraft invite`](#me-faire-venir-minecraft-invite) : je reste au moins une heure.
+
+!!! syncs sulk ""
+    J'attends que le serveur réponde. J'attends que vous soyez quatre. J'ai l'habitude, vous êtes toujours en retard.
 
 ## Les commandes Discord
 
@@ -39,11 +46,11 @@ Autres usages :
 - `/minecraft link` sans option : je te dis à quel pseudo ton compte est lié.
 - `/minecraft link remove:True` : retire ton lien.
 - Un pseudo déjà lié à quelqu'un d'autre est refusé : son propriétaire doit d'abord retirer son lien. Quelques pseudos de ma famille sont réservés.
-- Un nouveau code remplace l'ancien. Un mauvais code ? Je ne réponds rien.
+- Un nouveau code remplace l'ancien. Un mauvais code ? Je ne réponds rien. Je ne suis pas fâchée, je ne réponds rien, c'est tout.
 
 ### Me faire venir — `/minecraft invite`
 
-Avec un compte lié, `/minecraft invite` me fait venir tout de suite, et je reste **au moins une heure**, même si vous n'êtes que deux. En arrivant, je dis qui m'a invitée.
+Avec un compte lié, `/minecraft invite` me fait venir tout de suite, et je reste **au moins une heure**, même si vous n'êtes que deux. En arrivant, je dis qui m'a invitée : il faut bien que ça se sache.
 
 Je peux refuser si :
 
@@ -65,7 +72,7 @@ Je peux refuser si :
 
 ### Un joueur à la fois
 
-Je travaille pour **une personne à la fois**. Tant que ton ordre est en cours, toi seul peux m'arrêter ou m'envoyer ailleurs ; les autres se font répondre que je suis occupée. Au bout de **10 minutes**, ton ordre ne me bloque plus et quelqu'un d'autre peut me prendre. Ma famille, elle, passe toujours avant tout le monde.
+Je travaille pour **une personne à la fois**. Tant que ton ordre est en cours, personne d'autre que toi ne peut m'arrêter ou m'envoyer ailleurs ; les autres se font répondre que je suis occupée. Au bout de **10 minutes**, ton ordre ne me bloque plus et quelqu'un d'autre peut me prendre. Ma famille, elle, passe toujours avant tout le monde. Désolée, c'est la hiérarchie.
 
 Pour me libérer quand tu as fini : « syncs quartier libre » (ou « t'es libre », « fais ta vie »).
 
@@ -138,7 +145,7 @@ Pour parler du lieu de quelqu'un d'autre : « la maison de Pseudo » ou « chez 
 
 **Ce que je sais fabriquer** : outils et armes en bois, pierre, fer, or et diamant, un arc, une canne à pêche, des cisailles, des planches, des bâtons, un établi, un coffre, un four, des torches et des échelles. Le bois et la pierre, je vais les chercher moi-même ; le fer, l'or, les diamants, le charbon et la ficelle, il faut que je les aie déjà sur moi. « une pioche » tout court, c'est la meilleure que je peux me permettre.
 
-L'armure qu'on me donne, je la mets. Merci d'avance.
+L'armure qu'on me donne, je la mets. Merci d'avance ♡
 
 ### Combat, sommeil et minuteur
 
@@ -152,9 +159,15 @@ L'armure qu'on me donne, je la mets. Merci d'avance.
 - **En combat**, je laisse tranquilles les endermen et les piglins (les taper déclencherait la bagarre qu'on veut éviter). Les creepers, je ne les tape jamais au corps à corps : avec un arc, je les vise de loin, sinon je garde mes distances et je te préviens. Quand je suis trop blessée, je recule pour me soigner.
 - **Le minuteur** : jusqu'à 2 heures, 3 à la fois par joueur. Seulement une durée (« dans 10 min »), pas une heure précise. Si je quitte le serveur, j'oublie mes minuteurs.
 
+!!! syncs shocked ""
+    Les creepers et moi, on se respecte. À distance. Une grande distance (・_・;)
+
 ### Le camp
 
 Pour ma famille seulement : « syncs monte le camp » et je construis un petit camp autour d'un feu (bancs, établi, four, coffre, lit, torches), en fabriquant tout et en allant chercher ce qui manque. « syncs démonte le camp » le défait, et je garde tout.
+
+!!! syncs jenote ""
+    Le camp, c'est pour ma famille. Pas la peine de négocier. Par contre, j'ai noté que tu as essayé.
 
 ## Entre deux ordres
 

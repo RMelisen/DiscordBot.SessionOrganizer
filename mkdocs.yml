@@ -1,7 +1,7 @@
 # The members' user guide, published to GitHub Pages by .github/workflows/guide.yml.
 # Sources are the French pages under guide/ (docs/ holds contributor notes and is not published).
 site_name: Guide de S.Y.N.C.S.
-site_description: Le mode d'emploi de SYNCS, le bot du serveur — sessions, votes, niveaux, Plynlings, arcade et le reste.
+site_description: Le mode d'emploi de SYNCS, la bot du serveur — sessions, votes, niveaux, Plynlings, arcade et le reste.
 site_url: https://rmelisen.github.io/DiscordBot.SessionOrganizer/
 repo_url: https://github.com/RMelisen/DiscordBot.SessionOrganizer
 docs_dir: guide
@@ -14,6 +14,14 @@ validation:
 theme:
   name: material
   language: fr
+  # Her own palette and faces: guide/stylesheets/syncs.css (« sa chambre »).
+  # Template overrides (the 404 page) live in guide-theme/, outside docs_dir.
+  custom_dir: guide-theme
+  logo: assets/syncs/smug.png
+  favicon: assets/syncs/happy.png
+  font:
+    text: Nunito
+    code: JetBrains Mono
   features:
     - navigation.sections
     - navigation.top
@@ -26,18 +34,21 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep purple
-      accent: amber
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Passer en mode sombre
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: deep purple
-      accent: amber
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-sunny
         name: Passer en mode clair
+
+extra_css:
+  - stylesheets/syncs.css
 
 markdown_extensions:
   - admonition

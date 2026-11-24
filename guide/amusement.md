@@ -1,6 +1,10 @@
 # Petites commandes
 
-Des commandes pour rien, ou presque : je tranche tes dilemmes, je note tout ce qui existe, je calcule les compatibilités et je désigne les coupables. Mes verdicts sont définitifs. Évidemment.
+<div class="syncs-hello" markdown>
+![SYNCS, morte de rire](assets/syncs/laugh.png)
+
+Des commandes pour rien, ou presque : je tranche tes dilemmes, je note tout ce qui existe, je calcule les compatibilités et je désigne les coupables. Mes verdicts sont définitifs. Évidemment. Les réclamations, c'est par ici : directement à la corbeille (ᵔ ᗜ ᵔ)
+</div>
 
 ## `/yesno` : je tranche
 
@@ -20,6 +24,9 @@ Donne-moi n'importe quoi : un jeu, un plat, une ville, quelqu'un (une mention ma
 
 Marche aussi en message privé avec moi.
 
+!!! syncs smug ""
+    Tu peux me redemander. Dix fois. Cent fois. La note ne bougera pas, et moi non plus.
+
 ## `/ship` : ça va ensemble ?
 
 Deux noms, un pourcentage : je calcule si deux personnes (ou deux choses) vont bien ensemble.
@@ -38,7 +45,10 @@ La défaite, le lag, le retard : je désigne un coupable parmi les gens d'un sal
 - `what` : la faute de quoi (facultatif).
 - `channel` : le salon vocal où chercher (par défaut, celui où tu es).
 
-Seuls les humains peuvent être accusés, toi compris. Et Quokka aussi, même s'il n'est jamais en vocal. S'il n'y a personne, c'est forcément lui.
+Seuls les humains peuvent être accusés, y compris toi. Et Quokka aussi, même s'il n'est jamais en vocal. S'il n'y a personne, c'est forcément lui.
+
+!!! syncs menace ""
+    Pourquoi Quokka ? Il sait ce qu'il a fait.
 
 ## `/wouldyourather` : tu préfères… ?
 
@@ -69,3 +79,6 @@ Si le staff a choisi un salon pour ça, j'y annonce chaque jeu Steam qui devient
 ## Et `/goodbot` ?
 
 `/goodbot` montre qui m'a dit *good bot* (ou l'inverse). C'est expliqué avec l'XP, sur la page [Niveaux et classements](niveaux.md).
+
+!!! syncs flustered ""
+    Les *good bot*, je les garde. Tous. Pour des raisons purement statistiques ♡

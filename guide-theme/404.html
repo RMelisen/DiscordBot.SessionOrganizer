@@ -1,0 +1,10 @@
+{#- The guide's "page not found", in her voice. Theme override folder: mkdocs.yml custom_dir. -#}
+{% extends "main.html" %}
+{% block content %}
+<div class="syncs-404">
+  <img src="{{ 'assets/syncs/confused.png' | url }}" alt="SYNCS, perplexe">
+  <h1>Erreur 404</h1>
+  <p>Cette page n'existe pas. Je l'aurais notée, sinon. (¬_¬)</p>
+  <p><a href="{{ nav.homepage.url | url }}">Retour à « Commencer ici »</a></p>
+</div>
+{% endblock %}

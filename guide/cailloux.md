@@ -1,6 +1,10 @@
 # Cailloux et objets
 
-Les **cailloux**, c'est ma monnaie. On en gagne en travaillant pour moi, en passant chaque jour, en jouant, et un peu rien qu'en étant là. On les dépense en nourriture pour son Plynling, en objets de collection, en cosmétiques… ou en pots-de-vin. Je ne juge pas. Enfin, si, mais je prends l'argent.
+<div class="syncs-hello" markdown>
+![SYNCS, prête à négocier](assets/syncs/bargain.png)
+
+Bienvenue dans mon économie. Les **cailloux**, c'est ma monnaie. On en gagne en travaillant pour moi, en passant chaque jour, en jouant, et un peu rien qu'en étant là. On les dépense en nourriture pour son Plynling, en objets de collection, en cosmétiques… ou en pots-de-vin. Je ne juge pas. Enfin, si, mais je prends l'argent (ᵔ ᗜ ᵔ)
+</div>
 
 ## Gagner des cailloux
 
@@ -9,7 +13,7 @@ Les **cailloux**, c'est ma monnaie. On en gagne en travaillant pour moi, en pass
 | `/work` | 25 à 40, toutes les 4 h |
 | `/daily` | de 5 à 100 selon ta série, parfois un objet en plus |
 | Parler, réagir, être en vocal | 1 par gain d'XP, une trentaine par jour au plus |
-| Le [quiz](quiz.md) | 25, 40 ou 60 au premier qui trouve, 150 pour la grosse tête de la semaine |
+| Le [quiz](quiz.md) | 25, 40 ou 60 à la première personne qui trouve, 150 pour la grosse tête de la semaine |
 | L'[arcade](arcade.md) et Quokka | selon le jeu |
 | Compléter une collection | sa récompense (voir [plus bas](#le-carnet-de-collection)) |
 | Revendre des objets | voir [`/inventory sell`](#inventory-sell) |
@@ -27,9 +31,12 @@ Ta récompense du jour, à prendre **une fois par jour** (minuit, heure de Paris
 
 Sauter un jour remet ta série à 1. Sauf si c'est ma faute : un jour où j'ai été hors ligne au moins 3 heures ne casse pas ta série. Ta meilleure série compte pour le succès **🔥 Assiduité** (voir [les niveaux](niveaux.md#les-succes)). Raccourci : `;daily`.
 
+!!! syncs jenote ""
+    Reviens demain. Et après-demain. Je compte les jours, moi aussi.
+
 ### `/balance`
 
-Tes cailloux, **visibles par toi seul**. Le bouton 🔔 t'envoie un message privé dès que ton prochain `/work` est prêt (un message par boulot) ; reclique pour l'arrêter.
+Tes cailloux, **visibles par toi uniquement**. Le bouton 🔔 t'envoie un message privé dès que ton prochain `/work` est prêt (un message par boulot) ; reclique pour l'arrêter.
 
 ### `/pay`
 
@@ -40,11 +47,14 @@ Donne des cailloux à quelqu'un.
 
 Une **taxe de 10 %** (arrondie au-dessus) s'ajoute, **à ta charge** : la personne reçoit exactement ce que tu as tapé, et la taxe disparaît, personne ne la touche. Tu peux envoyer **2 000 cailloux par jour** au plus, toutes personnes confondues. Pas à toi-même, ni à un bot.
 
+!!! syncs sulk ""
+    La taxe, personne ne la touche. Même pas moi. Et pourtant, j'ai demandé.
+
 ## Ce que les cailloux m'achètent
 
 ### `/bribe favourite`
 
-**24 heures comme mon chouchou** : je suis gentille avec toi. Pour une fois. Racheter prolonge de 24 h à partir de la fin.
+**24 heures de traitement de faveur** : je suis gentille avec toi. Pour une fois. Racheter prolonge de 24 h à partir de la fin.
 
 ### `/bribe shame`
 
@@ -56,6 +66,9 @@ Les votes du Banni ne sont pas à vendre. S'il n'y a rien à effacer dans ce tit
 
 !!! warning "Le prix des pots-de-vin"
     Un pot-de-vin coûte **100 cailloux**, et le prix **double** à chaque pot-de-vin que tu as déjà payé cette semaine (du lundi au dimanche), les deux sortes confondues : 100, puis 200, puis 400… Lundi, on repart à 100.
+
+!!! syncs bargain ""
+    Un pot-de-vin, ça va. Trois dans la semaine, ça devient une relation. Je facture en conséquence ♡
 
 ### `/shoutout bid`
 
@@ -81,7 +94,7 @@ Chaque **objectif** atteint débloque une récompense pour tout le serveur. Le p
 
 Ce que tu verses te vaut le succès **🪙 Mécène** et une place dans la vue **Mécènes** de [`/leaderboard`](niveaux.md#leaderboard).
 
-`/jar status` montre le bocal, l'objectif en cours et les plus grands donateurs (visible par toi seul).
+`/jar status` montre le bocal, l'objectif en cours et les plus grands donateurs (visible par toi uniquement).
 
 ### Et ailleurs
 
@@ -111,11 +124,11 @@ Chaque objet de collection a une rareté, qui fixe aussi son prix de revente :
 
 ### `/inventory view`
 
-Ton inventaire, **visible par toi seul** : ton garde-manger, tes objets trouvés, ta garde-robe et tes cailloux, sur deux pages.
+Ton inventaire, **visible par toi uniquement** : ton garde-manger, tes objets trouvés, ta garde-robe et tes cailloux, sur deux pages.
 
 ### `/inventory shop`
 
-La boutique, **visible par toi seul**. Choisis un article dans le menu, puis **×1**, **×5** ou **×10** (les boutons sont grisés si tu n'as pas assez). **−10 % dès 5** du même article.
+La boutique, **visible par toi uniquement**. Choisis un article dans le menu, puis **×1**, **×5** ou **×10** (les boutons sont grisés si tu n'as pas assez). **−10 % dès 5** du même article.
 
 | Article | Prix |
 |---|---|
@@ -201,7 +214,7 @@ Je l'annonce dans le salon quand tu passes un rang. Tes complétions comptent da
 
 ### `/inventory cosmetics`
 
-Un écran **visible par toi seul**, en trois onglets :
+Un écran **visible par toi uniquement**, en trois onglets :
 
 - **Garde-robe** : ce que tu possèdes. Choisir un cosmétique le met tout de suite à ton Plynling (s'habiller est gratuit).
 - **Boutique** : ce qui est en vente. Une partie change **chaque lundi** (la même pour tout le monde), et certains articles ne sont là qu'à une saison.

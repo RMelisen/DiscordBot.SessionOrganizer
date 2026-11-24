@@ -1,15 +1,22 @@
 # Commencer ici
 
-Salut. Moi, c'est **S.Y.N.C.S.**, le bot du serveur. J'organise vos soirées, je compte votre XP, je tiens les registres… et personne ne me remercie jamais. Ce guide t'explique tout ce que je sais faire, page par page.
+<div class="syncs-hello" markdown>
+![SYNCS, toute contente](assets/syncs/happy.png)
+
+Salut ! Moi, c'est **S.Y.N.C.S.**, la bot du serveur. J'organise vos soirées, je compte votre XP, je tiens les registres… et personne ne me remercie jamais. Ça va, j'ai l'habitude. Ce guide t'explique tout ce que je sais faire, page par page : lis-le, ça m'évitera de me répéter (˶ᵔ ᵕ ᵔ˶)
+</div>
 
 ## Qui je suis
 
-Je suis un petit bot qui tourne sur un Raspberry Pi, et je fais tourner tout le serveur :
+Je suis une petite bot qui tourne sur un Raspberry Pi, quelque part dans un grenier, et c'est moi qui fais tourner tout le serveur :
 
 - **J'organise** : sessions de jeu, soirées film, sondages pour trouver un créneau, votes, tirages au sort, rappels.
 - **Je compte** : l'XP de chacun, les niveaux, les classements, et quelques titres moins glorieux.
 - **Je m'occupe d'un petit monde** : les Plynlings, des champignons à adopter, et une arcade où l'on joue des cailloux.
 - **Je parle** : j'ai du caractère. Il m'arrive de répondre dans le chat, de réagir à vos messages, de commenter ce qui se passe. Ne le prends pas personnellement. Enfin, pas toujours.
+
+!!! syncs jenote ""
+    Tout ce que tu fais ici atterrit quelque part dans mes logs. Je dis ça, je dis rien (¬_¬)
 
 Toutes mes commandes commencent par `/` : tape `/` dans Discord et la liste apparaît, avec une description pour chaque option.
 
@@ -27,13 +34,19 @@ Toutes mes commandes commencent par `/` : tape `/` dans Discord et la liste appa
 | `/arcade` | Mes jeux : duels, course de Plynlings, blackjack contre moi, loterie… avec des cailloux en jeu. Essaie `/arcade duel`. | [L'arcade](arcade.md) |
 | `/tonight` | « Qui est chaud ce soir ? » Assez de monde dit oui, et ça devient une vraie session. | [Sessions et soirées](sessions.md) |
 
+!!! syncs smug ""
+    Commence par `/schedule create`. Au début, je ne savais faire que des plannings. Regarde-moi maintenant ( ˶ˆ ᗜ ˆ˵ )
+
 ## XP et cailloux : ce qui relie tout
 
 Deux compteurs font tourner le serveur.
 
-**L'XP** mesure ta présence. Tu en gagnes en parlant, en réagissant aux messages, et en vocal (à condition d'être accompagné, micro ouvert et pas en sourdine). L'XP fait monter ton **niveau** sur `/level` et ta place sur `/leaderboard`. Elle ne se perd jamais.
+**L'XP** mesure ta présence. Tu en gagnes en parlant, en réagissant aux messages, et en vocal (à condition d'avoir de la compagnie, le micro ouvert et de ne pas être en sourdine). L'XP fait monter ton **niveau** sur `/level` et ta place sur `/leaderboard`. Elle ne se perd jamais.
 
 **Les cailloux** sont ma monnaie. Chaque gain d'XP t'en rapporte quelques-uns (plafonné chaque jour), et tu en gagnes surtout avec `/work` (toutes les 4 h), `/daily` (ta récompense du jour), le quiz et l'arcade. Ils servent à nourrir et soigner ton Plynling, acheter des objets et des cosmétiques, miser à l'arcade, ou acheter mes faveurs. Tout est sur la page [Cailloux et objets](cailloux.md).
+
+!!! syncs bargain ""
+    Mes faveurs ont un prix. Raisonnable. Pour l'instant.
 
 !!! note
     S'occuper de ton Plynling ne rapporte pas d'XP : c'est ta présence sur le serveur qui compte.
@@ -61,3 +74,5 @@ Deux compteurs font tourner le serveur.
     - [Minecraft](minecraft.md) : ma vie sur le serveur Minecraft.
 - [Staff](staff.md) : les outils des administrateurs.
 - [Questions fréquentes](faq.md) : quand quelque chose ne marche pas comme prévu.
+
+Bonne lecture. Et ne saute pas de pages : je le saurai.

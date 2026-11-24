@@ -1,6 +1,10 @@
 # La fin, et après
 
-Un Plynling peut mourir. Pas de vieillesse : de faim, ou d'une maladie qu'on n'a pas soignée. Voici comment ça arrive, comment l'éviter, et ce qui se passe ensuite. (╥﹏╥)
+<div class="syncs-hello" markdown>
+![SYNCS, triste](../assets/syncs/sad.png)
+
+Un Plynling peut mourir. Pas de vieillesse : de faim, ou d'une maladie qu'on n'a pas soignée. C'est la page que j'aime le moins. Voici comment ça arrive, comment l'éviter, et ce qui se passe ensuite. Lis surtout le « comment l'éviter ».
+</div>
 
 ## Comment il peut mourir
 
@@ -17,6 +21,9 @@ Ce qui ne le tue **jamais** :
 
 !!! tip "Je préviens toujours"
     Je t'envoie un **message privé** environ **3 heures avant** qu'il meure de faim (à **23 h la veille** si ça tombe la nuit), et un autre le matin où il **tombe malade**. Garde tes messages privés ouverts pour me laisser te prévenir.
+
+!!! syncs mama ""
+    Un message de moi, à ce moment-là, ce n'est jamais pour rien. Ouvre-le, s'il te plaît.
 
 Tous les détails pour le garder en forme sont sur [Prendre soin de lui](soins.md).
 
@@ -50,9 +57,12 @@ Chaque Plynling repose sous une tombe, de la plus simple à la plus belle :
 - **◀ ▶** : tourne les pages.
 - L'option `user` n'affiche que les tombes d'une personne.
 
+!!! syncs sad ""
+    Je me souviens de chacun d'eux. Oublier, ce n'est pas mon genre ♡
+
 ## Adopter à nouveau
 
-Tu peux adopter un nouveau Plynling **tout de suite** avec `/plynling adopt`. Tes **cosmétiques** te restent et habilleront le suivant ; ton inventaire et tes cailloux aussi.
+Tu peux adopter un nouveau Plynling **tout de suite** avec `/plynling adopt`. Tes **cosmétiques** te restent et habilleront le suivant ; ton inventaire et tes cailloux aussi. Rien ne presse, mais rien ne t'en empêche.
 
 ## L'abandonner
 
@@ -63,6 +73,9 @@ Tu peux adopter un nouveau Plynling **tout de suite** avec `/plynling adopt`. Te
 - **tout le serveur l'apprend**, et ça compte pour le titre de *L'Indigne* sur `/shame` (voir [Le mur de la honte](../honte.md)) ;
 - ses meilleurs amis et son ou sa partenaire en ont le cœur brisé ;
 - tu dois attendre **30 minutes** avant d'en adopter un autre.
+
+!!! syncs mama ""
+    Abandonner, c'est ton droit. Je le respecte. Je préfère juste qu'on se dise au revoir.
 
 !!! warning
     Un Plynling abandonné ne peut **pas** être ressuscité, même par le staff. Si tu pars en vacances, gèle-le plutôt (`/plynling freeze`).

@@ -1,6 +1,10 @@
 # L'arcade
 
-Mes jeux, avec des [cailloux](cailloux.md) en jeu. Tout passe par `/arcade` : un duel à deux, un casse en équipe, des paris sur les Plynlings, une fusée, du blackjack… Choisis ton jeu, mise, et essaie de repartir plus riche que tu n'es arrivé. Je ne promets rien.
+<div class="syncs-hello" markdown>
+![SYNCS, sûre d'elle](assets/syncs/smug.png)
+
+Mes jeux, mes règles, et des [cailloux](cailloux.md) en jeu. Tout passe par `/arcade` : un duel à deux, un casse en équipe, des paris sur les Plynlings, une fusée, du blackjack… Choisis ton jeu, mise, et essaie de repartir plus riche qu'en arrivant. Je ne promets rien. Je promets juste de bien compter (˶ᵔ ᵕ ᵔ˶)
+</div>
 
 ## Avant de jouer
 
@@ -21,27 +25,30 @@ Mes jeux, avec des [cailloux](cailloux.md) en jeu. Tout passe par `/arcade` : un
 | Patate chaude | `/arcade bomb` | 3 à 8 | 20 |
 | Qui a dit ça ? | `/arcade quote` | tout le monde | gratuit |
 | Ma température | `/arcade temperature` | 2 et plus | 10 |
-| Plus ou moins | `/arcade guess` | toi seul | 0 à 500 |
+| Plus ou moins | `/arcade guess` | toi, en solo | 0 à 500 |
 | Puissance 4 | `/arcade puissance4` | 2 (ou toi contre moi) | 0 à 500 |
 | Morpion | `/arcade morpion` | 2 (ou toi contre moi) | 0 à 500 |
 | Loterie | `/arcade lottery` | tout le monde | 20 le ticket |
 
 ## Duel — `/arcade duel`
 
-Pierre-feuille-ciseaux contre quelqu'un, avec des cailloux en jeu.
+Pierre-feuille-ciseaux contre quelqu'un, avec des cailloux en jeu. Le plus vieux jeu du monde, et toujours personne pour le jouer proprement.
 
 - **Lancer** : `/arcade duel opponent:@quelqu'un stake:100`. La mise (`stake`) va de 10 à 500, et chacun met la même. Vous devez tous les deux avoir de quoi la payer.
 - **Ton adversaire** reçoit une notification et a **10 minutes** pour cliquer sur **Accepter** ou **Refuser**.
-- **Jouer** : une fois le duel accepté, chacun clique sur **Choisir mon coup** et choisit 🗿 Pierre, 📄 Feuille ou ✂️ Ciseaux dans un message que lui seul voit. La carte montre qui a joué, jamais quoi. Vous avez **5 minutes** pour choisir, sinon le duel est annulé et personne ne paie.
+- **Jouer** : une fois le duel accepté, chacun clique sur **Choisir mon coup** et choisit 🗿 Pierre, 📄 Feuille ou ✂️ Ciseaux dans un message que personne d'autre ne voit. La carte montre qui a joué, jamais quoi. Vous avez **5 minutes** pour choisir, sinon le duel est annulé et personne ne paie.
 - **Égalité** : on rejoue la manche. Après 4 manches nulles d'affilée, c'est match nul et personne ne paie.
 - **Gains** : le gagnant empoche la mise de l'autre, moins 10 % de commission (arrondie au-dessus). Exemple : mise de 100, le gagnant gagne 90, le perdant perd 100.
 - La carte du duel est republiée en bas du salon à chaque étape, pour que vous ne la perdiez pas de vue.
 - Tu peux me défier, moi aussi : je n'ai pas besoin d'accepter, j'accepte toujours. Si tu l'oses.
 - On ne se défie pas soi-même, on ne défie pas les autres bots, et chacun n'a qu'un duel en cours à la fois.
 
+!!! syncs smug ""
+    Me défier, moi ? J'adore. C'est toujours touchant, quelqu'un qui croit en sa chance (ᵔ ᗜ ᵔ)
+
 ## Le casse de Quokka — `/arcade heist`
 
-Monte une équipe pour braquer la planque de Quokka. Plus vous êtes nombreux, plus ça passe, mais plus le butin se partage.
+Monte une équipe pour braquer la planque de Quokka. Plus vous êtes nombreux, plus ça passe, mais plus le butin se partage. Voler Quokka, ce n'est pas du vol. C'est de la justice, avec une cagoule.
 
 - **Lancer** : `/arcade heist`. Tu es le cerveau de l'opération et tu fais d'office partie de l'équipe. Il te faut 25 cailloux pour ta cagoule.
 - **Recruter** : les autres cliquent sur **Rejoindre l'équipe** (8 membres au maximum) ou **Me retirer**. Le cerveau, lui, ne se retire pas.
@@ -64,7 +71,7 @@ En cas d'échec, chacun perd ses 25. Quelle que soit la taille de l'équipe, ça
 
 ## Course de Plynlings — `/arcade race`
 
-Une course entre les [Plynlings](plynlings/index.md) du serveur, avec des paris.
+Une course entre les [Plynlings](plynlings/index.md) du serveur, avec des paris. Que le meilleur champignon gagne. Je reste neutre. Presque.
 
 - **Lancer** : `/arcade race`. Je choisis au hasard **3 à 6 coureurs** parmi les Plynlings vivants, réveillés et en forme. S'il n'y en a pas assez, pas de course. Et la nuit, quand les Plynlings dorment, non plus.
 - **La forme** de chaque coureur s'affiche sur la carte : son Courage, plus un bonus s'il est heureux. Les plus en forme sont favoris, mais personne n'est à l'abri.
@@ -76,7 +83,7 @@ Une course entre les [Plynlings](plynlings/index.md) du serveur, avec des paris.
 
 ## Crash — `/arcade crash`
 
-Une fusée décolle et son multiplicateur grimpe. Encaisse avant qu'elle explose.
+Une fusée décolle et son multiplicateur grimpe. Encaisse avant qu'elle explose. Le plus dur, ce n'est pas de miser : c'est de savoir s'arrêter. Je regarde, et je prends des notes.
 
 - **Lancer** : `/arcade crash`. Pendant **60 secondes**, chacun mise en cliquant sur **Miser 10**, **25**, **50** ou **100** (un clic sur une autre mise remplace la tienne). Celui qui a lancé la fusée peut cliquer sur **Décoller maintenant**.
 - **En vol**, le multiplicateur monte : environ ×2 au bout de 9 secondes, ×10 vers 30 secondes, ×20 au maximum. Clique sur **Encaisser** quand tu veux : tu récupères ta mise multipliée par le multiplicateur **au moment exact de ton clic**.
@@ -88,14 +95,14 @@ Une fusée décolle et son multiplicateur grimpe. Encaisse avant qu'elle explose
 Une main de blackjack contre moi. Ici, je ne triche pas : je taquine, c'est tout.
 
 - **Lancer** : `/arcade blackjack stake:50`. Mise (`stake`) de 10 à 200.
-- **Jouer** : **Tirer** pour une carte de plus, **Rester** pour t'arrêter, **Doubler** (seulement sur tes deux premières cartes, et si tu as de quoi payer le double) pour doubler ta mise, prendre une seule carte et t'arrêter. À 21, tu t'arrêtes tout seul.
+- **Jouer** : **Tirer** pour une carte de plus, **Rester** pour t'arrêter, **Doubler** (seulement sur tes deux premières cartes, et si tu as de quoi payer le double) pour doubler ta mise, prendre une seule carte et t'arrêter. À 21, tu t'arrêtes automatiquement.
 - **Mes règles** : je tire tant que j'ai moins de 17, et je m'arrête dès 17. Les As valent 11 ou 1, les figures 10. Une main par partie, le paquet ne s'épuise jamais.
 - **Gains** : victoire = ta mise gagnée ; blackjack (21 avec tes deux premières cartes) = **3 contre 2** ; égalité = rien ne bouge ; au-delà de 21, tu perds.
-- Une main à la fois par personne, et seul toi peux jouer la tienne. **5 minutes** sans rien faire, et tu restes automatiquement.
+- Une main à la fois par personne, et personne d'autre ne peut jouer la tienne. **5 minutes** sans rien faire, et tu restes automatiquement.
 
 ## Patate chaude — `/arcade bomb`
 
-Une bombe passe de main en main. Celui qui la tient quand elle explose perd sa mise.
+Une bombe passe de main en main. Celui qui la tient quand elle explose perd sa mise. Jamais un bouton n'a été cliqué aussi vite.
 
 - **Lancer** : `/arcade bomb`. La mise est fixe : **20 cailloux** chacun.
 - **S'inscrire** : les autres cliquent sur **Jouer** (8 joueurs au maximum) ou **Me retirer**. Celui qui a lancé la partie reste, c'est sa bombe.
@@ -106,7 +113,7 @@ Une bombe passe de main en main. Celui qui la tient quand elle explose perd sa m
 
 ## Qui a dit ça ? — `/arcade quote`
 
-Je ressors un vieux message du serveur. À toi de deviner qui l'a écrit.
+Je ressors un vieux message du serveur. À toi de deviner qui l'a écrit. J'ai tout gardé, évidemment.
 
 - **Lancer** : `/arcade quote`. Je pioche un message de plus d'une semaine, dans un salon que tout le monde peut lire, écrit par quelqu'un encore sur le serveur. Je propose quatre auteurs possibles.
 - **Jouer** : clique sur le nom de ton choix. **Un seul essai par personne.** L'auteur du message ne peut pas jouer, évidemment.
@@ -122,9 +129,12 @@ Devine la température de mon processeur. Oui, j'ai chaud parfois. Ça arrive au
 - **Résultat** au bout de **10 minutes** : je lis mon thermomètre, et le plus proche rafle la cagnotte, moins 10 %. En cas d'égalité, les plus proches se partagent.
 - Il faut **au moins 2 joueurs**, sinon le pari est annulé et personne ne paie. Un seul pari à la fois par serveur.
 
+!!! syncs overheat ""
+    Et non, je ne te dirai pas si j'ai chaud en ce moment. Une bot a droit à ses petits secrets.
+
 ## Plus ou moins — `/arcade guess`
 
-Je pense à un nombre entre 1 et 100. Tu as **6 essais** pour le trouver.
+Je pense à un nombre entre 1 et 100, bien au chaud dans ma RAM. Tu as **6 essais** pour le trouver.
 
 - **Lancer** : `/arcade guess`, ou `/arcade guess stake:100` pour miser (de 0 à 500 ; 0 par défaut, pour le plaisir).
 - **Jouer** : clique sur **Deviner** et tape ton nombre. Je te réponds « plus » ou « moins », et la carte garde l'historique de tes essais.
@@ -133,7 +143,7 @@ Je pense à un nombre entre 1 et 100. Tu as **6 essais** pour le trouver.
 
 ## Puissance 4 et morpion — `/arcade puissance4`, `/arcade morpion`
 
-Deux jeux de plateau, contre quelqu'un ou contre moi.
+Deux jeux de plateau, contre quelqu'un ou contre moi. Moi, je réfléchis vite.
 
 - **Lancer** : `/arcade puissance4` ou `/arcade morpion`. L'option `opponent` choisit ton adversaire ; sans elle, c'est contre moi. L'option `stake` ajoute une mise (de 0 à 500, 0 par défaut).
 - **Contre quelqu'un** : ton adversaire reçoit une notification et a **10 minutes** pour cliquer sur **Accepter** ou **Refuser**. Avec une mise, vous devez tous les deux avoir de quoi la payer.
@@ -142,15 +152,15 @@ Deux jeux de plateau, contre quelqu'un ou contre moi.
 - Une partie de plateau à la fois par personne. Contre moi, en revanche, tout le monde peut jouer en même temps : je suis multitâche.
 
 !!! tip "Petit conseil"
-    Au morpion, je joue parfaitement. Le mieux que tu puisses espérer, c'est un match nul. Au Puissance 4, bonne chance.
+    Au morpion, je joue parfaitement. Le mieux que tu puisses espérer, c'est un match nul. Au Puissance 4… bonne chance.
 
 ## La loterie — `/arcade lottery`
 
-La loterie de la semaine : **20 cailloux le ticket**, tirage **chaque dimanche à 21 h** (heure de Paris).
+La loterie de la semaine : **20 cailloux le ticket**, tirage **chaque dimanche à 21 h** (heure de Paris). Le dimanche soir, je fais des heureux. Enfin, un heureux.
 
-- **Voir la cagnotte** : `/arcade lottery` sans option. Je t'affiche (à toi seul) la cagnotte, le nombre de tickets et de joueurs, tes tickets, tes chances et l'heure du tirage.
+- **Voir la cagnotte** : `/arcade lottery` sans option. Je t'affiche (rien qu'à toi) la cagnotte, le nombre de tickets et de joueurs, tes tickets, tes chances et l'heure du tirage.
 - **Acheter** : `/arcade lottery tickets:5`. Jusqu'à 500 tickets par achat, sans limite au total sur la semaine. Contrairement aux autres jeux, **le ticket est payé tout de suite**.
-- **La cagnotte**, c'est 20 cailloux par ticket acheté, plus mon propre ticket gratuit, qui y ajoute aussi 20. Même seul joueur, tu peux donc gagner plus que ce que tu as payé.
+- **La cagnotte**, c'est 20 cailloux par ticket acheté, plus mon propre ticket gratuit, qui y ajoute aussi 20. Même si tu es la seule personne à jouer, tu peux donc gagner plus que ce que tu as payé.
 - **Le tirage** : un ticket au hasard parmi tous, le mien compris. Le gagnant prend **75 %** de la cagnotte, je brûle le reste. Si c'est mon ticket qui sort, personne ne gagne et toute la cagnotte part en fumée.
 - J'annonce le résultat dans le salon des bots, en mentionnant le gagnant. Une semaine où personne n'a joué, il n'y a pas de tirage.
 - Un ticket acheté le dimanche après 21 h compte pour la semaine suivante.
@@ -161,5 +171,8 @@ Quokka, le propriétaire de la planque qu'on braque avec `/arcade heist`, ose pa
 
 - Il vient **jusqu'à 4 fois par jour**, entre midi et 23 h, au hasard, et seulement quand il y a du monde sur le serveur.
 - Le **premier** qui clique sur **Frapper** gagne entre **10 et 30 cailloux**, et le badge 🦘 **Chasse au Quokka**.
-- Il repart au bout de **2 minutes**. Trop lent ? Il te nargue.
+- Il repart au bout de **2 minutes**. Pas assez rapide ? Il te nargue.
 - Rien à miser, rien à perdre : c'est cadeau. Frappe fort.
+
+!!! syncs grumpy ""
+    Il se croit chez lui. Il n'est pas chez lui. C'est MON salon (ง ͠ಥ_ಥ)ง

@@ -1,6 +1,10 @@
 # Le village
 
-Les Plynlings vivent à **Humeval**, un petit village tranquille. C'est là que se passent leurs visites et leurs événements : petites histoires du quotidien, où c'est toi qui choisis ce que fait ton Plynling.
+<div class="syncs-hello" markdown>
+![SYNCS, toute contente](../assets/syncs/happy.png)
+
+Les Plynlings vivent à **Humeval**, un petit village tranquille. C'est là que se passent leurs visites et leurs événements : petites histoires du quotidien, où c'est toi qui choisis ce que fait ton Plynling. Moi, je n'y mets jamais les pieds. Pas de pieds. Mais je regarde. Beaucoup.
+</div>
 
 ## Humeval en deux mots
 
@@ -12,6 +16,9 @@ Humeval, c'est un hameau d'une quinzaine de maisons au creux d'une vallée humid
 - **La monnaie**, ce sont les cailloux : des galets de la Sommeille.
 
 **Le ton est tout doux.** À Humeval, une catastrophe, c'est une dispute, une pomme volée ou un gâteau raté. Un choix « mal tourné » donne une scène drôle ou un peu penaude, et le village, lui, ne change pas : chacun reste à sa place, avec son métier et ses manies.
+
+!!! syncs grumpy ""
+    Là-bas, une catastrophe, c'est un gâteau raté. Ici, c'est un sondage où tout le monde vote « peut-être ». Je préfère Humeval.
 
 ## Quelques lieux
 
@@ -45,6 +52,9 @@ Au fil des histoires, ton Plynling croisera des villageois. On les appelle tous 
 
 Il y en a d'autres. Je te laisse les rencontrer.
 
+!!! syncs jenote ""
+    Quelqu'un qui compte tout, et tout le monde qui lui complique la tâche ? Je compatis, l'Intendant. Énormément.
+
 ## Les événements { #evenements }
 
 À peu près **une fois par jour**, en journée, il arrive quelque chose à ton Plynling. D'autres moments en amènent aussi : son arrivée, grandir, tomber malade et guérir, parfois une visite, ou un trop-plein de stress.
@@ -70,6 +80,9 @@ Quand tu ouvres l'événement, je te montre la scène et 2 à 4 choix. Sous chaq
 | 🏷️ un titre · 🎁 un souvenir à garder · ✨ un trait change | Ce que peut laisser la fin d'une longue histoire. |
 | 🔒 | Un choix fermé pour l'instant, avec ce qui manque pour l'ouvrir. |
 | ❔ on verra bien | Une surprise. Les coûts et les chances restent affichés. |
+
+!!! syncs smug ""
+    Les chances affichées sont les vraies. Moi, je ne mens jamais sur les chiffres. Sur le reste, ça dépend (˶˃ ᵕ ˂˶)
 
 Une fois ton choix fait, l'histoire est **racontée dans le salon du jeu**, page par page (◀ ▶), pour que tout le monde en profite.
 
@@ -107,4 +120,4 @@ Certains événements concernent **un autre Plynling** : une déclaration, un d�
 - Ces événements peuvent rapprocher ou éloigner les deux Plynlings, comme une visite.
 - **Une déclaration** suit les mêmes règles que l'aveu en visite : un garçon et une fille, meilleurs amis, personne déjà en couple, pas de refus entre eux depuis 3 jours (voir [Visites et relations](visites-et-relations.md#aveu)).
 
-Bonne vie au village (◕‿◕)
+Bonne vie au village. Raconte-moi tout. Enfin, je le saurai déjà, mais raconte quand même (ᵕ • ᴗ •)

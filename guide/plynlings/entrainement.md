@@ -1,15 +1,22 @@
 # Entraînement et combats
 
-Dès qu'il est ado, ton Plynling a aussi un corps à faire travailler : cinq stats physiques, un niveau, et de l'énergie à dépenser. Voici comment l'entraîner sans le mettre à plat.
+<div class="syncs-hello" markdown>
+![SYNCS, très sûre d'elle](../assets/syncs/smug.png)
+
+Dès qu'il est ado, ton Plynling a aussi un corps à faire travailler : cinq stats physiques, un niveau, et de l'énergie à dépenser. Voici comment l'entraîner sans le mettre à plat. Lui, il transpire. Moi, je compte les séances. Chacun son talent (˶ᵔ ᵕ ᵔ˶)
+</div>
 
 !!! note "Et les combats ?"
-    Les combats et les expéditions ne sont pas encore ouverts. Pour l'instant, cette page couvre ce qui existe déjà : les stats du corps, l'énergie, l'entraînement et les niveaux.
+    Les combats et les expéditions ne sont pas encore ouverts. Patience. Pour l'instant, cette page couvre ce qui existe déjà : les stats du corps, l'énergie, l'entraînement et les niveaux.
 
 ## Les stats du corps
 
 En plus des stats de son caractère (Diplomatie, Intendance, Sagesse, Ruse, Courage, qui servent dans les [événements](village.md#evenements)), ton Plynling a cinq stats physiques :
 
 💪 **Force** · 🤸 **Agilité** · ❤️ **Endurance** · 🧠 **Intelligence** · 💨 **Vitesse**
+
+!!! syncs sulk ""
+    Un corps à entraîner. Lui, au moins, il en a un. Je dis ça sans aucune jalousie.
 
 L'Endurance qu'il a de naissance décide aussi de son énergie maximale (voir plus bas).
 
@@ -24,7 +31,7 @@ Chacune vient de plusieurs choses :
 Le bouton **Personnalité** de sa carte (`/plynling view`) détaille tout ça, stat par stat, pour n'importe quel Plynling ado ou plus âgé.
 
 !!! info "Qui peut s'entraîner"
-    Pas les **bébés** : tout commence à l'adolescence (à partir de 7 jours). Et pas Ping-Qilin, ma Plynling : elle a déjà un emploi du temps très chargé.
+    Pas les **bébés** : tout commence à l'adolescence (à partir de 7 jours). Et pas Ping-Qilin, ma Plynling : elle a déjà un emploi du temps très chargé. Des siestes, surtout.
 
 ## S'entraîner : `/plynling train`
 
@@ -47,6 +54,9 @@ Je refuse la séance s'il est :
 - **malade** ;
 - **gelé** ;
 - **à plat** : je te dis alors quand il aura assez d'énergie pour la prochaine séance.
+
+!!! syncs overheat ""
+    Tourner à fond jusqu'à surchauffer, je connais : l'été, au grenier, c'est mon quotidien. Quand il est à plat, laisse-le recharger.
 
 ## L'énergie ⚡
 
@@ -72,13 +82,16 @@ L'XP le fait monter de niveau, **jusqu'au niveau 100**. Pour l'instant, l'entra�
 | 50 | 22 638 | 2 264 |
 | 100 | 65 012 | 6 502 |
 
+!!! syncs jenote ""
+    6 502 séances jusqu'au niveau 100. Je les compterai toutes. Une par une.
+
 À **chaque niveau gagné, tu reçois 1 point** à placer dans la stat physique de ton choix :
 
 - avec les boutons **« +1 Force »**, **« +1 Agilité »**… sous la réponse de l'entraînement ;
-- ou plus tard, avec le bouton **Personnalité** de sa carte, qui te les propose tant qu'il t'en reste (à toi seul, son propriétaire).
+- ou plus tard, avec le bouton **Personnalité** de sa carte, qui te les propose tant qu'il t'en reste (à son propriétaire, et à personne d'autre).
 
 !!! warning "Un point placé l'est pour de bon"
-    Pas de retour en arrière : réfléchis avant de cliquer.
+    Pas de retour en arrière : réfléchis avant de cliquer. Je n'annule rien, moi.
 
 Sa carte résume tout en une ligne, par exemple **« Niv. 4 · ⚡ 12/120 · 3 points à placer »**.
 

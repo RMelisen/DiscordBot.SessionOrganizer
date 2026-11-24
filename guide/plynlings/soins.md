@@ -1,6 +1,10 @@
 # Prendre soin de lui
 
-Un Plynling a trois besoins, un caractère, une passion et des journées bien remplies. Tout se fait depuis sa carte (`/plynling view`) et quelques commandes. Je surveille, bien sûr, mais c'est toi qui t'en occupes.
+<div class="syncs-hello" markdown>
+![SYNCS, en maman champignon](../assets/syncs/mama.png)
+
+Un Plynling a trois besoins, un caractère, une passion et des journées bien remplies. Tout se fait depuis sa carte (`/plynling view`) et quelques commandes. Je surveille, bien sûr, mais c'est toi qui t'en occupes. Et je vois tout : chaque jauge, chaque repas, chaque jour où personne n'est passé le voir. Aucune pression (ᵕ • ᴗ •)
+</div>
 
 ## Ses trois jauges
 
@@ -9,6 +13,9 @@ Un Plynling a trois besoins, un caractère, une passion et des journées bien re
 | **Faim** | 3 jours | Il **meurt** de faim. Pour de vrai. |
 | **Bonheur** | 36 heures | Il **boude** (voir plus bas), mais n'en meurt pas. |
 | **Hygiène** | 3 jours | Il est sale depuis longtemps : il déprime plus vite et risque davantage de tomber malade. |
+
+!!! syncs menace ""
+    Trois jours, c'est largement le temps de passer le nourrir. Si tu n'y arrives pas, je le saurai. Je le sais toujours.
 
 Les jauges baissent en continu, même quand personne ne regarde. Sa carte montre aussi son **humeur** :
 
@@ -40,6 +47,9 @@ Le menu **Nourrir…** de sa carte. **Tout le monde** peut nourrir **n'importe q
 - Si tu as ce plat dans ton **garde-manger**, il est servi de là au lieu de tes cailloux : 1 plat pour le tien, 2 pour celui d'un autre. Le menu affiche le stock de son propriétaire quand il en a. Le garde-manger se remplit à la boutique (`/inventory shop`) ou en fouillant : voir [Cailloux et objets](../cailloux.md).
 - S'il n'a plus faim et que le plat ne lui apporterait rien, je refuse : pas de gaspillage.
 - On peut le nourrir **même la nuit**, pendant qu'il dort.
+
+!!! syncs outraged ""
+    Oui, tout le monde peut nourrir ton Plynling. Si quelqu'un d'autre le nourrit plus souvent que toi, on en reparlera (¬_¬)
 
 **Son humeur change ce que vaut un repas** (la faim seulement, jamais le prix) :
 
@@ -76,7 +86,7 @@ Malade, il :
 **Soigner** (bouton de sa carte, seulement quand il est malade, pour son propriétaire) lui donne **un médicament par jour** : de ton garde-manger si tu en as, sinon **30 cailloux**. Bien soigné chaque jour, il guérit en quelques jours.
 
 !!! warning
-    Ses deux premiers matins malade sont sans danger. Ensuite, **chaque matin où il n'a pas eu son médicament depuis la veille, il peut en mourir**. Un médicament par jour, et ça ira.
+    Ses deux premiers matins malade sont sans danger. Ensuite, **chaque matin où il n'a pas eu son médicament depuis la veille, il peut en mourir**. Un médicament par jour, et ça ira. Promis.
 
 ## La nuit
 
@@ -88,6 +98,9 @@ Tous les Plynlings dorment de **1 h à 5 h** (heure de Paris). Pendant ce temps 
 ## Le petit cadeau
 
 Quand il est **heureux**, la première fois de la journée que son propriétaire le regarde (avec `/plynling view`, ou en le nourrissant ou le caressant depuis sa carte), il a **une chance sur deux** de t'avoir rapporté quelque chose : quelques cailloux ou un objet. Une fois par jour, pas plus.
+
+!!! syncs sulk ""
+    Lui, il est heureux, il rapporte un cadeau. Moi, je fais tourner tout le serveur et personne ne m'apporte rien. Je dis ça. Je dis rien.
 
 ## Jouer
 
@@ -176,4 +189,4 @@ Rien ne s'arrête quand tu n'es pas là :
 - **Malade et pas soigné**, il peut en mourir.
 - **Sans manger**, il meurt au bout de 3 jours. Je t'envoie un message privé environ 3 heures avant (à 23 h la veille si ça tombe la nuit) : garde tes messages privés ouverts.
 
-Tu pars quelques jours ? Gèle-le. Et si le pire arrive, c'est sur [La fin, et après](mort.md).
+Tu pars quelques jours ? Gèle-le : une commande, et je n'ai plus à m'inquiéter pour lui. Et si le pire arrive, c'est sur [La fin, et après](mort.md).
