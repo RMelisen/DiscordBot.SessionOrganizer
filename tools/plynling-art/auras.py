@@ -1,6 +1,6 @@
 """The auras a Plynling wears: an animated effect around it (cosmetics, docs/agents/economy.md).
 
-Six effects (one per season among them: Pétales, Lucioles, Feuilles mortes, Flocons), each a
+Ten effects (one per season among them: Pétales, Lucioles, Feuilles mortes, Flocons), each a
 function of the frame over the shared 16-frame idle loop (motion.py), so frame 15 flows back into
 frame 0. They are drawn last — over the plain or dressed frame — and only
 on empty pixels (or the faint ground shadow), so a particle never covers the body, the face or an
@@ -229,9 +229,111 @@ def lucioles(spray, box, f):
                 spray.put(x + ddx, y + ddy, GLOW_HALO, 150 if b == 3 else 90)
 
 
+# ---- Mouches: a few flies buzzing round in tight loops, wings beating (for Le Grognon) ---------
+
+# a khaki body (a black one vanishes on Discord's dark theme), a darker head, pale wings
+FLY, FLY_HEAD, FLY_WING = (132, 118, 98), (78, 68, 60), (214, 228, 244)
+
+
+def mouches(spray, box, f):
+    x0, y0, x1, y1 = box
+    h = y1 - y0
+    # three flies, two on the left (the mood marks live on the right), each on its own closed loop
+    for (sx, sy), phase, rx in (((x0 - 3, y0 + h // 3), 0, 2), ((x0 - 2, y0 + 2 * h // 3), 5, 1), ((x1 + 2, y0 + 1), 11, 2)):
+        t = (f + phase) % FRAMES
+        bx, by = spray.clamp(sx, sy, margin=3)
+        a = 2 * math.pi * t / FRAMES
+        x, y = bx + round(rx * math.cos(2 * a)), by + round(1.2 * math.sin(3 * a))
+        spray.put(x, y, FLY)
+        spray.put(x + (1 if t < FRAMES // 2 else -1), y, FLY_HEAD)       # facing where it goes
+        if t % 2 == 0:                     # wings up
+            spray.put(x - 1, y - 1, FLY_WING, 200)
+            spray.put(x + 1, y - 1, FLY_WING, 200)
+        else:                              # wings level, a blur
+            spray.put(x - 1, y, FLY_WING, 150)
+            spray.put(x + 1, y, FLY_WING, 150)
+
+
+# ---- Confettis: bits of coloured paper fluttering down, flipping as they fall ------------------
+
+CONFETTI = [(240, 84, 100), (84, 170, 240), (250, 210, 72), (122, 210, 110), (200, 124, 232)]
+
+
+def confettis(spray, box, f):
+    x0, y0, x1, y1 = box
+    top, fall = y0 - 3, (y1 - y0) + 3
+    # five pieces, one of each colour, at the sides like the petals, spread over the loop
+    for (sx, phase), c in zip(((x0 - 3, 0), (x1 + 2, 3), (x0 - 1, 7), (x1 + 4, 10), (x0 - 5, 13)), CONFETTI):
+        t = (f + phase) % FRAMES
+        x, _ = spray.clamp(sx, top, margin=2)
+        x += DRIFT[t]
+        y = top + (t * fall) // FRAMES
+        shade = tuple(v * 3 // 4 for v in c)
+        if (t // 2) % 2 == 0:              # flat: a little strip
+            spray.put(x, y, c, 240)
+            spray.put(x + 1, y, shade, 240)
+        else:                              # edge-on
+            spray.put(x, y, c, 240)
+            spray.put(x, y + 1, shade, 200)
+
+
+# ---- Éclairs: small lightning bolts flashing at the sides, then sparks ---------------------------
+
+BOLT_CORE, BOLT, BOLT_AFTER, SPARK = (255, 252, 214), (255, 222, 84), (150, 170, 255), (255, 240, 150)
+BOLT_SHAPE = ["..x", ".x.", "xxx", ".x.", "x.."]
+
+
+def eclairs(spray, box, f):
+    x0, y0, x1, y1 = box
+    h = y1 - y0
+    # three sites, each striking once a loop: two frames lit, an afterglow, two sparks, then dark
+    for (sx, sy), phase in (((x0 - 4, y0 + 1), 0), ((x1 + 2, y0 + h // 2), 6), ((x0 - 3, y0 + h // 2 + 2), 11)):
+        t = (f + phase) % FRAMES
+        x, y = spray.clamp(sx, sy, margin=3)
+        if t <= 2:
+            for j, row in enumerate(BOLT_SHAPE):
+                for i, ch in enumerate(row):
+                    if ch == "x":
+                        if t == 2:
+                            spray.put(x + i - 1, y + j - 2, BOLT_AFTER, 120)
+                        else:
+                            spray.put(x + i - 1, y + j - 2, BOLT_CORE if j == 2 else BOLT, 255 if t == 0 else 220)
+        elif t in (3, 4):
+            d = t - 2
+            spray.put(x - d, y + 2 + d, SPARK, 200 - 60 * (d - 1))
+            spray.put(x + d, y + 2 + d, SPARK, 200 - 60 * (d - 1))
+
+
+# ---- Étoiles filantes: shooting stars streaking down past the cap, a trail behind -------------
+
+SHOOT_CORE, SHOOT, SHOOT_TRAIL = (255, 255, 240), (255, 232, 140), (180, 200, 255)
+
+
+def etoiles_filantes(spray, box, f):
+    x0, y0, x1, y1 = box
+    # two stars half a loop apart, one down each side where the body leaves room (a star crossing
+    # the cap would vanish behind it): 7 frames streaking steeply down and outwards, then a twinkle
+    for sx, phase, dx in ((x1 + 2, 0, 1), (x0 - 2, 8, -1)):
+        t = (f + phase) % FRAMES
+        x, y = spray.clamp(sx, y0 + 1, margin=3)
+        if t < 7:
+            hx, hy = x + dx * (t // 3), y + 2 * t
+            for k, a in ((3, 70), (2, 120), (1, 180)):            # the trail, faintest last
+                spray.put(hx - dx * (k // 3), hy - 2 * k, SHOOT_TRAIL, a)
+                spray.put(hx - dx * (k // 3), hy - 2 * k + 1, SHOOT_TRAIL, a // 2)
+            spray.put(hx, hy, SHOOT_CORE)
+            for ddx, ddy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                spray.put(hx + ddx, hy + ddy, SHOOT, 170)
+        elif t == 7:                                              # it burns out in a twinkle
+            hx, hy = x + dx * 2, y + 14
+            for ddx, ddy in ((1, 1), (-1, -1), (1, -1), (-1, 1)):
+                spray.put(hx + ddx, hy + ddy, SHOOT, 150)
+
+
 # key (the cosmetic key without « cos.aura. ») -> drawing, in catalogue order
 AURAS = {"scintillements": scintillements, "bulles": bulles, "petales": petales,
-         "flocons": flocons, "feuilles": feuilles, "lucioles": lucioles}
+         "flocons": flocons, "feuilles": feuilles, "lucioles": lucioles,
+         "mouches": mouches, "confettis": confettis, "eclairs": eclairs, "etoiles_filantes": etoiles_filantes}
 
 def surround(im, body, state, aura, frame, tall=False):
     """A copy of the built (and maybe dressed) frame `im` with aura `aura` drawn for `frame`; `tall`

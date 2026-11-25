@@ -232,6 +232,30 @@ public static class ReportChecks
             var noStandings = MemberBadges.Evaluate(noFacts, new DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero));
             if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(allDone, noStandings) is not { } badgeLine || badgeLine.Length > 4000) Fail("/level badge line missing or too long");
             if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(new List<ProjectSYNCS.Models.CollectionCompletion>(), noStandings) is not null) Fail("/level shows a badge line with no completion");
+            // /inventory view at its widest: everything held, cosmetics included, every icon uploaded.
+            var heldEverything = ItemCatalog.All.Select(i => new ProjectSYNCS.Models.InventoryItem { Key = i.Key, Quantity = 9999 }).ToList();
+            foreach (var invPage in Enum.GetValues<ProjectSYNCS.Commands.InventoryPage>())
+            {
+                try
+                {
+                    var (inv, _) = ProjectSYNCS.Commands.InventoryModule.BuildInventoryPage(heldEverything, ItemCatalog.Sets.Count, 9_999_999, invPage);
+                    Measure($"/inventory view {invPage}", inv, names: true);
+                    Console.WriteLine($"/inventory view {invPage} at worst: {inv.Length} chars, longest field {inv.Fields.Max(f => f.Value.Length)}");
+                }
+                catch (ArgumentException ex) { Fail($"/inventory view {invPage} with everything held throws: {ex.Message}"); }
+            }
+            // Every title and nothing else: too long for one field, short enough to keep the names.
+            try
+            {
+                var titles = CosmeticCatalog.InSlot(CosmeticSlot.Title).Select(c => new ProjectSYNCS.Models.InventoryItem { Key = c.Key, Quantity = 1 }).ToList();
+                var (wardrobe, _) = ProjectSYNCS.Commands.InventoryModule.BuildInventoryPage(titles, 0, 0, ProjectSYNCS.Commands.InventoryPage.Wardrobe);
+                Measure("/inventory view Wardrobe, every title", wardrobe, names: true);
+                var titleFields = wardrobe.Fields.Where(f => f.Name.StartsWith(CosmeticCatalog.SlotPlural(CosmeticSlot.Title))).ToList();
+                if (titleFields.Count < 2 || !titleFields[1].Name.EndsWith("(suite)")) Fail("/inventory view: thirty titles are not split into « (suite) »");
+                if (!string.Concat(titleFields.Select(f => f.Value)).Contains(CosmeticCatalog.ShortName(CosmeticCatalog.InSlot(CosmeticSlot.Title).Last())))
+                    Fail("/inventory view: thirty titles lost their names");
+            }
+            catch (ArgumentException ex) { Fail($"/inventory view with every title throws: {ex.Message}"); }
             ProjectSYNCS.Helpers.ItemEmojis.Clear();
             Console.WriteLine($"collection book at worst: {widestBook} chars");
         }

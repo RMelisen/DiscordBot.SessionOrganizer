@@ -3,6 +3,24 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.19.0 — 2026-11-25
+
+- Cosmetics have six rarities: commun, peu commun, rare, the new épique (3 600 cailloux), légendaire and the new mythique, which is never sold.
+- Every Chef-d'œuvre is mythique and every Ouvrage peu commun; seasonal and crafted cosmetics no longer read « commun ».
+- Seasonal cosmetics cost their rarity: seasonal titles and accessories are now peu commun (1 200), seasonal thèmes, auras and the cadre stay rare (2 400).
+- Re-tiered: Aurore boréale, Le Sage, L'Immortel and the Lanternes cadre are épique; the ballon is peu commun.
+- Chefs-d'œuvre cost 200, 300 or 400 cailloux by how long their hunt takes.
+- The shop shows one rotating aura a week instead of both.
+- The shop and the item view name the rarity of seasonal and crafted cosmetics too.
+- Cosmetic collections: 14 themed groups (Grand-Froid, Grandes Vacances, Cour royale…); `/inventory view`'s wardrobe page shows how many pieces of each you own.
+- Fixed `/inventory view`'s wardrobe page failing for someone owning many cosmetics: a long list continues in a « (suite) » field, and a very large wardrobe shows only the icons.
+- Two cosmetics of every kind but auras are always on sale: new basics Ciel (thème), Le Gentil (titre), a cup of coffee (accessoire) and Pâquerettes (cadre).
+- New in the weekly rotation: Le Studieux, round glasses and the Mouches aura (commun); a bow tie, Le Distingué, the Roses rouges cadre and the Confettis aura (peu commun); a monocle and the Velours thème (rare); a walking cane and the Éclairs aura (épique); Le Magnifique and the Étoiles filantes aura (légendaire).
+- New Chef-d'œuvre: a pocket watch, crafted from Puits treasures.
+- The baguette magique is retired: each copy is refunded 2 400 cailloux and taken off any Plynling wearing it.
+- The Grand Illusionniste collection is now Gentleman, joined by the bow tie, monocle, cane, pocket watch and more.
+- The card says « Entouré d'éclairs », not « de éclairs ».
+
 ## 8.18.1 — 2026-11-25
 
 - Cosmetics screen: more room between blocks, and the shop and recipes are listed by type (thème, titre, accessoire, aura, cadre).

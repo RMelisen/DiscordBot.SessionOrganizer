@@ -20,7 +20,7 @@ public static class AccessoryArtChecks
         if (!ok) _fail("accessory art: " + what);
     }
 
-    private static readonly string[] Retired = { "cos.accessory.sac_a_dos", "cos.accessory.casque_audio" };
+    private static readonly string[] Retired = { "cos.accessory.sac_a_dos", "cos.accessory.casque_audio", "cos.accessory.baguette" };
 
     public static void Run(Action<string> fail)
     {
@@ -32,6 +32,7 @@ public static class AccessoryArtChecks
         GamesJournalVisitsAndPostsAttachTheirPicture();
         RetiredAreGone();
         RetireMigrationRefunds();
+        RetireWandMigration();
         StyleResets();
         WardrobeStylePicker();
     }
@@ -376,6 +377,68 @@ public static class AccessoryArtChecks
             .ToDictionary(p => p.OwnerId, p => (p.AccessoryKey, p.AccessoryStyle));
         Expect(worn[7] == (null, null), $"retirement: Pépin still wears {worn[7]}");
         Expect(worn[8].AccessoryKey == "cos.accessory.lunettes", "retirement: Mousse lost her lunettes");
+    }
+
+    // RetireMagicWand on a real SQLite: refunds 2 400 a baguette (the rare price it always sold at),
+    // takes it off whichever of the three slots holds it, and moves the later accessories up.
+    private static void RetireWandMigration()
+    {
+        const string wand = "cos.accessory.baguette";
+        using var conn = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+        conn.Open();
+        var opts = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<ProjectSYNCS.Data.AppDbContext>().UseSqlite(conn).Options;
+        using var db = new ProjectSYNCS.Data.AppDbContext(opts);
+        var migrator = db.GetService<IMigrator>();
+        migrator.Migrate("AddGuildFeatureSettings");
+        var at = new DateTimeOffset(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
+        db.PebbleWallets.Add(new PebbleWallet { GuildId = 1, UserId = 7, Balance = 100 });
+        db.PebbleWallets.Add(new PebbleWallet { GuildId = 1, UserId = 8, Balance = 50 });
+        db.InventoryItems.Add(new InventoryItem { GuildId = 1, UserId = 7, Key = wand, Quantity = 2, DiscoveredAt = at });
+        db.InventoryItems.Add(new InventoryItem { GuildId = 1, UserId = 8, Key = "cos.accessory.lunettes", Quantity = 1, DiscoveredAt = at });
+        db.InventoryItems.Add(new InventoryItem { GuildId = 1, UserId = 9, Key = wand, Quantity = 1, DiscoveredAt = at });   // no wallet
+        db.SaveChanges();
+        db.ChangeTracker.Clear();
+
+        void Wearing(long owner, string name, (string? Key, string? Style) a, (string? Key, string? Style) b, (string? Key, string? Style) c,
+            bool dead = false)
+        {
+            var values = new Dictionary<string, object> { ["GuildId"] = 1, ["OwnerId"] = owner, ["Name"] = name };
+            void Slot(string key, string style, (string? Key, string? Style) item)
+            {
+                if (item.Key is { } k) values[key] = k;
+                if (item.Style is { } s) values[style] = s;
+            }
+            Slot("AccessoryKey", "AccessoryStyle", a);
+            Slot("Accessory2Key", "Accessory2Style", b);
+            Slot("Accessory3Key", "Accessory3Style", c);
+            if (dead) values["DiedAt"] = "2026-11-02 12:00:00+00:00";
+            InsertAtOldSchema(conn, "Plynlings", values);
+        }
+        Wearing(10, "A", (wand, "gauche"), ("cos.accessory.ballon", "rouge_droite"), ("cos.accessory.couronne", null));
+        Wearing(11, "B", ("cos.accessory.noeud", "rose_gauche"), (wand, "droite"), ("cos.accessory.tulipe", "gauche"));
+        Wearing(12, "C", ("cos.accessory.noeud", "rose_gauche"), ("cos.accessory.fleur", "blanche_droite"), (wand, "droite"), dead: true);
+        Wearing(13, "D", ("cos.accessory.lunettes", null), (null, null), (null, null));
+        // Never written by the bot (an item is never worn twice), but a data migration runs once: any
+        // pattern of freed slots must close.
+        Wearing(14, "E", (wand, "gauche"), (wand, "droite"), ("cos.accessory.couronne", null));
+
+        migrator.Migrate();
+        var wallets = db.PebbleWallets.ToDictionary(w => w.UserId, w => w.Balance);
+        Expect(wallets[7] == 100 + 2 * 2400, $"wand retirement: the holder of 2 baguettes has {wallets[7]}, expected {100 + 2 * 2400}");
+        Expect(wallets.GetValueOrDefault(9UL) == 2400, $"wand retirement: a holder with no wallet got {wallets.GetValueOrDefault(9UL)}, expected 2400");
+        Expect(wallets[8] == 50, $"wand retirement: someone without one was paid ({wallets[8]})");
+        var logged = db.EconomyDailyStats.Where(s => s.GuildId == 1 && s.Metric == EconomyLog.EarnAdmin).Sum(s => s.Value);
+        Expect(logged == 3 * 2400, $"wand retirement: the economy log records {logged}, expected {3 * 2400}");
+        var keys = db.InventoryItems.Select(i => i.Key).ToList();
+        Expect(!keys.Contains(wand) && keys.Contains("cos.accessory.lunettes"), "wand retirement: inventory rows left " + string.Join(", ", keys));
+
+        var worn = db.Plynlings.Select(p => new { p.Name, p.AccessoryKey, p.AccessoryStyle, p.Accessory2Key, p.Accessory2Style, p.Accessory3Key, p.Accessory3Style })
+            .ToList().ToDictionary(p => p.Name, p => $"{p.AccessoryKey}:{p.AccessoryStyle}|{p.Accessory2Key}:{p.Accessory2Style}|{p.Accessory3Key}:{p.Accessory3Style}");
+        Expect(worn["A"] == "cos.accessory.ballon:rouge_droite|cos.accessory.couronne:|:", "wand retirement: A wears " + worn["A"]);
+        Expect(worn["B"] == "cos.accessory.noeud:rose_gauche|cos.accessory.tulipe:gauche|:", "wand retirement: B wears " + worn["B"]);
+        Expect(worn["C"] == "cos.accessory.noeud:rose_gauche|cos.accessory.fleur:blanche_droite|:", "wand retirement: C (dead) wears " + worn["C"]);
+        Expect(worn["D"] == "cos.accessory.lunettes:|:|:", "wand retirement: D wears " + worn["D"]);
+        Expect(worn["E"] == "cos.accessory.couronne:|:|:", "wand retirement: E (two freed slots) wears " + worn["E"]);
     }
 
     // One row into a table at whatever schema the database is at: the given values, and a zero (or

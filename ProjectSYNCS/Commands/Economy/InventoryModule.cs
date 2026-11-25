@@ -392,18 +392,30 @@ public class InventoryModule : SyncsModuleBase
         }
         else
         {
-            // What is held, one field per slot.
-            var any = false;
-            foreach (var slot in CosmeticCatalog.SlotOrder)
-            {
-                var owned = CosmeticCatalog.InSlot(slot).Where(c => Count(c.Key) > 0).Select(c => $"{c.Emoji} {CosmeticCatalog.ShortName(c)}").ToList();
-                if (owned.Count == 0) continue;
-                any = true;
-                embed.AddField(CosmeticCatalog.SlotPlural(slot), string.Join(" · ", owned));
-            }
-            embed.WithDescription(any
+            var owned = CosmeticCatalog.SlotOrder
+                .Select(slot => (Slot: slot, Items: CosmeticCatalog.InSlot(slot).Where(c => Count(c.Key) > 0).ToList()))
+                .Where(s => s.Items.Count > 0)
+                .ToList();
+            var description = owned.Count > 0
                 ? "Pour les essayer et habiller ton Plynling : `/inventory cosmetics`."
-                : "Aucun cosmétique pour l'instant. La boutique : `/inventory cosmetics`.");
+                : "Aucun cosmétique pour l'instant. La boutique : `/inventory cosmetics`.";
+            // One line for the collections, not a tag per item.
+            var collections = CosmeticCollections.Progress(key => Count(key) > 0);
+
+            // What is held, one field per slot, cut into « (suite) » fields past 1024. A wardrobe too big
+            // for one embed even so (every icon uploaded, ~100 cosmetics) keeps the icons, drops the names.
+            List<(string Name, string Value)> Fields(bool names) => owned
+                .SelectMany(s => WardrobeFields(CosmeticCatalog.SlotPlural(s.Slot),
+                    s.Items.Select(c => names ? $"{c.Emoji} {CosmeticCatalog.ShortName(c)}" : c.Emoji), names ? " · " : " "))
+                .ToList();
+            var fields = Fields(names: true);
+            var length = description.Length + fields.Sum(f => f.Name.Length + f.Value.Length)
+                         + (collections is null ? 0 : "Collections".Length + collections.Length);
+            if (length > WardrobeBudget) fields = Fields(names: false);
+
+            foreach (var (name, value) in fields) embed.AddField(name, value);
+            embed.WithDescription(description);
+            if (collections is not null) embed.AddField("Collections", collections);
         }
 
         var components = new ComponentBuilder()
@@ -413,5 +425,27 @@ public class InventoryModule : SyncsModuleBase
                 disabled: page == InventoryPage.Wardrobe)
             .Build();
         return (embed.Build(), components);
+    }
+
+    // The garde-robe page's room for its fields and description: Discord's 6000 less the title and
+    // the footer (« Ton inventaire — garde-robe », the balance), with margin.
+    private const int WardrobeBudget = EmbedBuilder.MaxEmbedLength - 200;
+
+    // One slot's entries as fields of at most 1024, the later ones named « titres (suite) ».
+    private static IEnumerable<(string Name, string Value)> WardrobeFields(string name, IEnumerable<string> entries, string separator)
+    {
+        var value = "";
+        var first = true;
+        foreach (var entry in entries)
+        {
+            if (value.Length > 0 && value.Length + separator.Length + entry.Length > EmbedFieldBuilder.MaxFieldValueLength)
+            {
+                yield return (first ? name : $"{name} (suite)", value);
+                first = false;
+                value = "";
+            }
+            value = value.Length == 0 ? entry : value + separator + entry;
+        }
+        if (value.Length > 0) yield return (first ? name : $"{name} (suite)", value);
     }
 }

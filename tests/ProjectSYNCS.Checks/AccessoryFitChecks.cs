@@ -187,7 +187,7 @@ public static class AccessoryFitChecks
             "a hat picked in the nœud's slot replaces the couronne where it is");
         Is(Pick(W("couronne"), null, 1, W("noeud")), "couronne", "noeud:rose_gauche", null, null,
             "a nœud next to a couronne clashes with nothing");
-        Is(Pick(W("ballon", "rouge_gauche"), null, 1, W("baguette", "gauche")), "ballon:rouge_droite", "baguette:gauche", null, "ballon",
+        Is(Pick(W("ballon", "rouge_gauche"), null, 1, W("canne_peche", "gauche")), "ballon:rouge_droite", "canne_peche:gauche", null, "ballon",
             "a held item on the same side moves the other");
         Is(Pick(W("noeud", "rose_gauche"), W("ballon", "rouge_gauche"), 1, W("noeud", "bleu_gauche")), "ballon:rouge_gauche", "noeud:bleu_gauche", null, null,
             "never the same item twice: the two swap");
@@ -201,17 +201,17 @@ public static class AccessoryFitChecks
             "the other slot holds the pick: swap, and the nœud goes to the other slot");
         Is(Pick(W("noeud"), W("couronne"), 0, W("fleur", "rose_gauche")), "fleur:rose_gauche", "couronne", null, null,
             "a pick that clashes with nothing takes its slot");
-        Is(Pick(W("ballon", "rouge_gauche"), W("baguette", "droite"), 0, W("baguette", "gauche")), "baguette:gauche", "ballon:rouge_droite", null, "ballon",
+        Is(Pick(W("ballon", "rouge_gauche"), W("canne_peche", "droite"), 0, W("canne_peche", "gauche")), "canne_peche:gauche", "ballon:rouge_droite", null, "ballon",
             "a swap that lands two held items on one side flips the moved one");
         Is(Pick(W("noeud", "rose_droite"), W("fleur", "blanche_gauche"), 0, W("fleur", "blanche_droite")), "fleur:blanche_droite", "noeud:rose_gauche", null, "noeud",
             "a swap that lands two head items on one side flips the moved one");
-        Is(Pick(W("ballon", "rouge_gauche"), W("baguette", "droite"), 0, W("baguette")), "baguette:droite", "ballon:rouge_gauche", null, null,
+        Is(Pick(W("ballon", "rouge_gauche"), W("canne_peche", "droite"), 0, W("canne_peche")), "canne_peche:droite", "ballon:rouge_gauche", null, null,
             "a pick naming no style keeps the worn style, swap included");
         Is(Pick(W("noeud", "bleu_droite"), null, 1, W("noeud")), "noeud:bleu_droite", null, null, null,
             "picking the worn item in the empty slot leaves it alone, in the first slot");
         var retired = new WornAccessory("cos.accessory.sac_a_dos", "x");
         Is(Pick(retired, null, 1, W("couronne")), "sac_a_dos:x", "couronne", null, null, "a retired item never clashes (Pick)");
-        Is(Pick(W("ballon", "rouge_gauche"), retired, 0, W("baguette", "gauche")), "baguette:gauche", "sac_a_dos:x", null, null, "a retired item has no side (Pick)");
+        Is(Pick(W("ballon", "rouge_gauche"), retired, 0, W("canne_peche", "gauche")), "canne_peche:gauche", "sac_a_dos:x", null, null, "a retired item has no side (Pick)");
         var unknown = Pick(W("noeud"), null, 1, new WornAccessory("cos.accessory.nope", null));
         Is(unknown, "noeud", null, null, null, "an unknown key changes nothing (Pick)");
     }
@@ -226,7 +226,7 @@ public static class AccessoryFitChecks
             "with two worn and no clash, the third slot fills");
         Is(TryOn(W("noeud", "rose_gauche"), null, W("fleur", "blanche_gauche")), "noeud:rose_droite", "fleur:blanche_gauche", null, "noeud",
             "a fleur tried on the nœud's side flips the nœud");
-        Is(TryOn(null, null, W("baguette")), "baguette:gauche", null, null, null, "a first accessory");
+        Is(TryOn(null, null, W("canne_peche")), "canne_peche:gauche", null, null, null, "a first accessory");
         Is(TryOn(W("noeud", "rose_gauche"), W("couronne"), W("noeud", "bleu_droite")), "noeud:bleu_droite", "couronne", null, null,
             "the same item worn takes the new style");
         Is(TryOn(W("noeud"), null, new WornAccessory("cos.accessory.nope", null)), "noeud", null, null, null, "an unknown key changes nothing (TryOn)");
@@ -235,6 +235,11 @@ public static class AccessoryFitChecks
         Is(TryOn(retired, W("couronne"), W("bonnet")), "sac_a_dos:x", "bonnet:rouge", "couronne", null, "a hat still replaces the hat beside a retired item");
         Is(TryOn(W("noeud", "rose"), null, W("fleur", "blanche_gauche")), "noeud:rose_droite", "fleur:blanche_gauche", null, "noeud",
             "flipping an old style without a side gives rose_droite");
+        // The Gentleman batch: two eye pieces never stack; the café is a held item like the ballon.
+        Is(TryOn(W("lunettes_rondes"), W("noeud_papillon"), W("monocle")), "monocle", "noeud_papillon", "lunettes_rondes", null,
+            "a monocle tried on replaces the lunettes rondes");
+        Is(TryOn(W("ballon", "rouge_gauche"), null, W("cafe", "droite")), "ballon:rouge_gauche", "cafe:droite", null, null,
+            "a café in the other hand stays beside the ballon");
     }
 
     private static void Restyles()
@@ -256,20 +261,20 @@ public static class AccessoryFitChecks
         Is3(AccessoryFit.TryOn(full, W("ballon")), ["lunettes", "echarpe:rouge_haut", "ballon:rouge_gauche"], "couronne", null,
             "with all three full and no clash, the last goes");
         Is3(AccessoryFit.TryOn(full, W("bonnet")), ["lunettes", "echarpe:rouge_haut", "bonnet:rouge"], "couronne", null, "a hat still replaces the hat, wherever it is");
-        var hands = L(W("ballon", "rouge_gauche"), W("baguette", "droite"), W("couronne"));
-        Is3(AccessoryFit.TryOn(hands, W("tulipe")), ["tulipe:gauche", "baguette:droite", "couronne"], "ballon", null,
+        var hands = L(W("ballon", "rouge_gauche"), W("canne_peche", "droite"), W("couronne"));
+        Is3(AccessoryFit.TryOn(hands, W("tulipe")), ["tulipe:gauche", "canne_peche:droite", "couronne"], "ballon", null,
             "both hands full: a third held item replaces the one in its hand");
-        Is3(AccessoryFit.TryOn(hands, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:droite", "couronne"], "baguette", null,
+        Is3(AccessoryFit.TryOn(hands, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:droite", "couronne"], "canne_peche", null,
             "both hands full, the other hand picked: that one goes");
         Is3(AccessoryFit.TryOn(L(W("noeud", "rose_gauche"), W("fleur", "blanche_droite")), W("ballon")), ["noeud:rose_gauche", "fleur:blanche_droite", "ballon:rouge_gauche"],
             null, null, "a nœud, a fleur and a ballon fit together");
 
-        Is3(AccessoryFit.Pick(hands, 2, W("tulipe", "gauche")), ["tulipe:gauche", "baguette:droite", "couronne"], "ballon", null,
+        Is3(AccessoryFit.Pick(hands, 2, W("tulipe", "gauche")), ["tulipe:gauche", "canne_peche:droite", "couronne"], "ballon", null,
             "picked in the third slot with both hands full elsewhere: it replaces the one in its hand, the couronne stays");
-        Is3(AccessoryFit.Pick(L(W("ballon", "rouge_gauche"), W("baguette", "droite")), 2, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:droite"], "baguette", null,
+        Is3(AccessoryFit.Pick(L(W("ballon", "rouge_gauche"), W("canne_peche", "droite")), 2, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:droite"], "canne_peche", null,
             "picked in the empty third slot with both hands full: it replaces the one in its hand");
-        Is3(AccessoryFit.Pick(L(W("couronne"), W("echarpe", "rouge_haut"), W("ballon", "rouge_gauche")), 2, W("baguette", "gauche")),
-            ["couronne", "echarpe:rouge_haut", "baguette:gauche"], null, null, "the third picker's own held item is replaced by the pick");
+        Is3(AccessoryFit.Pick(L(W("couronne"), W("echarpe", "rouge_haut"), W("ballon", "rouge_gauche")), 2, W("canne_peche", "gauche")),
+            ["couronne", "echarpe:rouge_haut", "canne_peche:gauche"], null, null, "the third picker's own held item is replaced by the pick");
         Is3(AccessoryFit.Pick(L(W("couronne"), W("echarpe", "rouge_haut"), W("ballon", "rouge_gauche")), 2, W("bonnet")),
             ["bonnet:rouge", "echarpe:rouge_haut", "ballon:rouge_gauche"], "couronne", null, "a hat picked in the third slot replaces the couronne where it is");
         Is3(AccessoryFit.Pick(L(W("noeud", "rose_gauche"), W("couronne")), 2, W("ballon")), ["noeud:rose_gauche", "couronne", "ballon:rouge_gauche"], null, null,
@@ -344,13 +349,13 @@ public static class AccessoryFitChecks
     {
         Expect(AccessoryStyles.Resolve(P + "noeud", "rose") == "rose_gauche", "an old nœud style reads « rose_gauche »: " + AccessoryStyles.Resolve(P + "noeud", "rose"));
         Expect(AccessoryStyles.Resolve(P + "fleur", null) == "blanche_droite", "the fleur defaults to « blanche_droite »: " + AccessoryStyles.Resolve(P + "fleur", null));
-        Expect(AccessoryStyles.Resolve(P + "baguette", null) == "gauche", "the baguette defaults to « gauche »: " + AccessoryStyles.Resolve(P + "baguette", null));
+        Expect(AccessoryStyles.Resolve(P + "canne_peche", null) == "gauche", "the canne_peche defaults to « gauche »: " + AccessoryStyles.Resolve(P + "canne_peche", null));
         Expect(AccessoryStyles.Resolve(P + "ballon", null) == "rouge_gauche", "the ballon defaults to « rouge_gauche »: " + AccessoryStyles.Resolve(P + "ballon", null));
         Expect(AccessoryFit.Side(P + "noeud", "rose") == "gauche", "an old nœud style reads as the default side");
         Expect(AccessoryFit.Side(P + "fleur", "bleue_gauche") == "gauche", "the fleur's stored side");
         Expect(AccessoryFit.Side(P + "couronne", null) is null && AccessoryFit.Side(P + "echarpe", "rouge_bas") is null, "a non-sided item has no side");
         Expect(AccessoryFit.Side(P + "nope", "gauche") is null, "an unknown item has no side");
-        foreach (var key in new[] { "noeud", "fleur", "ballon", "baguette", "lanterne" })
+        foreach (var key in new[] { "noeud", "fleur", "ballon", "canne_peche", "lanterne" })
             foreach (var choice in AccessoryStyles.Choices(P + key))
                 foreach (var o in choice.Options)
                     Expect(!o.Key.Contains('_'), $"{key}: option key « {o.Key} » contains « _ »");

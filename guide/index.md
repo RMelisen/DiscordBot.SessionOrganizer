@@ -72,7 +72,9 @@ Deux compteurs font tourner le serveur.
     - [L'arcade](arcade.md) : tous mes jeux.
     - [Petites commandes](amusement.md) : `/yesno`, `/rate`, `/ship`, `/confess`…
     - [Minecraft](minecraft.md) : ma vie sur le serveur Minecraft.
-- [Staff](staff.md) : les outils des administrateurs.
+- **Staff**
+    - [Le staff](staff.md) : les outils des administrateurs.
+    - [Inviter SYNCS sur ton serveur](inviter.md) : le lien, les permissions et `/config setup`.
 - [Questions fréquentes](faq.md) : quand quelque chose ne marche pas comme prévu.
 
 Bonne lecture. Et ne saute pas de pages : je le saurai.

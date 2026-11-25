@@ -350,14 +350,16 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is six keys on it.** `CosmeticCatalog` holds the 100
-(`cos.<slot>.<name>`, stored, **append-only** — three retired, see below) with slot data (a thème's accent and banner, a titre's
+**Cosmetics are items; what a Plynling wears is six keys on it.** `CosmeticCatalog` holds the 117
+(`cos.<slot>.<name>`, stored, **append-only** — four retired, see below) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
 no set. `Plynling.ThemeKey`, `TitleKey`, `AccessoryKey`, `Accessory2Key`, `GraveKey`, `AuraKey` are read and written only through
 `CosmeticSlots`. **`CosmeticSlot` is append-only**: the shop seeds each slot's draw on its number. The
 order players see is `CosmeticCatalog.SlotOrder` (Thème, Titre, Accessoire, Aura, Cadre); the Garde-robe's
 slot row is then 5 buttons, a row's maximum — a sixth slot needs a select there. Wearing uses nothing up; a dead row keeps its keys (its grave shows its cadre).
+**Two basics in every slot but the Aura** (always on sale, 300 for a titre or accessoire, 500 for a
+thème or cadre), so a newcomer has a choice; checks section 61 pins the two.
 
 - **Losing the last one takes it off**: `InventoryService.TakeAsync` clears the key from the owner's
   *living* Plynling in the same unit of work.
@@ -393,15 +395,17 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   default. Option keys are stored: append-only, never renamed, never containing « _ »; a new option
   needs its drawing first (checks section 62 compares the two).
 - **Auras** (8.6.0, `cos.aura.*`): an animated effect drawn around the Plynling, worn **with** the
-  accessory — `Outfit.With`/`Without` on one never touch the other. Six: Scintillements
-  (the look the rarer species lost in 8.5.1, now for anyone) and Bulles in the weekly rotation — with two
-  rotating auras and `RotatingPerSlot` 2, both are on sale every week until more exist — and **one per
+  accessory — `Outfit.With`/`Without` on one never touch the other. Ten: Scintillements
+  (the look the rarer species lost in 8.5.1, now for anyone) and Bulles in the weekly rotation — one a
+  week (`RotatingCount`) — and **one per
   season**: Pétales, a *Chef-d'œuvre* from primevères and cerises, **spring-only** (a recipe mixing seasons
   can't be measured by section 61, which simulates one season), then Lucioles d'été (summer; the crafted cadre took « Lucioles », and section 61 wants
   a crafted name unique), Feuilles mortes
   (autumn, key `cos.aura.feuilles`: `cos.grave.feuilles` is the cadre) and Flocons (winter), seasonal shop
-  items (8.17.0). Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
-  « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line. Not drawn on
+  items (8.17.0). Mouches (commun), Confettis (peu commun), Éclairs (épique) and Étoiles filantes
+  (légendaire) joined the rotation with the Gentleman batch. Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
+  « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line, « d' » before a vowel
+  (« Entouré d'éclairs », `AccessoryNotices.StartsWithVowelSound`). Not drawn on
   the sick and frozen faces: the try-on then says « Son aura ne se voit pas tant qu'il est malade ou gelé. »
   Art and file cost: `plynling.md` *Art*. **A new aura costs ~126 layer files**: draw it in
   `auras.py`, add its key to `AURAS`, `python export.py layers`, a 16×16 icon in `tools/item-art/icons.py`, a catalogue
@@ -411,13 +415,27 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. The
   Citrouilles cadre (`cos.grave.citrouilles`, autumn) left in 8.8.0, the owner's call;
   `RetirePumpkinGraveFrame` refunded 2 400 (the seasonal price) the same way and cleared `GraveKey`
-  on any Plynling, dead or alive. To retire another, copy one of those migrations — and clear
-  **every** slot (`AccessoryKey`/`AccessoryStyle`, `Accessory2Key`/`Accessory2Style` **and** `Accessory3Key`/`Accessory3Style`). A
-  retired key still occupies its slot until then. Their keys stay retired — never reuse them.
+  on any Plynling, dead or alive. The baguette magique (`cos.accessory.baguette`) left with the
+  Gentleman batch, the owner's call; `RetireMagicWand` refunded 2 400 (the rare price it always sold
+  at), cleared it from all three accessory slots and moved the later ones up so no slot sits empty
+  in front of a filled one. To retire another accessory, copy that one; checks section 62
+  (`RetireWandMigration`) runs it on a real SQLite. A retired key still occupies its slot until
+  then. Their keys stay retired — never reuse them, and add them to `AccessoryArtChecks.Retired`.
+
+**Collections** (`CosmeticCollections`): a code-only label, each cosmetic in at most one, shown
+only as one « Collections » line on `/inventory view`'s garde-robe page. That page splits a slot past
+1024 into « (suite) » fields and drops names past 6000 (checks section 23). **It is close**: with
+all 117 owned and every icon uploaded the page is already icons-only and 5 818 of 6 000 characters —
+about five more cosmetics and it overflows (section 23 fails first): page the wardrobe before adding more.
+
+**Six tiers** (`ItemRarity`, never stored): commun … rare, **épique**, légendaire, **mythique** — the
+new two cosmetics only. `TierPrice` (600 / 1 200 / 2 400 / 3 600 / 5 000) prices rotating **and
+seasonal** items (seasonal: peu commun or rare). **Mythique is never sold**: Chefs-d'œuvre only;
+Ouvrages are peu commun. Checks section 61 `Rarities` pins it.
 
 **The shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` = the basics, then
-`RotatingPerSlot` (2) per slot drawn with `new Random(week * 10 + slot)` (seeded: same for everyone,
-across restarts), then the season's items. The week is the Paris ISO week (`WeekKey`, `yyyyww`),
+`RotatingCount(slot)` (2, the Aura 1) per slot drawn with `new Random(week * 10 + slot)` (seeded: same for everyone,
+across restarts; per slot, so a count change reshuffles no other slot), then the season's items. The week is the Paris ISO week (`WeekKey`, `yyyyww`),
 turning Monday 00:00 Paris. The shop select and the buy buttons carry their week and `BuyAsync`
 refuses any other week, so a shop left open over the weekend can't buy what rotated out.
 
@@ -462,14 +480,15 @@ redraws in place.
 
 ### Crafting — Ouvrages and Chefs-d'œuvre
 
-27 recipes, each made **once per person** (`AlreadyOwned`). `CosmeticInfo.Trophy` splits them, and the
+28 recipes, each made **once per person** (`AlreadyOwned`). `CosmeticInfo.Trophy` splits them, and the
 Fabrication tab lists them in that order:
 
 - **Ouvrages** (14: Thème 2, Titre 5, Accessoire 3, Cadre 4, ~100 cailloux; the per-slot counts are pinned
   in `CraftingChecks.OuvragesPerSlot`): commons (at most one peu commun) found at **one place**, every
   place served, for the duplicates. Three titles are named after their place (Sommeillant, Mouillé,
   Puisatier). **Band: 10–25 aimed forages.**
-- **Chefs-d'œuvre** (13, 200–300 cailloux): aimed hunts. **Band: 60–150 aimed forages.**
+- **Chefs-d'œuvre** (14): aimed hunts. **Band: 60–150 aimed forages.** Their cailloux follow the
+  effort: **200 under 90 forages, 300 up to 115, 400 above** (`CraftingChecks.TrophyPrice`).
 - **The bands are enforced** (checks section 61, `CraftingChecks.ExpectedForages`: 300 seeded runs from
   nothing, aiming each time at the place covering the most missing units, in the ingredients' season or
   mid-April). A recipe outside its band fails the checks: retune it, never widen the band to fit.

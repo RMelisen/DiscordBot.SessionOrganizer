@@ -56,7 +56,7 @@ public static class AccessoryNotices
         preview ? (IsPlural(c) ? "remplaceraient" : "remplacerait") : IsPlural(c) ? "ont remplacé" : "a remplacé";
 
     // The only aspirated h in the catalogue is « haut-de-forme »: any other h would elide.
-    private static bool StartsWithVowelSound(string noun) =>
+    internal static bool StartsWithVowelSound(string noun) =>
         noun.Length > 0 && ("aeiouyàâéèêëîïôöûœ".Contains(char.ToLowerInvariant(noun[0])) || (char.ToLowerInvariant(noun[0]) == 'h' && !noun.StartsWith("haut", StringComparison.Ordinal)));
 
     private static string Capitalize(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];

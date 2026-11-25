@@ -49,8 +49,10 @@ public static class PlynlingCardUi
         var items = worn.Items.Select(i => $"{i.Item.Emoji} {i.Item.Name}").ToList();
         var accessory = items.Count == 0 ? ""
             : "\nPorte " + (items.Count == 1 ? items[0] : string.Join(", ", items.Take(items.Count - 1)) + " et " + items[^1]);
-        accessory += worn.Aura is { } au
-            ? $"\n{au.Emoji} {p.Gender.Agree("Entouré", "Entourée")} de {au.Name.ToLower(System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))}"
+        // « Entouré de bulles », « Entouré d'éclairs »: de elides before a vowel.
+        var auraName = worn.Aura?.Name.ToLower(System.Globalization.CultureInfo.GetCultureInfo("fr-FR"));
+        accessory += worn.Aura is { } au && auraName is not null
+            ? $"\n{au.Emoji} {p.Gender.Agree("Entouré", "Entourée")} {(AccessoryNotices.StartsWithVowelSound(auraName) ? "d'" : "de ")}{auraName}"
             : "";
         return $"## {SafeName(p.Name)}{(epithet is null ? "" : ", " + LowerArticle(epithet))}\n" + title +
                $"{p.Gender.Symbol()} {info.Name}\n" +

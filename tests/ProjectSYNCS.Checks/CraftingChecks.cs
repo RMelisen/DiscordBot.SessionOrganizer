@@ -59,6 +59,8 @@ public static class CraftingChecks
         catch (Exception ex) { Expect(false, "named craft threw: " + ex.Message); }
         Catalog();
         Bands();
+        Rarities();
+        Collections();
         NowReady();
         try { await CraftAnyCommonAsync(); }
         catch (Exception ex) { Expect(false, "any-common craft threw: " + ex.Message); }
@@ -66,8 +68,79 @@ public static class CraftingChecks
 
     private static IEnumerable<CosmeticInfo> Crafted => CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted);
 
+    // The six tiers (trade offers, item lines and the shop print them; a Chef-d'œuvre once read
+    // « commun »). Mythique is the Chefs-d'œuvre's and nothing else's; an Ouvrage is peu commun; a
+    // seasonal item picks peu commun or rare and costs its tier; collectibles keep four tiers.
+    private static void Rarities()
+    {
+        foreach (var c in CosmeticCatalog.All)
+        {
+            Expect(ItemCatalog.ByKey(c.Key)?.Rarity == c.Rarity, $"{c.Key}: the item's rarity differs from the cosmetic's");
+            Expect(c.Rarity == ItemRarity.Mythic == (c.Source == CosmeticSource.Crafted && c.Trophy), $"{c.Key}: mythique is the Chefs-d'œuvre's tier");
+            switch (c.Source)
+            {
+                case CosmeticSource.Crafted when !c.Trophy:
+                    Expect(c.Rarity == ItemRarity.Uncommon, $"{c.Key}: an Ouvrage is peu commun, not {c.Rarity}");
+                    break;
+                case CosmeticSource.Seasonal:
+                    Expect(c.Rarity is ItemRarity.Uncommon or ItemRarity.Rare, $"{c.Key}: a seasonal item is peu commun or rare, not {c.Rarity}");
+                    Expect(c.Price == CosmeticCatalog.TierPrice(c.Rarity), $"{c.Key}: price {c.Price}, its tier says {CosmeticCatalog.TierPrice(c.Rarity)}");
+                    break;
+                case CosmeticSource.Rotating:
+                    Expect(c.Price == CosmeticCatalog.TierPrice(c.Rarity), $"{c.Key}: price {c.Price}, its tier says {CosmeticCatalog.TierPrice(c.Rarity)}");
+                    break;
+            }
+        }
+        Expect(ItemCatalog.Collectibles.All(i => i.Rarity is not (ItemRarity.Epic or ItemRarity.Mythic)), "a collectible is épique or mythique");
+        Expect(Enum.GetValues<CosmeticSlot>().All(slot => CosmeticCatalog.Shop(DateTimeOffset.UtcNow).Count(c => c.Slot == slot && c.Source == CosmeticSource.Rotating)
+                == Math.Min(CosmeticCatalog.RotatingCount(slot), CosmeticCatalog.All.Count(c => c.Slot == slot && c.Source == CosmeticSource.Rotating))),
+            "the shop's rotating count per slot");
+        // Two basics in every slot but the Aura, so a newcomer has a choice from day one.
+        foreach (var slot in new[] { CosmeticSlot.Theme, CosmeticSlot.Title, CosmeticSlot.Accessory, CosmeticSlot.Grave })
+        {
+            var basics = CosmeticCatalog.All.Count(c => c.Source == CosmeticSource.Basic && c.Slot == slot);
+            Expect(basics == 2, $"{slot}: {basics} basic(s), want 2");
+        }
+    }
+
+    // Cosmetic collections (a label on the inventory's garde-robe page): real keys, each cosmetic in
+    // at most one, names unique, at least two pieces each, and the progress line reads right.
+    private static void Collections()
+    {
+        var all = CosmeticCollections.All;
+        foreach (var c in all)
+        {
+            Expect(c.Keys.Count >= 2, $"collection {c.Name}: {c.Keys.Count} piece(s)");
+            foreach (var key in c.Keys)
+                Expect(CosmeticCatalog.ByKey(key) is not null, $"collection {c.Name}: {key} is not a cosmetic");
+        }
+        foreach (var twice in all.SelectMany(c => c.Keys).GroupBy(k => k).Where(g => g.Count() > 1))
+            Expect(false, $"{twice.Key} is in {twice.Count()} collections");
+        Expect(all.Select(c => c.Name).Distinct().Count() == all.Count, "two collections share a name");
+        Expect(CosmeticCollections.Of("cos.accessory.bonnet")?.Name == "Grand-Froid" && CosmeticCollections.Of("cos.accessory.casquette") is null,
+            "Of: the bonnet is Grand-Froid, the casquette in none");
+        // Grand Illusionniste became Gentleman: the magician's pieces left, the gentleman's came in.
+        var gentleman = all.FirstOrDefault(c => c.Name == "Gentleman")?.Keys ?? Array.Empty<string>();
+        foreach (var key in new[] { "cos.title.mysterieux", "cos.title.fripon", "cos.accessory.haut_de_forme",
+                     "cos.theme.velours", "cos.title.distingue", "cos.title.magnifique", "cos.grave.roses",
+                     "cos.accessory.noeud_papillon", "cos.accessory.monocle", "cos.accessory.canne", "cos.accessory.montre_gousset" })
+            Expect(gentleman.Contains(key), $"collection Gentleman: {key} missing");
+        Expect(!gentleman.Contains("cos.grave.colombes") && all.All(c => c.Name != "Grand Illusionniste"), "collection Gentleman: the magician is still there");
+
+        var froid = all.First(c => c.Name == "Grand-Froid");
+        Expect(CosmeticCollections.Progress(_ => false) is null, "progress shown with nothing owned");
+        var some = CosmeticCollections.Progress(k => k == froid.Keys[0] || k == froid.Keys[1]);
+        Expect(some == $"Grand-Froid 2/{froid.Keys.Count}", "progress for two pieces: " + some);
+        var full = CosmeticCollections.Progress(froid.Keys.Contains);
+        Expect(full == $"**Grand-Froid {froid.Keys.Count}/{froid.Keys.Count}**", "progress for a complete one: " + full);
+    }
+
+    // A Chef-d'œuvre's cailloux follow its effort: 200 under 90 aimed forages, 300 up to 115, 400 above.
+    // A recipe retuned across a line moves its price with it.
+    private static long TrophyPrice(double forages) => forages < 90 ? 200 : forages <= 115 ? 300 : 400;
+
     // Two tiers: 14 Ouvrages (each from one place, every place served, la Lisière's from any common
-    // mushrooms) and 13 trophies. The Aura slot has no Ouvrage: its three effects were fixed by
+    // mushrooms) and 14 trophies. The Aura slot has no Ouvrage: its three effects were fixed by
     // design, and its one recipe is a trophy (Pétales).
     private static readonly Dictionary<CosmeticSlot, int> OuvragesPerSlot = new()
     {
@@ -77,7 +150,7 @@ public static class CraftingChecks
     private static void Catalog()
     {
         var ouvrages = Crafted.Where(c => !c.Trophy).ToList();
-        Expect(Crafted.Count() == 27 && ouvrages.Count == 14, $"{Crafted.Count()} recipes, {ouvrages.Count} Ouvrages; want 27 and 14");
+        Expect(Crafted.Count() == 28 && ouvrages.Count == 14, $"{Crafted.Count()} recipes, {ouvrages.Count} Ouvrages; want 28 and 14");
         foreach (var slot in Enum.GetValues<CosmeticSlot>())
             Expect(ouvrages.Count(c => c.Slot == slot) == OuvragesPerSlot[slot],
                 $"{slot}: {ouvrages.Count(c => c.Slot == slot)} Ouvrages, want {OuvragesPerSlot[slot]}");
@@ -87,7 +160,7 @@ public static class CraftingChecks
             foreach (var (key, count) in c.Recipe)
                 Expect(count > 0 && Recipes.Items(key).Count > 0 && Recipes.Items(key).All(i => i.Kind == ItemKind.Collectible),
                     $"{c.Key}: ingredient {key} is not a collectible");
-            Expect(c.Trophy ? c.Price is >= 200 and <= 300 : c.Price is >= 80 and <= 120, $"{c.Key}: price {c.Price}");
+            Expect(c.Trophy ? c.Price is 200 or 300 or 400 : c.Price == 100, $"{c.Key}: price {c.Price}");
             Expect(ItemCatalog.All.Count(i => i.Name == c.Name) == 0 && CosmeticCatalog.All.Count(o => o.Name == c.Name) == 1,
                 $"{c.Key}: name « {c.Name} » is used twice");
         }
@@ -117,6 +190,8 @@ public static class CraftingChecks
             var (lo, hi) = c.Trophy ? (60, 150) : (10, 25);
             Console.WriteLine($"recipe {c.Key}: {mean:0} forages ({(c.Trophy ? "trophy" : "ouvrage")})");
             Expect(mean >= lo && mean <= hi, $"{c.Key}: {mean:0} forages aimed, want {lo}–{hi}");
+            if (c.Trophy)
+                Expect(c.Price == TrophyPrice(mean), $"{c.Key}: {mean:0} forages costs {TrophyPrice(mean)} cailloux, not {c.Price}");
         }
     }
 

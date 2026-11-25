@@ -33,12 +33,13 @@ public static class AccessoryFit
         "cos.accessory.casquette" or "cos.accessory.haut_de_forme" or "cos.accessory.couronne"
             or "cos.accessory.chapeau_paille" or "cos.accessory.bonnet" or "cos.accessory.couronne_fleurs" => AccessoryCategory.Hat,
         "cos.accessory.noeud" or "cos.accessory.fleur" => AccessoryCategory.Head,
-        "cos.accessory.lunettes" => AccessoryCategory.Eyes,
-        "cos.accessory.echarpe" or "cos.accessory.collier_coquillages" or "cos.accessory.medaillon" => AccessoryCategory.Neck,
+        "cos.accessory.lunettes" or "cos.accessory.lunettes_rondes" or "cos.accessory.monocle" => AccessoryCategory.Eyes,
+        "cos.accessory.echarpe" or "cos.accessory.collier_coquillages" or "cos.accessory.medaillon"
+            or "cos.accessory.noeud_papillon" => AccessoryCategory.Neck,
         "cos.accessory.moufles" => AccessoryCategory.Hands,
-        "cos.accessory.ballon" or "cos.accessory.baguette" or "cos.accessory.tulipe" or "cos.accessory.glace"
+        "cos.accessory.ballon" or "cos.accessory.tulipe" or "cos.accessory.glace"
             or "cos.accessory.plume_doree" or "cos.accessory.bocal" or "cos.accessory.canne_peche"
-            or "cos.accessory.lanterne" => AccessoryCategory.Held,
+            or "cos.accessory.lanterne" or "cos.accessory.cafe" or "cos.accessory.canne" or "cos.accessory.montre_gousset" => AccessoryCategory.Held,
         _ => null,
     };
 

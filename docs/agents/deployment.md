@@ -34,7 +34,7 @@ bot first or take all three files. WAL needs a local filesystem; never move `/da
 
 ## The image carries the Plynling layers
 
-`ProjectSYNCS/Assets/Plynlings/` (~5.5 MB of layers the bot draws dressed pictures from) ships in the
+`ProjectSYNCS/Assets/Plynlings/` (~7.9 MB of layers the bot draws dressed pictures from) ships in the
 image. **ImageSharp stays pinned to 3.x**: 4.x needs a Six Labors licence key at build time. It only
 ever decodes the shipped files, never user uploads.
 

@@ -122,7 +122,7 @@ pinned for the process lifetime. All in-memory state resets on restart **by desi
   older history lives only in the totals. Instances, removal rules and bucket-only tables:
   `architecture.md`.
 - **No `HasMaxLength`** (SQLite ignores it): cap at the input (below).
-- **Migrations are schema-only** except seven deliberate data migrations; read `architecture.md`
+- **Migrations are schema-only** except eight deliberate data migrations; read `architecture.md`
   before writing one.
 
 ### Time and culture

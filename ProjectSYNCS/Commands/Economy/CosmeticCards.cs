@@ -252,9 +252,9 @@ public static class CosmeticCards
             .Select(s => (s.Title, Items: shop.Where(c => c.Source == s.Source).OrderBy(c => CosmeticCatalog.SlotRank(c.Slot)).ToList()))
             .Where(s => s.Items.Count > 0)
             .ToList();
-        // The section already says basique or de saison; only this week's items name their rarity.
+        // The basics need no tier; this week's and the season's items name theirs, which sets their price.
         string Line(CosmeticInfo c) =>
-            $"{c.Emoji} {CosmeticCatalog.Label(c)} · " + (c.Source == CosmeticSource.Rotating ? $"{ItemCatalog.RarityLabel(c.Rarity)} · " : "") +
+            $"{c.Emoji} {CosmeticCatalog.Label(c)} · " + (c.Source != CosmeticSource.Basic ? $"{ItemCatalog.RarityLabel(c.Rarity)} · " : "") +
             PebbleEconomy.Cailloux(c.Price) + (data.Owns(c) ? $" {UiIcons.Check}" : "");
         string Title(string title, List<CosmeticInfo> items) =>
             items[0].Source == CosmeticSource.Seasonal ? $"{title} · {ItemCatalog.SeasonLabel(items[0].Season)}" : title;
@@ -408,8 +408,8 @@ public static class CosmeticCards
     private static string SourceLabel(CosmeticInfo c) => c.Source switch
     {
         CosmeticSource.Basic => "basique",
-        CosmeticSource.Seasonal => $"de saison ({ItemCatalog.SeasonLabel(c.Season)})",
-        CosmeticSource.Crafted => "à fabriquer",
+        CosmeticSource.Seasonal => $"{ItemCatalog.RarityLabel(c.Rarity)}, de saison ({ItemCatalog.SeasonLabel(c.Season)})",
+        CosmeticSource.Crafted => $"{ItemCatalog.RarityLabel(c.Rarity)}, à fabriquer",
         _ => ItemCatalog.RarityLabel(c.Rarity),
     };
 

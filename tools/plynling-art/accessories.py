@@ -45,6 +45,7 @@ CREAM_L, CREAM, CREAM_D, CONE, CONE_D = (255, 222, 232), (255, 168, 198), (222, 
 QUILL = (244, 234, 204)
 GREEN_L, GREEN_DD = (168, 222, 136), (40, 92, 48)
 STRAW_L, STRAW, STRAW_D = (252, 230, 160), (232, 194, 108), (182, 136, 66)
+COFFEE = (96, 60, 40)
 
 # One character per colour in the drawings below; "." is empty.
 INKS = {
@@ -58,7 +59,7 @@ INKS = {
     "u": TULIP_L, "U": TULIP, "V": TULIP_D, "f": LEAF, "F": LEAF_D,
     "m": CREAM_L, "M": CREAM, "N": CREAM_D, "K": CONE, "Q": CONE_D, "Z": QUILL,
     "1": MITT, "2": MITT_D, "3": CUFF, "6": GREEN_L, "7": GREEN_DD,
-    "4": STRAW_L, "5": STRAW, "8": STRAW_D,
+    "4": STRAW_L, "5": STRAW, "8": STRAW_D, "9": COFFEE,
 }
 
 
@@ -228,6 +229,46 @@ LANTERNE = art(        # a glowing paper lantern hanging from a little stick
     "..k.......",
 )
 LANTERNE_GRIP = (9, 2)
+
+
+CAFE = art(            # a cup of coffee, steaming; held by its handle
+    "..s.s.",
+    ".s.s..",
+    "w9999w",
+    "wwwwwG",
+    "swwwsG",
+    ".ssss.",
+)
+CAFE_GRIP = (5, 4)
+CANNE_POMMEAU = art(   # the gentleman's cane: a gold pommel, a crook to the hand, a walnut shaft held clear of the body
+    "lg..",
+    "gdOO",
+    "o...",
+    "O...",
+    "o...",
+    "O...",
+    "o...",
+    "O...",
+    "o...",
+    "h...",
+)
+CANNE_POMMEAU_GRIP = (3, 1)
+MONTRE = art(          # a gold pocket watch dangling from its chain, the chain's end in the hand
+    "....d",
+    "...g.",
+    "..d..",
+    ".lgd.",
+    "lwwwd",
+    "gwkwD",
+    "dwwwD",
+    ".dDD.",
+)
+MONTRE_GRIP = (4, 0)
+NOEUD_PAPILLON = art(  # a navy bow tie, worn under the mouth
+    "jJ....Jj",
+    "JJJvvJJJ",
+    "vJ....Jv",
+)
 
 
 # ---- the body, measured -----------------------------------------------------------------
@@ -422,6 +463,39 @@ def medaillon(pen, b, n):
         pen.put(x, n + y, c)
 
 
+def lunettes_rondes(pen, b):
+    """Thin round tortoise-shell frames around each eye, the eyes showing through."""
+    e = b.eye
+    for x0 in (11, 17):
+        for x in (x0 + 1, x0 + 2):
+            pen.put(x, e - 1, ROD_D)
+            pen.put(x, e + 3, ROD_D)
+        for y in (e, e + 1, e + 2):
+            pen.put(x0, y, ROD_D)
+            pen.put(x0 + 3, y, ROD_D)
+    for x in (15, 16):
+        pen.put(x, e, ROD_D)
+    pen.put(10, e, ROD_D)
+    pen.put(21, e, ROD_D)
+
+
+def monocle(pen, b):
+    """A gold rim round the right eye and its chain falling to the side."""
+    e, x0 = b.eye, 17
+    for x in (x0 + 1, x0 + 2):
+        pen.put(x, e - 1, GOLD_L)
+        pen.put(x, e + 3, GOLD_D)
+    for y in (e, e + 1, e + 2):
+        pen.put(x0, y, GOLD)
+        pen.put(x0 + 3, y, GOLD_D)
+    for i, (x, y) in enumerate(((21, e + 3), (21, e + 4), (22, e + 5), (22, e + 6), (22, e + 7))):
+        pen.put(x, y, GOLD if i % 2 else GOLD_D)
+
+
+def noeud_papillon(pen, b):
+    pen.stamp(NOEUD_PAPILLON, 12, b.eye + 5)     # under the mouth: the collar row sits at eye level on the short ones
+
+
 def at_neck(fn, place):
     return lambda pen, b: fn(pen, b, neck_row(b, place))
 
@@ -489,7 +563,6 @@ ACCESSORIES = {
     "ballon": dict(family="held", styles=sided(lambda swap, side: held(recolour(BALLON, swap), None, side), BALLON_COLOURS, "ballon")),
     "lunettes": dict(family="eyes", styles={"": lunettes}),
     "haut_de_forme": dict(family="hat", styles={"": hat(HAUT_DE_FORME)}),
-    "baguette": dict(family="held", styles=held_sides(BAGUETTE)),
     "couronne": dict(family="hat", styles={"": hat(COURONNE)}),
     "tulipe": dict(family="held", styles=held_sides(TULIPE, TULIPE_GRIP)),
     "glace": dict(family="held", styles=held_sides(GLACE, GLACE_GRIP)),
@@ -503,6 +576,12 @@ ACCESSORIES = {
     "bonnet": dict(family="hat", styles=styles(lambda swap: hat(recolour(BONNET, swap)), BONNET_COLOURS.items())),
     "lanterne": dict(family="held", styles=held_sides(LANTERNE, LANTERNE_GRIP)),
     "couronne_fleurs": dict(family="hat", styles={"": hat(COURONNE_FLEURS)}),
+    "cafe": dict(family="held", styles=held_sides(CAFE, CAFE_GRIP)),
+    "lunettes_rondes": dict(family="eyes", styles={"": lunettes_rondes}),
+    "noeud_papillon": dict(family="neck", styles={"": noeud_papillon}),
+    "monocle": dict(family="eyes", styles={"": monocle}),
+    "canne": dict(family="held", styles=held_sides(CANNE_POMMEAU, CANNE_POMMEAU_GRIP)),
+    "montre_gousset": dict(family="held", styles=held_sides(MONTRE, MONTRE_GRIP)),
 }
 
 

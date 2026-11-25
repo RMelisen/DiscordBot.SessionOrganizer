@@ -32,7 +32,7 @@ public static class PaintChecks
         var root = StoryChecks.RepoRoot();
         PlynlingPainter.AssetsRoot = Path.Combine(root, "ProjectSYNCS", "Assets", "Plynlings");
         var old = Path.Combine(root, "assets", "plynlings");
-        Expect(Auras().Length == 6, $"{Auras().Length} auras in the catalogue, expected 6");
+        Expect(Auras().Length == 10, $"{Auras().Length} auras in the catalogue, expected 10");
         LookNamesRoundTrip();
         MarksRepaintIsInvisible();
         MarksBlendShows();
@@ -46,7 +46,7 @@ public static class PaintChecks
     // bare _visit file in assets/plynlings/ (so a dressed one sits where its partner does), and a hat fits whole.
     private static void VisitPictures(string old)
     {
-        var dressed = new PlynlingLook("coprin_baby", "happy", false, new("cos.accessory.couronne", null), new("cos.accessory.baguette", "droite"),
+        var dressed = new PlynlingLook("coprin_baby", "happy", false, new("cos.accessory.couronne", null), new("cos.accessory.canne_peche", "droite"),
             "bulles", new("cos.accessory.echarpe", "rouge_haut"), Visit: true);
         Expect(PlynlingLook.Parse(dressed.FileName) == dressed, $"visit look {dressed.FileName} doesn't round-trip");
         Expect(PlynlingLook.Parse((dressed with { Dirty = true }).FileName) == dressed with { Dirty = true }, "a dirty visit look doesn't round-trip");
@@ -98,7 +98,7 @@ public static class PaintChecks
         items.AddRange(TodaysLooks().Select(l => (WornAccessory?)new WornAccessory(l.Key, AccessoryStyles.Resolve(l.Key, l.Style))));
         // Both sides of a sided item, and every pair (a second only with a first).
         items.Add(new WornAccessory("cos.accessory.noeud", "rose_droite"));
-        items.Add(new WornAccessory("cos.accessory.baguette", "droite"));
+        items.Add(new WornAccessory("cos.accessory.canne_peche", "droite"));
         var auras = Auras().Select(a => (string?)a).Prepend(null).ToArray();
         int checkedCount = 0, bad = 0;
         string? firstBad = null;
@@ -193,8 +193,8 @@ public static class PaintChecks
             if (why is not null) bad.Enqueue($"{name}: {why}");
         });
         Expect(bad.IsEmpty, $"{bad.Count} marks repaint(s) show on the bare base, e.g. {string.Join("; ", bad.Take(3))}");
-        var right = new PlynlingLook("amanite", "sleeping", false, new("cos.accessory.baguette", "droite"), null, null);
-        Expect(PlynlingPainter.Draw(right) is not null, "amanite sleeping with a right-hand baguette is not drawn");
+        var right = new PlynlingLook("amanite", "sleeping", false, new("cos.accessory.canne_peche", "droite"), null, null);
+        Expect(PlynlingPainter.Draw(right) is not null, "amanite sleeping with a right-hand canne_peche is not drawn");
     }
 
     private static (int W, int H, List<Rgba32[]> Ticks) Decode(byte[] bytes)
@@ -216,7 +216,7 @@ public static class PaintChecks
     private static void MarksBlendShows()
     {
         string Layer(string folder, string name) => Path.Combine(PlynlingPainter.AssetsRoot, folder, name + ".webp");
-        // Each held look on its right side, as its layer is named: « ballon_rouge_droite », « baguette_droite ».
+        // Each held look on its right side, as its layer is named: « ballon_rouge_droite », « canne_peche_droite ».
         var held = TodaysLooks().Select(l => (Name: l.Key[AccessoryPrefix.Length..], l.Style)).Where(l => AccessoryFit.Category(AccessoryPrefix + l.Name) == AccessoryCategory.Held)
             .Select(l => $"{l.Name}_{(l.Style is null ? "" : l.Style + "_")}droite").ToList();
         Expect(held.Count >= 8, $"only {held.Count} held items found");
@@ -298,7 +298,7 @@ public static class PaintChecks
             .Build();
 
         var name = new PlynlingLook("amanite", "content", false, new("cos.accessory.noeud", "rose_gauche"),
-            new("cos.accessory.baguette", "droite"), "petales").FileName;
+            new("cos.accessory.canne_peche", "droite"), "petales").FileName;
         var files = PlynlingPainter.FilesFor(Card("attachment://" + name));
         try
         {

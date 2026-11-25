@@ -2,7 +2,9 @@ namespace ProjectSYNCS.Helpers;
 
 public enum ItemKind { Food, Collectible, Cosmetic, Care }
 
-public enum ItemRarity { Common, Uncommon, Rare, Legendary }
+// Never stored (items are stored by key), so the order is free and sorts lists. Collectibles use
+// four tiers; Epic and Mythic are cosmetics only (Mythic: the Chefs-d'œuvre, never sold).
+public enum ItemRarity { Common, Uncommon, Rare, Epic, Legendary, Mythic }
 
 public enum Season { None, Spring, Summer, Autumn, Winter }
 
@@ -111,7 +113,7 @@ public static class ItemCatalog
         ItemRarity.Common => 2,
         ItemRarity.Uncommon => 5,
         ItemRarity.Rare => 15,
-        _ => 50,
+        _ => 50,    // légendaire; épique and mythique are cosmetics, which never sell
     };
 
     public static string RarityLabel(ItemRarity rarity) => rarity switch
@@ -119,7 +121,9 @@ public static class ItemCatalog
         ItemRarity.Common => "commun",
         ItemRarity.Uncommon => "peu commun",
         ItemRarity.Rare => "rare",
-        _ => "légendaire",
+        ItemRarity.Epic => "épique",
+        ItemRarity.Legendary => "légendaire",
+        _ => "mythique",
     };
 
     public static string SeasonLabel(Season season) => season switch
@@ -209,7 +213,9 @@ public static class ItemCatalog
         ItemRarity.Common => "communs",
         ItemRarity.Uncommon => "peu communs",
         ItemRarity.Rare => "rares",
-        _ => "légendaires",
+        ItemRarity.Epic => "épiques",
+        ItemRarity.Legendary => "légendaires",
+        _ => "mythiques",
     };
 
     // The emoji for plain-text places — autocomplete suggestions — where custom emoji markup

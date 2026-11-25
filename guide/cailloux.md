@@ -247,5 +247,25 @@ Il y a cinq sortes de cosmétiques : **Thème**, **Titre**, **Accessoire**, **Au
 
 `/plynling wardrobe` ouvre le même écran directement sur la garde-robe.
 
+### Raretés des cosmétiques
+
+Les cosmétiques ont six raretés. En boutique, cette semaine comme de saison, la rareté fixe le prix :
+
+| Rareté | Prix |
+|---|---|
+| Commun | 600 cailloux |
+| Peu commun | 1 200 cailloux |
+| Rare | 2 400 cailloux |
+| Épique | 3 600 cailloux |
+| Légendaire | 5 000 cailloux |
+| Mythique | jamais en vente : ce sont les **Chefs-d'œuvre**, à fabriquer |
+
+Deux articles de chaque sorte (sauf les auras) sont **toujours en vente**, à 300 ou 500 cailloux. Les **Ouvrages** sont peu communs.
+
+Beaucoup de cosmétiques font partie d'une **collection** qui va ensemble (Grand-Froid, Cour royale, Jour de fête…). Ta progression s'affiche en bas de la page garde-robe de `/inventory view`, par exemple « Grand-Froid 3/8 ». C'est pour le plaisir de compléter : rien ne se débloque.
+
+!!! syncs smug ""
+    Mythique, ça ne s'achète pas. Même chez moi. Surtout chez moi.
+
 !!! note
     Les cosmétiques se donnent et s'échangent comme les autres objets, mais ne se revendent pas. Si tu donnes ton dernier exemplaire d'un cosmétique porté, ton Plynling l'enlève.
