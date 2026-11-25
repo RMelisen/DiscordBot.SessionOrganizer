@@ -47,6 +47,12 @@ GREEN_L, GREEN_DD = (168, 222, 136), (40, 92, 48)
 STRAW_L, STRAW, STRAW_D = (252, 230, 160), (232, 194, 108), (182, 136, 66)
 COFFEE = (96, 60, 40)
 NORI = (34, 58, 44)
+VIOLET_L, VIOLET, VIOLET_D = (206, 168, 242), (150, 98, 212), (98, 58, 152)
+CHOC_L, CHOC = (176, 116, 78), (128, 78, 48)                       # its shade is COFFEE
+PISTACHE_L, PISTACHE, PISTACHE_D = (222, 240, 184), (182, 214, 128), (132, 170, 90)
+VANILLE = (252, 242, 208)
+BORDEAUX, BORDEAUX_D = (118, 28, 48), (80, 18, 36)
+SATIN = (18, 16, 24)                                               # a black band, darker than the hat
 
 # One character per colour in the drawings below; "." is empty.
 INKS = {
@@ -61,6 +67,8 @@ INKS = {
     "m": CREAM_L, "M": CREAM, "N": CREAM_D, "K": CONE, "Q": CONE_D, "Z": QUILL,
     "1": MITT, "2": MITT_D, "3": CUFF, "6": GREEN_L, "7": GREEN_DD,
     "4": STRAW_L, "5": STRAW, "8": STRAW_D, "9": COFFEE, "0": NORI,
+    "S": VIOLET_L, "T": VIOLET, "Y": VIOLET_D, "W": CHOC_L, "X": CHOC,
+    "I": PISTACHE_L, "#": PISTACHE, "+": PISTACHE_D, "%": VANILLE, "&": BORDEAUX, "@": BORDEAUX_D, "=": SATIN,
 }
 
 
@@ -91,6 +99,8 @@ HAUT_DE_FORME = art(
     ".rrrrrrrR.",
     "kHHHHHHHHk",
 )
+HAUT_DE_FORME_RUBANS = {"rouge": {}, "noir": {"r": "=", "R": "="}, "bleu": {"r": "B", "R": "J"},
+                        "violet": {"r": "T", "R": "Y"}}
 CASQUETTE = art(
     "...jjjj...",
     "..jBBBBJ..",
@@ -174,6 +184,8 @@ TULIPE = art(
     ".f.",
 )
 TULIPE_GRIP = (1, 5)
+TULIPE_COLOURS = {"rouge": {}, "jaune": {"u": "l", "U": "y", "V": "d"}, "violette": {"u": "S", "U": "T", "V": "Y"},
+                  "blanche": {"u": "w", "U": "s", "V": "G"}}
 GLACE = art(
     ".mM.",
     "mMMN",
@@ -184,6 +196,8 @@ GLACE = art(
     "..Q.",
 )
 GLACE_GRIP = (2, 5)
+GLACE_PARFUMS = {"fraise": {}, "chocolat": {"m": "W", "M": "X", "N": "9"}, "vanille": {"m": "w", "M": "%", "N": "4"},
+                 "pistache": {"m": "I", "M": "#", "N": "+"}}
 PLUME = art(
     "ll....",
     "lgg...",
@@ -230,6 +244,7 @@ LANTERNE = art(        # a glowing paper lantern hanging from a little stick
     "..k.......",
 )
 LANTERNE_GRIP = (9, 2)
+LANTERNE_COLOURS = {"ambree": {}, "rouge": {"E": "R", "y": "r", "l": "e"}, "bleue": {"E": "J", "y": "B", "l": "j"}}
 
 
 CAFE = art(            # a cup of coffee, steaming; held by its handle
@@ -270,6 +285,8 @@ NOEUD_PAPILLON = art(  # a navy bow tie, worn under the mouth
     "JJJvvJJJ",
     "vJ....Jv",
 )
+NOEUD_PAPILLON_COLOURS = {"marine": {}, "noir": {"j": "h", "J": "H", "v": "k"}, "rouge": {"j": "e", "J": "r", "v": "R"},
+                          "bordeaux": {"j": "R", "J": "&", "v": "@"}}
 
 # ---- Soleil-Levant ----
 CHAPEAU_CHINOIS = art(  # taller and narrower, red lacquer, a gold knob and a gold rim
@@ -292,6 +309,8 @@ KANZASHI = art(        # a sakura on a gold pin, two bead drops hanging under it
     ".r..j.",
 )
 KANZASHI_AT = (2, 3)   # the flower's heart
+KANZASHI_COLOURS = {"sakura": {}, "rouge": {"p": "e", "P": "r"}, "indigo": {"p": "j", "P": "J"},   # the éventail's keys
+                    "glycine": {"p": "S", "P": "T"}}
 ONIGIRI = art(         # a rice triangle wrapped in a band of nori
     "...w...",
     "..wws..",
@@ -351,7 +370,7 @@ def _eventail():
 
 EVENTAIL, EVENTAIL_GRIP = _eventail()
 EVENTAIL_COLOURS = {"rouge": {}, "indigo": {"e": "j", "r": "B", "R": "v"},
-                    "sakura": {"e": "p", "r": "P", "R": "q"}}
+                    "sakura": {"e": "p", "r": "P", "R": "q"}, "glycine": {"e": "S", "r": "T", "R": "Y"}}
 
 # ---- batch 3 (8.21.0) ----
 BONNET_NUIT = art(     # a night-blue nightcap dotted with stars, its tip flopping over to the right, a pompom
@@ -364,6 +383,7 @@ BONNET_NUIT = art(     # a night-blue nightcap dotted with stars, its tip floppi
     "..wwwwwwwwwwww..",
     "..swswswswswsw..",
 )
+BONNET_NUIT_COLOURS = {"nuit": {}, "rouge": {"j": "e", "B": "r", "J": "R"}, "vert": {"j": "6", "B": "f", "J": "F"}}
 SUCETTE = art(         # a swirled lollipop, its white stick slanting down to the hand
     ".pPPp..",
     "pPwwPq.",
@@ -374,6 +394,21 @@ SUCETTE = art(         # a swirled lollipop, its white stick slanting down to th
     "......w",
 )
 SUCETTE_GRIP = (6, 6)
+
+
+def _arc_en_ciel(drawing):
+    """The sucette in rainbow bands, one per row of candy (red at the top, blue at the bottom); the
+    white swirl and the stick stay."""
+    bands = [("r", "R"), ("E", "d"), ("y", "d"), ("f", "F"), ("B", "J")]
+    out = []
+    for j, row in enumerate(drawing):
+        mid, dark = bands[min(j, len(bands) - 1)]
+        out.append("".join(mid if ch in "pP" else dark if ch == "q" else ch for ch in row))
+    return out
+
+
+SUCETTE_COLOURS = {"rose": SUCETTE, "bleue": recolour(SUCETTE, {"p": "j", "P": "B", "q": "J"}),
+                   "verte": recolour(SUCETTE, {"p": "6", "P": "f", "q": "F"}), "arcenciel": _arc_en_ciel(SUCETTE)}
 CHAPEAU_CHAMPIGNON = art(  # a fly-agaric cap as a hat: red, white spots, an ink outline so it stands off a red cap
     "....xxxx....",
     "..xxerrrxx..",
@@ -420,20 +455,25 @@ def aureole(pen, b):
     pen.stamp(AUREOLE, x0, bottom - h + 1)
 
 
-def lunettes_coeur(pen, b):
-    """Pink heart-shaped lenses, a shine on each, a thin pink frame between and on the sides."""
+LUNETTES_COEUR_COLOURS = {"roses": (PINK_L, PINK, PINK_D), "rouges": (RED_L, RED, RED_D),
+                          "violettes": (VIOLET_L, VIOLET, VIOLET_D)}
+
+
+def lunettes_coeur(pen, b, colour="roses"):
+    """Heart-shaped lenses (pink by default), a shine on each, a thin frame between and on the sides."""
+    light, mid, dark = LUNETTES_COEUR_COLOURS[colour]
     e = b.eye
     heart = ("PP.PP", "PPPPP", ".PPP.", "..P..")
     for x0 in (10, 17):
         for j, row in enumerate(heart):
             for i, ch in enumerate(row):
                 if ch != ".":
-                    pen.put(x0 + i, e - 1 + j, PINK if (i, j) != (1, 0) else PINK_L)
-        pen.put(x0 + 1, e, PINK_L)
+                    pen.put(x0 + i, e - 1 + j, mid if (i, j) != (1, 0) else light)
+        pen.put(x0 + 1, e, light)
     for x in (15, 16):
-        pen.put(x, e, PINK_D)
-    pen.put(9, e, PINK_D)
-    pen.put(22, e, PINK_D)
+        pen.put(x, e, dark)
+    pen.put(9, e, dark)
+    pen.put(22, e, dark)
 
 
 def cache_oeil(pen, b):
@@ -635,6 +675,8 @@ SCARF_COLOURS = {                     # knit, its shade (the stripes stay cream)
     "rouge": (SCARF, SCARF_D),
     "bleue": ((84, 136, 226), (52, 88, 166)),
     "verte": ((96, 176, 96), (58, 120, 64)),
+    "rose": (PINK, PINK_D),
+    "violette": (VIOLET, VIOLET_D),
 }
 
 
@@ -701,15 +743,16 @@ def monocle(pen, b):
         pen.put(x, y, GOLD if i % 2 else GOLD_D)
 
 
-def noeud_papillon(pen, b):
-    pen.stamp(NOEUD_PAPILLON, 12, b.eye + 5)     # under the mouth: the collar row sits at eye level on the short ones
+def noeud_papillon(pen, b, swap=None):
+    pen.stamp(recolour(NOEUD_PAPILLON, swap or {}), 12, b.eye + 5)     # under the mouth: the collar row sits at eye level on the short ones
 
 
 def at_neck(fn, place):
     return lambda pen, b: fn(pen, b, neck_row(b, place))
 
 
-MOUFLE_COLOURS = {"rouges": {}, "bleues": {"1": "B", "2": "J"}, "vertes": {"1": "f", "2": "F"}}
+MOUFLE_COLOURS = {"rouges": {}, "bleues": {"1": "B", "2": "J"}, "vertes": {"1": "f", "2": "F"},
+                  "roses": {"1": "P", "2": "q"}, "violettes": {"1": "T", "2": "Y"}}
 
 
 def moufles(pen, b, swap=None):
@@ -727,7 +770,8 @@ NECK_PLACES = [("haut", "haut"), ("bas", "bas")]
 CASQUETTE_COLOURS = {"bleue": {}, "rouge": {"j": "e", "B": "r", "J": "R", "v": "R"},
                      "verte": {"j": "6", "B": "f", "J": "F", "v": "7"}}
 BALLON_COLOURS = {"rouge": {}, "bleu": {"a": "j", "A": "B", "z": "J"}, "jaune": {"a": "l", "A": "g", "z": "d"}}
-BONNET_COLOURS = {"rouge": {}, "bleu": {"1": "B", "2": "J"}, "vert": {"1": "f", "2": "F"}}
+BONNET_COLOURS = {"rouge": {}, "bleu": {"1": "B", "2": "J"}, "vert": {"1": "f", "2": "F"},
+                  "rose": {"1": "P", "2": "q"}, "violet": {"1": "T", "2": "Y"}}
 
 # The side a nœud, a fleur or a held thing sits on: the last part of its style name, the default
 # first (« rose_gauche », « blanche_droite », « droite »). Bare held items are just the side.
@@ -737,13 +781,18 @@ DEFAULT_SIDE = {"noeud": "gauche", "fleur": "droite", "ballon": "gauche", "kanza
 
 def sided(make, colours, acc):
     """`make(swap, side)` in every colour and both sides, `acc`'s default side first in each colour."""
-    default = DEFAULT_SIDE[acc]
+    default = DEFAULT_SIDE.get(acc, "gauche")      # a held thing not in DEFAULT_SIDE: the left
     order = (default,) + tuple(s for s in SIDES if s != default)
     return {f"{colour}_{side}": make(swap, side) for colour, swap in colours.items() for side in order}
 
 
 def held_sides(drawing, grip=None):
     return {side: held(drawing, grip, side) for side in SIDES}
+
+
+def coloured_held(drawing, grip, colours, acc):
+    """A held thing in every colour (a swap of its drawing's tones) and both hands: « jaune_droite »."""
+    return sided(lambda swap, side: held(recolour(drawing, swap), grip, side), colours, acc)
 
 
 def file_style(acc, style):
@@ -771,10 +820,10 @@ ACCESSORIES = {
     "casquette": dict(family="hat", styles=styles(lambda swap: hat(recolour(CASQUETTE, swap)), CASQUETTE_COLOURS.items())),
     "ballon": dict(family="held", styles=sided(lambda swap, side: held(recolour(BALLON, swap), None, side), BALLON_COLOURS, "ballon")),
     "lunettes": dict(family="eyes", styles={"": lunettes}),
-    "haut_de_forme": dict(family="hat", styles={"": hat(HAUT_DE_FORME)}),
+    "haut_de_forme": dict(family="hat", styles=styles(lambda swap: hat(recolour(HAUT_DE_FORME, swap)), HAUT_DE_FORME_RUBANS.items())),
     "couronne": dict(family="hat", styles={"": hat(COURONNE)}),
-    "tulipe": dict(family="held", styles=held_sides(TULIPE, TULIPE_GRIP)),
-    "glace": dict(family="held", styles=held_sides(GLACE, GLACE_GRIP)),
+    "tulipe": dict(family="held", styles=coloured_held(TULIPE, TULIPE_GRIP, TULIPE_COLOURS, "tulipe")),
+    "glace": dict(family="held", styles=coloured_held(GLACE, GLACE_GRIP, GLACE_PARFUMS, "glace")),
     "moufles": dict(family="hands", styles=styles(lambda swap: lambda pen, b: moufles(pen, b, swap), MOUFLE_COLOURS.items())),
     "plume_doree": dict(family="held", styles=held_sides(PLUME)),
     "collier_coquillages": dict(family="neck", styles=styles(lambda p: at_neck(collier_coquillages, p), NECK_PLACES)),
@@ -783,27 +832,27 @@ ACCESSORIES = {
     "canne_peche": dict(family="held", styles=held_sides(CANNE)),
     "chapeau_paille": dict(family="hat", styles={"": hat(CHAPEAU_PAILLE)}),
     "bonnet": dict(family="hat", styles=styles(lambda swap: hat(recolour(BONNET, swap)), BONNET_COLOURS.items())),
-    "lanterne": dict(family="held", styles=held_sides(LANTERNE, LANTERNE_GRIP)),
+    "lanterne": dict(family="held", styles=coloured_held(LANTERNE, LANTERNE_GRIP, LANTERNE_COLOURS, "lanterne")),
     "couronne_fleurs": dict(family="hat", styles={"": hat(COURONNE_FLEURS)}),
     "cafe": dict(family="held", styles=held_sides(CAFE, CAFE_GRIP)),
     "lunettes_rondes": dict(family="eyes", styles={"": lunettes_rondes}),
-    "noeud_papillon": dict(family="neck", styles={"": noeud_papillon}),
+    "noeud_papillon": dict(family="neck", styles=styles(lambda swap: lambda pen, b: noeud_papillon(pen, b, swap), NOEUD_PAPILLON_COLOURS.items())),
     "monocle": dict(family="eyes", styles={"": monocle}),
     "canne": dict(family="held", styles=held_sides(CANNE_POMMEAU, CANNE_POMMEAU_GRIP)),
     "montre_gousset": dict(family="held", styles=held_sides(MONTRE, MONTRE_GRIP)),
     "onigiri": dict(family="held", styles=held_sides(ONIGIRI, ONIGIRI_GRIP)),
     "sugegasa": dict(family="hat", styles={"": sugegasa}),
     "chapeau_chinois": dict(family="hat", styles={"": hat(CHAPEAU_CHINOIS)}),
-    "kanzashi": dict(family="cap", styles={          # at the fleur's spot, the right by default
-        side: on_cap(KANZASHI, 0.74, KANZASHI_AT, side != "droite") for side in ("droite", "gauche")}),
+    "kanzashi": dict(family="cap", styles=sided(     # at the fleur's spot, the right by default
+        lambda swap, side: on_cap(recolour(KANZASHI, swap), 0.74, KANZASHI_AT, side != "droite"), KANZASHI_COLOURS, "kanzashi")),
     "eventail": dict(family="held", styles=sided(
         lambda swap, side: held(recolour(EVENTAIL, swap), EVENTAIL_GRIP, side), EVENTAIL_COLOURS, "eventail")),
     "katana": dict(family="held", styles=held_sides(KATANA, KATANA_GRIP)),
-    "bonnet_nuit": dict(family="hat", styles={"": hat(BONNET_NUIT)}),
-    "sucette": dict(family="held", styles=held_sides(SUCETTE, SUCETTE_GRIP)),
+    "bonnet_nuit": dict(family="hat", styles=styles(lambda swap: hat(recolour(BONNET_NUIT, swap)), BONNET_NUIT_COLOURS.items())),
+    "sucette": dict(family="held", styles=sided(lambda drawing, side: held(drawing, SUCETTE_GRIP, side), SUCETTE_COLOURS, "sucette")),
     "chapeau_champignon": dict(family="hat", styles={"": hat(CHAPEAU_CHAMPIGNON)}),
     "doudou": dict(family="held", styles=held_sides(DOUDOU, DOUDOU_GRIP)),
-    "lunettes_coeur": dict(family="eyes", styles={"": lunettes_coeur}),
+    "lunettes_coeur": dict(family="eyes", styles=styles(lambda c: lambda pen, b: lunettes_coeur(pen, b, c), ((c, c) for c in LUNETTES_COEUR_COLOURS))),
     "cache_oeil": dict(family="eyes", styles={"": cache_oeil}),
     "aureole": dict(family="hat", styles={"": aureole}),
 }
@@ -912,6 +961,21 @@ if __name__ == "__main__":
     e = os.path.join(out, "soleil_faces.png")
     sheet(three, faces, lambda acc, fc: dressed(fc[0], "amanite", dirty=fc[1], acc=acc),
           three, [fc[0] + (" sale" if fc[1] else "") for fc in faces], e, K=4)
+    # The colours of 8.22.1, on the default side, every colour of each item side by side, on all 14 shapes
+    colour_sheets = {"colours_held": ("tulipe", "glace", "sucette", "lanterne"),
+                     "colours_head": ("haut_de_forme", "bonnet_nuit", "kanzashi", "lunettes_coeur", "noeud_papillon"),
+                     "colours_winter": ("bonnet", "moufles", "echarpe", "eventail")}
+    for sheet_name, accs in colour_sheets.items():
+        def front(acc, st):        # the default side (a sided item), the high place (the écharpe)
+            if acc in DEFAULT_SIDE or ACCESSORIES[acc]["family"] == "held":
+                return file_style(acc, st) != st
+            return not st.endswith("_bas")
+        cols = [(acc, st) for acc, st in every if acc in accs and front(acc, st)]
+        path = os.path.join(out, sheet_name + ".png")
+        sheet(shapes, cols, lambda s, l: dressed("content", s[0], stage=s[1], acc=l[0], style=l[1]),
+              [f"{sp} {'bébé' if st == 'baby' else ''}" for sp, st in shapes],
+              [f"{acc[:9]}\n{st.split('_')[0]}" for acc, st in cols], path, K=4)
+        print(path)
     print(c)
     print(a)
     print(b)

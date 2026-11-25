@@ -384,7 +384,9 @@ thème or cadre), so a newcomer has a choice; checks section 61 pins the two.
   Garde-robe's worst case is already 39 of 40 components (section 59 prints it; the gaps between
   pickers cost two): it would need the pickers on their own view first.
 - **Accessory styles** (`AccessoryStyles`): some accessories have one or two choices — a colour (nœud,
-  fleur, écharpe, casquette, ballon, moufles), a place at the neck (écharpe, collier, médaillon), and
+  fleur, écharpe, casquette, ballon, moufles, bonnet, éventail, and since 8.22.1 tulipe, sucette, lanterne,
+  bonnet de nuit, lunettes en cœur, nœud papillon, kanzashi; the glace's choice is « Parfum », the
+  haut-de-forme's « Ruban »), a place at the neck (écharpe, collier, médaillon), and
   the **side** of the sided ones (« Côté » for nœud and fleur, « Main » for held items). A side is a
   style, not a slot. The first option is the default. The picked options are one string per
   worn accessory (`AccessoryStyle`, `Accessory2Style`, `Accessory3Style`; « bleue_haut », null = default), written by the
@@ -393,7 +395,10 @@ thème or cadre), so a newcomer has a choice; checks section 61 pins the two.
   (`SavedStyles.Parse`/`Format` are the format): putting an item back on restores its last colour and
   side. `Outfit` carries all of it, and a try-on of another accessory shows its remembered style or
   default. Option keys are stored: append-only, never renamed, never containing « _ »; a new option
-  needs its drawing first (checks section 62 compares the two).
+  needs its drawing first (checks section 62 compares the two). **A choice may be added in front of
+  existing ones** (8.22.1 put a colour before the side of five items): `Resolve` reads stored parts in
+  choice order, giving a skipped choice its default, so an old « droite » reads « rouge_droite ». That
+  only holds while no option key is shared between two choices of the same accessory.
 - **Auras** (8.6.0, `cos.aura.*`): an animated effect drawn around the Plynling, worn **with** the
   accessory — `Outfit.With`/`Without` on one never touch the other. Thirteen: Scintillements
   (the look the rarer species lost in 8.5.1, now for anyone) and Bulles in the weekly rotation — one a

@@ -166,7 +166,7 @@ public static class AccessoryArtChecks
 
         var p = Living("cos.accessory.noeud", "bleu");
         var tried = Outfit.Of(p).With(CosmeticCatalog.ByKey("cos.accessory.haut_de_forme")!);
-        Wears(p, "cos.accessory.haut_de_forme:", "try-on", tried);
+        Wears(p, "cos.accessory.haut_de_forme:rouge", "try-on", tried);
         Wears(p, "cos.accessory.noeud:bleu_gauche", "its own outfit keeps the style", Outfit.Of(p));
         Expect(Look(p, Outfit.Of(p).Without(CosmeticSlot.Accessory)) is null, "try-on without the accessory still shows one");
 
@@ -492,7 +492,7 @@ public static class AccessoryArtChecks
         Expect(selects.Count == 2, $"écharpe: {selects.Count} style select(s), expected 2 (couleur, position)");
         if (selects.Count == 2)
         {
-            Expect(selects[0].CustomId == "cosm:style:0:cos.accessory.echarpe" && selects[0].Options.Count == 3, "écharpe colour select: " + selects[0].CustomId);
+            Expect(selects[0].CustomId == "cosm:style:0:cos.accessory.echarpe" && selects[0].Options.Count == 5, "écharpe colour select: " + selects[0].CustomId);
             Expect(selects[1].CustomId == "cosm:style:1:cos.accessory.echarpe" && selects[1].Options.Count == 2, "écharpe position select: " + selects[1].CustomId);
             Expect(selects[0].Options.Single(o => o.IsDefault == true).Value == "bleue", "écharpe colour select: the worn colour is not the selected option");
             Expect(selects[1].Options.Single(o => o.IsDefault == true).Value == "bas", "écharpe position select: the worn place is not the selected option");

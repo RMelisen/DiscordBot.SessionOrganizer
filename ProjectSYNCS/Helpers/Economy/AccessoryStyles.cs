@@ -15,8 +15,10 @@ public static class AccessoryStyles
 
     public sealed record Choice(string Label, IReadOnlyList<Option> Options);
 
-    private static Choice Colour(params (string Key, string Name)[] options) =>
-        new("Couleur", options.Select(o => new Option(o.Key, o.Name)).ToList());
+    private static Choice Colour(params (string Key, string Name)[] options) => Named("Couleur", options);
+
+    private static Choice Named(string label, params (string Key, string Name)[] options) =>
+        new(label, options.Select(o => new Option(o.Key, o.Name)).ToList());
 
     private static Choice Sides(string label, bool leftFirst)
     {
@@ -34,35 +36,51 @@ public static class AccessoryStyles
     {
         "cos.accessory.noeud" => new[] { Colour(("rose", "Rose"), ("bleu", "Bleu"), ("dore", "Doré"), ("blanc", "Blanc")), Sides("Côté", true) },
         "cos.accessory.fleur" => new[] { Colour(("blanche", "Blanche"), ("rose", "Rose"), ("bleue", "Bleue"), ("jaune", "Jaune")), Sides("Côté", false) },
-        "cos.accessory.echarpe" => new[] { Colour(("rouge", "Rouge"), ("bleue", "Bleue"), ("verte", "Verte")), Place },
+        "cos.accessory.echarpe" => new[] { Colour(("rouge", "Rouge"), ("bleue", "Bleue"), ("verte", "Verte"), ("rose", "Rose"), ("violette", "Violette")), Place },
         "cos.accessory.casquette" => new[] { Colour(("bleue", "Bleue"), ("rouge", "Rouge"), ("verte", "Verte")) },
         "cos.accessory.ballon" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("jaune", "Jaune")), Hand },
-        "cos.accessory.moufles" => new[] { Colour(("rouges", "Rouges"), ("bleues", "Bleues"), ("vertes", "Vertes")) },
-        "cos.accessory.bonnet" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("vert", "Vert")) },
+        "cos.accessory.moufles" => new[] { Colour(("rouges", "Rouges"), ("bleues", "Bleues"), ("vertes", "Vertes"), ("roses", "Roses"), ("violettes", "Violettes")) },
+        "cos.accessory.bonnet" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("vert", "Vert"), ("rose", "Rose"), ("violet", "Violet")) },
         "cos.accessory.collier_coquillages" or "cos.accessory.medaillon" => new[] { Place },
-        "cos.accessory.kanzashi" => new[] { Sides("Côté", false) },
-        "cos.accessory.eventail" => new[] { Colour(("rouge", "Rouge"), ("indigo", "Indigo"), ("sakura", "Sakura")), Hand },
-        "cos.accessory.tulipe" or "cos.accessory.glace" or "cos.accessory.plume_doree"
-            or "cos.accessory.bocal" or "cos.accessory.canne_peche" or "cos.accessory.lanterne" or "cos.accessory.cafe"
+        "cos.accessory.kanzashi" => new[] { Colour(("sakura", "Sakura"), ("rouge", "Rouge"), ("indigo", "Indigo"), ("glycine", "Glycine")), Sides("Côté", false) },
+        "cos.accessory.eventail" => new[] { Colour(("rouge", "Rouge"), ("indigo", "Indigo"), ("sakura", "Sakura"), ("glycine", "Glycine")), Hand },
+        "cos.accessory.tulipe" => new[] { Colour(("rouge", "Rouge"), ("jaune", "Jaune"), ("violette", "Violette"), ("blanche", "Blanche")), Hand },
+        "cos.accessory.glace" => new[] { Named("Parfum", ("fraise", "Fraise"), ("chocolat", "Chocolat"), ("vanille", "Vanille"), ("pistache", "Pistache")), Hand },
+        "cos.accessory.sucette" => new[] { Colour(("rose", "Rose"), ("bleue", "Bleue"), ("verte", "Verte"), ("arcenciel", "Arc-en-ciel")), Hand },
+        "cos.accessory.lanterne" => new[] { Colour(("ambree", "Ambrée"), ("rouge", "Rouge"), ("bleue", "Bleue")), Hand },
+        "cos.accessory.noeud_papillon" => new[] { Colour(("marine", "Marine"), ("noir", "Noir"), ("rouge", "Rouge"), ("bordeaux", "Bordeaux")) },
+        "cos.accessory.haut_de_forme" => new[] { Named("Ruban", ("rouge", "Rouge"), ("noir", "Noir"), ("bleu", "Bleu"), ("violet", "Violet")) },
+        "cos.accessory.bonnet_nuit" => new[] { Colour(("nuit", "Bleu nuit"), ("rouge", "Rouge"), ("vert", "Vert")) },
+        "cos.accessory.lunettes_coeur" => new[] { Colour(("roses", "Roses"), ("rouges", "Rouges"), ("violettes", "Violettes")) },
+        "cos.accessory.plume_doree" or "cos.accessory.bocal" or "cos.accessory.canne_peche" or "cos.accessory.cafe"
             or "cos.accessory.canne" or "cos.accessory.montre_gousset"
-            or "cos.accessory.onigiri" or "cos.accessory.katana"
-            or "cos.accessory.sucette" or "cos.accessory.doudou" => new[] { Hand },
+            or "cos.accessory.onigiri" or "cos.accessory.katana" or "cos.accessory.doudou" => new[] { Hand },
         _ => Array.Empty<Choice>(),
     };
 
     /// <summary>
-    /// The style to show: each stored option kept where it is one of its choice's, else that choice's
-    /// default — so a stale or unknown style still names a drawn picture. Null for an accessory
-    /// without styles.
+    /// The style to show: the stored options read in choice order, each kept where it is one of its
+    /// choice's, a choice it skips taking its default — so a stale or unknown style still names a drawn
+    /// picture, and a style stored before a choice was added in front keeps its later parts (a tulipe's
+    /// « droite » from before it had colours reads « rouge_droite »). A part no remaining choice knows is
+    /// dropped. Null for an accessory without styles.
     /// </summary>
     public static string? Resolve(string? accessoryKey, string? style)
     {
         var choices = Choices(accessoryKey);
         if (choices.Count == 0) return null;
         var parts = style?.Split('_') ?? Array.Empty<string>();
-        return string.Join('_', choices.Select((c, i) =>
-            i < parts.Length && c.Options.Any(o => o.Key == parts[i]) ? parts[i] : c.Options[0].Key));
+        var picked = new string[choices.Count];
+        var p = 0;
+        for (var i = 0; i < choices.Count; i++)
+        {
+            while (p < parts.Length && !choices.Skip(i).Any(c => Has(c, parts[p]))) p++;
+            picked[i] = p < parts.Length && Has(choices[i], parts[p]) ? parts[p++] : choices[i].Options[0].Key;
+        }
+        return string.Join('_', picked);
     }
+
+    private static bool Has(Choice choice, string option) => choice.Options.Any(o => o.Key == option);
 
     /// <summary>The stored style with choice <paramref name="choice"/> set to <paramref name="option"/>.</summary>
     public static string? With(string? accessoryKey, string? style, int choice, string option)

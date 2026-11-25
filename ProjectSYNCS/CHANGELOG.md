@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.22.1 — 2026-11-25
+
+- New colours, picked for free in the wardrobe: the tulipe (jaune, violette, blanche), the glace (chocolat, vanille, pistache), the sucette (bleue, verte, arc-en-ciel), the lanterne (rouge, bleue), the bonnet de nuit (rouge, vert), the lunettes en cœur (rouges, violettes), the nœud papillon (noir, rouge, bordeaux), the haut-de-forme's ribbon (noir, bleu, violet) and the kanzashi (rouge, indigo, glycine).
+- The éventail comes in glycine too, and the winter set (bonnet, moufles, écharpe) in pink and purple.
+
 ## 8.22.0 — 2026-11-25
 
 - Eight cosmetics left the shop and are now crafted. New Ouvrages: the Chapeau-champignon, the Mouches aura, and the Plumes, Bonhomme de neige and Guirlande de fleurs cadres. New Chefs-d'œuvre: Le Gourmet, the Petite couronne and the Étoiles filantes aura. Copies you already own stay yours.

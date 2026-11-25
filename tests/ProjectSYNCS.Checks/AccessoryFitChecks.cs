@@ -245,14 +245,14 @@ public static class AccessoryFitChecks
             "a chapeau chinois added beside the sugegasa replaces it");
         Is(Pick(W("katana", "gauche"), null, 1, W("eventail", "rouge_gauche")), "katana:droite", "eventail:rouge_gauche", null, "katana",
             "an éventail in the left hand moves the katana to the right");
-        Is(Pick(W("noeud", "rose_gauche"), null, 1, W("kanzashi")), "noeud:rose_gauche", "kanzashi:droite", null, null,
+        Is(Pick(W("noeud", "rose_gauche"), null, 1, W("kanzashi")), "noeud:rose_gauche", "kanzashi:sakura_droite", null, null,
             "a kanzashi sits on the right, beside a nœud on the left");
         // Batch 3: the auréole floats where a hat sits, so it is one; the two new eye pieces never stack.
         Is(Pick(W("bonnet_nuit"), null, 1, W("aureole")), "aureole", null, "bonnet_nuit", null,
             "an auréole added beside the bonnet de nuit replaces it");
-        Is(TryOn(W("cache_oeil"), W("doudou", "gauche"), W("lunettes_coeur")), "lunettes_coeur", "doudou:gauche", "cache_oeil", null,
+        Is(TryOn(W("cache_oeil"), W("doudou", "gauche"), W("lunettes_coeur")), "lunettes_coeur:roses", "doudou:gauche", "cache_oeil", null,
             "lunettes en cœur tried on replace the cache-œil");
-        Is(Pick(W("doudou", "gauche"), null, 1, W("sucette", "gauche")), "doudou:droite", "sucette:gauche", null, "doudou",
+        Is(Pick(W("doudou", "gauche"), null, 1, W("sucette", "gauche")), "doudou:droite", "sucette:rose_gauche", null, "doudou",
             "a sucette in the left hand moves the doudou to the right");
     }
 
@@ -276,16 +276,16 @@ public static class AccessoryFitChecks
             "with all three full and no clash, the last goes");
         Is3(AccessoryFit.TryOn(full, W("bonnet")), ["lunettes", "echarpe:rouge_haut", "bonnet:rouge"], "couronne", null, "a hat still replaces the hat, wherever it is");
         var hands = L(W("ballon", "rouge_gauche"), W("canne_peche", "droite"), W("couronne"));
-        Is3(AccessoryFit.TryOn(hands, W("tulipe")), ["tulipe:gauche", "canne_peche:droite", "couronne"], "ballon", null,
+        Is3(AccessoryFit.TryOn(hands, W("tulipe")), ["tulipe:rouge_gauche", "canne_peche:droite", "couronne"], "ballon", null,
             "both hands full: a third held item replaces the one in its hand");
-        Is3(AccessoryFit.TryOn(hands, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:droite", "couronne"], "canne_peche", null,
+        Is3(AccessoryFit.TryOn(hands, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:rouge_droite", "couronne"], "canne_peche", null,
             "both hands full, the other hand picked: that one goes");
         Is3(AccessoryFit.TryOn(L(W("noeud", "rose_gauche"), W("fleur", "blanche_droite")), W("ballon")), ["noeud:rose_gauche", "fleur:blanche_droite", "ballon:rouge_gauche"],
             null, null, "a nœud, a fleur and a ballon fit together");
 
-        Is3(AccessoryFit.Pick(hands, 2, W("tulipe", "gauche")), ["tulipe:gauche", "canne_peche:droite", "couronne"], "ballon", null,
+        Is3(AccessoryFit.Pick(hands, 2, W("tulipe", "gauche")), ["tulipe:rouge_gauche", "canne_peche:droite", "couronne"], "ballon", null,
             "picked in the third slot with both hands full elsewhere: it replaces the one in its hand, the couronne stays");
-        Is3(AccessoryFit.Pick(L(W("ballon", "rouge_gauche"), W("canne_peche", "droite")), 2, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:droite"], "canne_peche", null,
+        Is3(AccessoryFit.Pick(L(W("ballon", "rouge_gauche"), W("canne_peche", "droite")), 2, W("tulipe", "droite")), ["ballon:rouge_gauche", "tulipe:rouge_droite"], "canne_peche", null,
             "picked in the empty third slot with both hands full: it replaces the one in its hand");
         Is3(AccessoryFit.Pick(L(W("couronne"), W("echarpe", "rouge_haut"), W("ballon", "rouge_gauche")), 2, W("canne_peche", "gauche")),
             ["couronne", "echarpe:rouge_haut", "canne_peche:gauche"], null, null, "the third picker's own held item is replaced by the pick");
@@ -365,14 +365,24 @@ public static class AccessoryFitChecks
         Expect(AccessoryStyles.Resolve(P + "fleur", null) == "blanche_droite", "the fleur defaults to « blanche_droite »: " + AccessoryStyles.Resolve(P + "fleur", null));
         Expect(AccessoryStyles.Resolve(P + "canne_peche", null) == "gauche", "the canne_peche defaults to « gauche »: " + AccessoryStyles.Resolve(P + "canne_peche", null));
         Expect(AccessoryStyles.Resolve(P + "ballon", null) == "rouge_gauche", "the ballon defaults to « rouge_gauche »: " + AccessoryStyles.Resolve(P + "ballon", null));
+        // Styles stored before a colour choice was added in front of the side (8.22.1) keep their side.
+        foreach (var (key, stored, reads) in new[]
+                 {
+                     ("tulipe", "droite", "rouge_droite"), ("glace", "gauche", "fraise_gauche"), ("sucette", "droite", "rose_droite"),
+                     ("lanterne", "droite", "ambree_droite"), ("kanzashi", "gauche", "sakura_gauche"), ("kanzashi", "droite", "sakura_droite"),
+                     ("haut_de_forme", null, "rouge"), ("eventail", "nope_droite", "rouge_droite"), ("echarpe", "bleue_nope", "bleue_haut"),
+                 })
+            Expect(AccessoryStyles.Resolve(P + key, stored) == reads,
+                $"{key}: « {stored} » reads « {AccessoryStyles.Resolve(P + key, stored)} », not « {reads} »");
+        Expect(AccessoryFit.Side(P + "tulipe", "droite") == "droite", "an old tulipe side survives its new colour");
         Expect(AccessoryFit.Side(P + "noeud", "rose") == "gauche", "an old nœud style reads as the default side");
         Expect(AccessoryFit.Side(P + "fleur", "bleue_gauche") == "gauche", "the fleur's stored side");
         Expect(AccessoryFit.Side(P + "couronne", null) is null && AccessoryFit.Side(P + "echarpe", "rouge_bas") is null, "a non-sided item has no side");
         Expect(AccessoryFit.Side(P + "nope", "gauche") is null, "an unknown item has no side");
-        foreach (var key in new[] { "noeud", "fleur", "ballon", "canne_peche", "lanterne" })
-            foreach (var choice in AccessoryStyles.Choices(P + key))
+        foreach (var acc in CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Accessory))
+            foreach (var choice in AccessoryStyles.Choices(acc.Key))
                 foreach (var o in choice.Options)
-                    Expect(!o.Key.Contains('_'), $"{key}: option key « {o.Key} » contains « _ »");
+                    Expect(!o.Key.Contains('_'), $"{acc.Key}: option key « {o.Key} » contains « _ »");
         var sides = AccessoryStyles.Choices(P + "noeud")[^1];
         Expect(sides.Label == "Côté" && sides.Options.Select(o => o.Name).SequenceEqual(new[] { "À gauche", "À droite" }), "nœud's « Côté » choice");
         var hand = AccessoryStyles.Choices(P + "ballon")[^1];
