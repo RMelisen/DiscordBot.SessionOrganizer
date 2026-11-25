@@ -3743,3 +3743,108 @@ icon("auras", "cos.aura.koi", "Carpes koï", "🎏", *centred(
      "..wwwwwww.ff",
      "....w..w....",
      "h..........h"))
+
+
+# ---- Batch 3 (8.21.0) ---------------------------------------------------------------------------
+# Loose pieces filling thin collections; drawn as fills like Soleil-Levant (centred()).
+
+icon("accessoires", "cos.accessory.bonnet_nuit", "un bonnet de nuit", "🌙", *centred(
+     "....BDD.....",
+     "...BBDDd....",
+     "...BBDyDd...",
+     "..BBDDDDDdww",
+     "..ByDDDDDdws",
+     ".BBDDDDyDd..",
+     ".BDDyDDDDd..",
+     "wwwwwwwwwwss",
+     "wswswswswsss"))
+
+icon("accessoires", "cos.accessory.sucette", "une sucette", "🍭", *centred(
+     "..Iiiii.....",
+     ".IiwwwwiC...",
+     "Iiwiiiwwic..",
+     "iwiwwiiwic..",
+     "iwiwiwiwic..",
+     "iwiiwwiwic..",
+     ".iwwiiwiC...",
+     "..CciiCC....",
+     "......ws....",
+     ".......ws...",
+     "........ws..",
+     ".........ws."))
+
+icon("accessoires", "cos.accessory.chapeau_champignon", "un chapeau-champignon", "🍄", *centred(
+     "....EEEE....",
+     "..EEwwEEEc..",
+     ".EwwwEEEwwc.",
+     ".EEwEEEEwwc.",
+     "EEEEEwwEEEcc",
+     "EwwEEwwEEEcc",
+     "EwwEEEEEEccc",
+     ".JJJJJJJJJJ."))
+
+icon("accessoires", "cos.accessory.doudou", "un petit doudou", "🧸", *centred(
+     ".jjj....jjj.",
+     ".jUjjjjjjUj.",
+     "..jjjjjjjjU.",
+     "..jkjjjjkjU.",
+     "..jjjJJjjjU.",
+     "..jjJkkJjUU.",
+     "...UjJJjUU..",
+     "...iiCCii...",
+     "..jjjjjjUU..",
+     ".jjjjjjjjUU.",
+     ".jjjjjjjjUU.",
+     "..jjU..jUU.."))
+
+icon("accessoires", "cos.accessory.lunettes_coeur", "des lunettes en cœur", "💕", *centred(
+     "Ii.ii..Ii.ii",
+     "iiiiC++iiiiC",
+     ".iiC....iiC.",
+     "..C......C.."))
+
+icon("accessoires", "cos.accessory.cache_oeil", "un cache-œil de pirate", "🏴‍☠️", *centred(
+     "+...........",
+     ".+..........",
+     "..+.........",
+     "...+........",
+     "....+.......",
+     ".....kkkkk+.",
+     "....kgkkkk.+",
+     "....kkkkkk..",
+     "....kkkkkk..",
+     ".....kkkk...",
+     "......kk...."))
+
+icon("accessoires", "cos.accessory.aureole", "une auréole", "😇", *centred(
+     "...yyyyyy...",
+     ".yywaaaaayy.",
+     "ya........ay",
+     "yo........oa",
+     ".aaooooooaa.",
+     "...oooooo..."))
+
+icon("auras", "cos.aura.coeurs", "Petits cœurs", "💗", *centred(
+     ".......Ii.iC",
+     ".......iiiiC",
+     "........iiC.",
+     ".........C..",
+     "Iii.iii.....",
+     "iwiiiiiC....",
+     "iiiiiiiC....",
+     ".iiiiiC.....",
+     "..iiiC......",
+     "...iC.......",
+     "....C.......") )
+
+icon("auras", "cos.aura.averse", "Gouttes de pluie", "🌧️", *centred(
+     "....wws.....",
+     "..wwwwsss...",
+     ".wwwssssGs..",
+     "wwssssssGGG.",
+     ".GGGGGGGGG..",
+     "............",
+     ".B...B...B..",
+     ".h...h...h..",
+     "...B...B....",
+     "...h...h...."))

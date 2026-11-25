@@ -43,6 +43,7 @@ public static class CosmeticCollections
         {
             "cos.theme.nuit_etoilee", "cos.theme.aurore_boreale", "cos.title.reveur", "cos.title.dormeur",
             "cos.aura.scintillements", "cos.aura.etoiles_filantes", "cos.grave.etoiles", "cos.grave.clair_de_lune", "cos.grave.lucioles",
+            "cos.accessory.bonnet_nuit",
         }),
         new CosmeticCollection("Gentleman", new[]
         {
@@ -59,23 +60,24 @@ public static class CosmeticCollections
         new CosmeticCollection("Jour de fête", new[]
         {
             "cos.theme.arc_en_ciel", "cos.title.farceur", "cos.title.bavard", "cos.accessory.ballon",
-            "cos.aura.bulles", "cos.aura.confettis", "cos.grave.bulles_savon", "cos.grave.notes_musique",
+            "cos.aura.bulles", "cos.aura.confettis", "cos.grave.bulles_savon", "cos.grave.notes_musique", "cos.accessory.sucette",
         }),
         new CosmeticCollection("Tout doux", new[]
         {
             "cos.theme.lavande", "cos.title.petit", "cos.title.calin", "cos.title.timide",
             "cos.accessory.noeud", "cos.grave.coeurs", "cos.grave.nuages",
+            "cos.accessory.doudou", "cos.accessory.lunettes_coeur", "cos.aura.coeurs",
         }),
         // Forage: mostly crafted, named after the places of Humeval.
         new CosmeticCollection("Cœur de la Lisière", new[]
         {
             "cos.theme.foret", "cos.theme.sous_bois", "cos.theme.champignonniere", "cos.title.mycologue",
-            "cos.grave.cercle_fees", "cos.grave.glands",
+            "cos.grave.cercle_fees", "cos.grave.glands", "cos.accessory.chapeau_champignon",
         }),
         new CosmeticCollection("Au fil de la Sommeille", new[]
         {
             "cos.theme.riviere", "cos.theme.ocean", "cos.title.sommeillant", "cos.accessory.canne_peche",
-            "cos.grave.galets", "cos.grave.mousse",
+            "cos.grave.galets", "cos.grave.mousse", "cos.aura.averse",
         }),
         new CosmeticCollection("Carnet du naturaliste", new[]
         {
@@ -85,7 +87,7 @@ public static class CosmeticCollections
         new CosmeticCollection("Chasse au trésor", new[]
         {
             "cos.theme.caverne_tresors", "cos.title.chercheur_tresors", "cos.title.aventurier",
-            "cos.title.brocanteur", "cos.title.puisatier",
+            "cos.title.brocanteur", "cos.title.puisatier", "cos.accessory.cache_oeil",
         }),
         new CosmeticCollection("Le Communal", new[]
         {

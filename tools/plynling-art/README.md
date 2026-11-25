@@ -57,9 +57,9 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   gallery and Discord stretches each to half the message width, which can't be shrunk from the
   bot — so the sprite is shrunk inside its picture. Change `VISIT_CANVAS` and re-export to make
   them smaller or larger. Added without a version bump, like the angry faces.
-- `accessories.py` — the 32 cosmetic accessories, drawn on the Plynling's own picture. Each has a
-  family that says where it sits — a hat on the cap (couronne, haut-de-forme, casquette, chapeau de paille, bonnet, couronne de fleurs, chapeau chinois, and the sugegasa, drawn by code and sized from each cap), on the cap
-  (nœud, fleur, kanzashi), on the eyes, at the neck (écharpe, collier, médaillon), on the hands, or held in a
+- `accessories.py` — the 39 cosmetic accessories, drawn on the Plynling's own picture. Each has a
+  family that says where it sits — a hat on the cap (couronne, haut-de-forme, casquette, chapeau de paille, bonnet, couronne de fleurs, chapeau chinois, bonnet de nuit, chapeau-champignon, the auréole floating two rows over the cap with a faint glow, and the sugegasa, drawn by code and sized from each cap), on the cap
+  (nœud, fleur, kanzashi), on the eyes (lunettes, monocle, lunettes en cœur, cache-œil), at the neck (écharpe, collier, médaillon), on the hands, or held in a
   hand, the left by default (the heart, the sweat and the « z » are on the right) — and is placed from the drawing
   itself on every frame (the cap's real top, the first stem row under it, the arms), so one drawing
   fits every species and stage and follows the breath and the hop. Some come in **styles** the player
@@ -70,7 +70,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   stays clean on a muddy Plynling and takes the ice tint on a frozen one. Every placement and colour
   was approved by the owner species by species — redraw through the preview sheets
   (`python accessories.py <outdir>`) and show them before exporting.
-- `auras.py` — the 11 cosmetic auras, animated around the Plynling over the 16-frame loop (the
+- `auras.py` — the 13 cosmetic auras, animated around the Plynling over the 16-frame loop (Petits cœurs, hearts rising and fading at the sides, and Gouttes de pluie, two rain clouds raining to the foot, came in 8.21.0; the
   later five: Mouches, Confettis, Éclairs, Étoiles filantes, and Carpes koï — three small side-view
   koï drifting round flat ovals beside the stem, a faint ripple trailing; the first six:
   Scintillements (twinkling stars, the look the rarer species lost in v5), Bulles (bubbles rising and
@@ -111,4 +111,4 @@ new names (the bot links those); its old bare files stay for posted messages. A 
 
 ## Layers for runtime drawing
 
-`python export.py layers` writes `ProjectSYNCS/Assets/Plynlings/` (deleted first; 10 752 files, about 9.5 MB), the pictures the bot lays over each other instead of reading a pre-dressed file: `base/<shape>_<face>[_dirty]`, `acc/<shape>_<face>_<acc>[_<full style>]` (clean faces only: dirty shares the clean layer), `aura/<shape>_<face>_<aura>[_tall]` (raw, unmasked particles; `_tall` is the 320 px hat canvas, adults only) and `marks/<shape>_<face>` (heart, sweat, « z », frost; no file for content and sad). Every file is an 8x lossless loop on the shared 125 ms timing, its layers sitting at the foot of the largest canvas in play. `sprites.marks()` draws the mood extras alone.
+`python export.py layers` writes `ProjectSYNCS/Assets/Plynlings/` (deleted first; 12 012 files, about 10.8 MB), the pictures the bot lays over each other instead of reading a pre-dressed file: `base/<shape>_<face>[_dirty]`, `acc/<shape>_<face>_<acc>[_<full style>]` (clean faces only: dirty shares the clean layer), `aura/<shape>_<face>_<aura>[_tall]` (raw, unmasked particles; `_tall` is the 320 px hat canvas, adults only) and `marks/<shape>_<face>` (heart, sweat, « z », frost; no file for content and sad). Every file is an 8x lossless loop on the shared 125 ms timing, its layers sitting at the foot of the largest canvas in play. `sprites.marks()` draws the mood extras alone.

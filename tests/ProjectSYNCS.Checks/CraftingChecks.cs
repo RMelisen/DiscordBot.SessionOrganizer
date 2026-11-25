@@ -136,6 +136,16 @@ public static class CraftingChecks
         };
         Expect(soleil.Count == soleilKeys.Length && soleilKeys.All(soleil.Contains), $"collection Soleil-Levant: [{string.Join(", ", soleil)}]");
         Expect(soleilKeys.All(k => CosmeticCatalog.ByKey(k)?.Source == CosmeticSource.Rotating), "collection Soleil-Levant: a piece is not rotating");
+        // Batch 3: each piece joins the collection it was made for (the auréole joins none).
+        foreach (var (key, collection) in new[]
+        {
+            ("cos.accessory.bonnet_nuit", "Ciel de nuit"), ("cos.accessory.sucette", "Jour de fête"),
+            ("cos.accessory.chapeau_champignon", "Cœur de la Lisière"), ("cos.accessory.doudou", "Tout doux"),
+            ("cos.accessory.lunettes_coeur", "Tout doux"), ("cos.aura.coeurs", "Tout doux"),
+            ("cos.aura.averse", "Au fil de la Sommeille"), ("cos.accessory.cache_oeil", "Chasse au trésor"),
+        })
+            Expect(CosmeticCollections.Of(key)?.Name == collection, $"{key}: collection {CosmeticCollections.Of(key)?.Name ?? "none"}, want {collection}");
+        Expect(CosmeticCollections.Of("cos.accessory.aureole") is null, "the auréole joined a collection");
 
         var froid = all.First(c => c.Name == "Grand-Froid");
         Expect(CosmeticCollections.Progress(_ => false) is null, "progress shown with nothing owned");

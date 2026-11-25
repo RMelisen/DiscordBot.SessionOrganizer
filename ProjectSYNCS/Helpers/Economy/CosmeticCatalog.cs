@@ -495,6 +495,17 @@ public static class CosmeticCatalog
         Accessory("katana", "🗡️", "un katana", Rot, E);
         Aura("koi", "🎏", "Carpes koï", Rot, E);
 
+        // Batch 3 (8.21.0): loose pieces filling thin collections, all in the weekly rotation.
+        Accessory("bonnet_nuit", "🌙", "un bonnet de nuit", Rot, C);
+        Accessory("sucette", "🍭", "une sucette", Rot, C);
+        Accessory("chapeau_champignon", "🍄", "un chapeau-champignon", Rot, U);
+        Accessory("doudou", "🧸", "un petit doudou", Rot, U);
+        Accessory("lunettes_coeur", "💕", "des lunettes en cœur", Rot, U);
+        Aura("coeurs", "💗", "Petits cœurs", Rot, U);
+        Aura("averse", "🌧️", "Gouttes de pluie", Rot, U);   // « Entouré de gouttes de pluie »: « d'averse » read wrong
+        Accessory("cache_oeil", "🏴‍☠️", "un cache-œil de pirate", Rot, R);
+        Accessory("aureole", "😇", "une auréole", Rot, L);
+
         return list;
     }
 }

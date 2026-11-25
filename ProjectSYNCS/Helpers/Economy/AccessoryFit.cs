@@ -32,16 +32,19 @@ public static class AccessoryFit
     {
         "cos.accessory.casquette" or "cos.accessory.haut_de_forme" or "cos.accessory.couronne"
             or "cos.accessory.chapeau_paille" or "cos.accessory.bonnet" or "cos.accessory.couronne_fleurs"
-            or "cos.accessory.sugegasa" or "cos.accessory.chapeau_chinois" => AccessoryCategory.Hat,
+            or "cos.accessory.sugegasa" or "cos.accessory.chapeau_chinois"
+            or "cos.accessory.bonnet_nuit" or "cos.accessory.chapeau_champignon" or "cos.accessory.aureole" => AccessoryCategory.Hat,
         "cos.accessory.noeud" or "cos.accessory.fleur" or "cos.accessory.kanzashi" => AccessoryCategory.Head,
-        "cos.accessory.lunettes" or "cos.accessory.lunettes_rondes" or "cos.accessory.monocle" => AccessoryCategory.Eyes,
+        "cos.accessory.lunettes" or "cos.accessory.lunettes_rondes" or "cos.accessory.monocle"
+            or "cos.accessory.lunettes_coeur" or "cos.accessory.cache_oeil" => AccessoryCategory.Eyes,
         "cos.accessory.echarpe" or "cos.accessory.collier_coquillages" or "cos.accessory.medaillon"
             or "cos.accessory.noeud_papillon" => AccessoryCategory.Neck,
         "cos.accessory.moufles" => AccessoryCategory.Hands,
         "cos.accessory.ballon" or "cos.accessory.tulipe" or "cos.accessory.glace"
             or "cos.accessory.plume_doree" or "cos.accessory.bocal" or "cos.accessory.canne_peche"
             or "cos.accessory.lanterne" or "cos.accessory.cafe" or "cos.accessory.canne" or "cos.accessory.montre_gousset"
-            or "cos.accessory.onigiri" or "cos.accessory.eventail" or "cos.accessory.katana" => AccessoryCategory.Held,
+            or "cos.accessory.onigiri" or "cos.accessory.eventail" or "cos.accessory.katana"
+            or "cos.accessory.sucette" or "cos.accessory.doudou" => AccessoryCategory.Held,
         _ => null,
     };
 

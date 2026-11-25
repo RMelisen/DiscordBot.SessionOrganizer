@@ -73,6 +73,8 @@ public static class AuraChecks
         Expect(PlynlingCardUi.Heading(starry, now).Contains("Entourée d'étoiles filantes"), "female heading, vowel: " + PlynlingCardUi.Heading(starry, now));
         var koi = Living(aura: "cos.aura.koi");
         Expect(PlynlingCardUi.Heading(koi, now).Contains("Entouré de carpes koï"), "koï heading: " + PlynlingCardUi.Heading(koi, now));
+        Expect(PlynlingCardUi.Heading(Living(aura: "cos.aura.coeurs"), now).Contains("Entouré de petits cœurs"), "cœurs heading");
+        Expect(PlynlingCardUi.Heading(Living(aura: "cos.aura.averse"), now).Contains("Entouré de gouttes de pluie"), "averse heading");
 
         string Screen(Plynling p, string? picked = null) => string.Join("\n", Flat(CosmeticCards.Build(
             new CosmeticView(picked is null ? CosmeticTab.Wardrobe : CosmeticTab.Craft, CosmeticSlot.Aura, picked),
@@ -222,7 +224,9 @@ public static class AuraChecks
         Entry("cos.aura.eclairs", CosmeticSource.Rotating, ItemRarity.Epic, 3600, false, "Éclairs");
         Entry("cos.aura.etoiles_filantes", CosmeticSource.Rotating, ItemRarity.Legendary, 5000, false, "Étoiles filantes");
         Entry("cos.aura.koi", CosmeticSource.Rotating, ItemRarity.Epic, 3600, false, "Carpes koï");
-        Expect(CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count() == 11, $"{CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count()} auras, want 11");
+        Entry("cos.aura.coeurs", CosmeticSource.Rotating, ItemRarity.Uncommon, 1200, false, "Petits cœurs");
+        Entry("cos.aura.averse", CosmeticSource.Rotating, ItemRarity.Uncommon, 1200, false, "Gouttes de pluie");
+        Expect(CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count() == 13, $"{CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count()} auras, want 13");
         // One aura per season: Pétales crafted from spring flowers, the three others sold in their season only.
         foreach (var (key, season) in new[] { ("cos.aura.lucioles", Season.Summer), ("cos.aura.feuilles", Season.Autumn), ("cos.aura.flocons", Season.Winter) })
         {

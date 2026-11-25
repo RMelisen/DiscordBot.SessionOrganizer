@@ -32,7 +32,7 @@ public static class PaintChecks
         var root = StoryChecks.RepoRoot();
         PlynlingPainter.AssetsRoot = Path.Combine(root, "ProjectSYNCS", "Assets", "Plynlings");
         var old = Path.Combine(root, "assets", "plynlings");
-        Expect(Auras().Length == 11, $"{Auras().Length} auras in the catalogue, expected 11");
+        Expect(Auras().Length == 13, $"{Auras().Length} auras in the catalogue, expected 13");
         LookNamesRoundTrip();
         MarksRepaintIsInvisible();
         MarksBlendShows();

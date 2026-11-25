@@ -371,11 +371,73 @@ def koi(spray, box, f):
                     spray.put(x + dx, y + j - 1, coat[ch], 210 if ch == "t" else 255)
 
 
+# ---- Petits cœurs: little hearts rising at the sides, swaying, fading out at the top ------------
+
+HEART_L, HEART, HEART_D = (255, 196, 214), (250, 110, 150), (204, 64, 110)
+HEART_BIG = ["lp.pp", "ppppd", ".ppd.", "..d.."]   # l its shine, d its shade
+HEART_SMALL = ["p.p", ".d."]
+
+
+def coeurs(spray, box, f):
+    x0, y0, x1, y1 = box
+    rise = (y1 - y0) - 2
+    # three hearts, two on the left (the mood marks live on the right): each rises over 12 frames,
+    # swaying, fades over the last three, and is gone for four
+    for sx, phase, shape in ((x0 - 5, 0, HEART_BIG), (x0 - 2, 7, HEART_SMALL), (x1 + 2, 3, HEART_BIG)):
+        t = (f + phase) % FRAMES
+        if t >= 12:
+            continue
+        x, start = spray.clamp(sx, y1 - 3, margin=0)
+        x = min(max(x, spray.x_min), spray.x_max - len(shape[0]) + 1)
+        y = start - (t * rise) // 12
+        a = 255 if t < 9 else 255 - 60 * (t - 8)
+        for j, row in enumerate(shape):
+            for i, ch in enumerate(row):
+                if ch != ".":
+                    spray.put(x + i + SWAY[t], y + j, {"l": HEART_L, "p": HEART, "d": HEART_D}[ch], a)
+
+
+# ---- Averse: a little rain cloud on each side, raining, the drops splashing at the foot ---------
+
+CLOUD_L, CLOUD, CLOUD_D, DROP, DROP_L = (232, 236, 246), (196, 204, 222), (150, 160, 186), (110, 170, 240), (176, 214, 255)
+CLOUD_BIG = ["..ll...", ".lllll.", "llCCCCc", ".ccccc."]   # l its light top, C its body, c its shade
+CLOUD_SMALL = [".ll..", "lCCCc", ".ccc."]
+
+
+def averse(spray, box, f):
+    x0, y0, x1, y1 = box
+    h = y1 - y0
+    # a big cloud high on the left, a small one lower on the right (under the mood marks' corner);
+    # each rains in three columns, a drop falling over 7 frames and splashing at the body's foot on
+    # the 8th, twice a loop, each column on its own beat
+    for (sx, sy), shape, cols in (((x0 - 7, y0 + 1), CLOUD_BIG, (2, 4, 6)), ((x1 + 2, y0 + h // 3), CLOUD_SMALL, (2, 4))):
+        cx, cy = spray.clamp(sx, sy, margin=1)
+        cx = min(max(cx, spray.x_min), spray.x_max - len(shape[0]) + 1)
+        bob = 1 if (f // 4) % 2 else 0                       # the cloud bobs a row, slowly
+        for j, row in enumerate(shape):
+            for i, ch in enumerate(row):
+                if ch != ".":
+                    spray.put(cx + i, cy + j + bob, {"l": CLOUD_L, "C": CLOUD, "c": CLOUD_D}[ch], 235)
+        top, ground = cy + len(shape) + 1, y1
+        fall = max(4, ground - 1 - top)
+        for k, col in enumerate(cols):
+            t = (f + k * 3) % 8
+            x = cx + col - 1
+            if t < 7:
+                y = top + (t * fall) // 6
+                spray.put(x, y, DROP, 230)
+                spray.put(x, y - 1, DROP_L, 120)
+            else:                                             # the splash
+                spray.put(x - 1, ground - 1, DROP_L, 190)
+                spray.put(x + 1, ground - 1, DROP_L, 190)
+                spray.put(x, ground - 2, DROP_L, 120)
+
+
 # key (the cosmetic key without « cos.aura. ») -> drawing, in catalogue order
 AURAS = {"scintillements": scintillements, "bulles": bulles, "petales": petales,
          "flocons": flocons, "feuilles": feuilles, "lucioles": lucioles,
          "mouches": mouches, "confettis": confettis, "eclairs": eclairs, "etoiles_filantes": etoiles_filantes,
-         "koi": koi}
+         "koi": koi, "coeurs": coeurs, "averse": averse}
 
 def surround(im, body, state, aura, frame, tall=False):
     """A copy of the built (and maybe dressed) frame `im` with aura `aura` drawn for `frame`; `tall`

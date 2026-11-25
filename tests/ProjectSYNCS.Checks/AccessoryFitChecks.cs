@@ -247,6 +247,13 @@ public static class AccessoryFitChecks
             "an éventail in the left hand moves the katana to the right");
         Is(Pick(W("noeud", "rose_gauche"), null, 1, W("kanzashi")), "noeud:rose_gauche", "kanzashi:droite", null, null,
             "a kanzashi sits on the right, beside a nœud on the left");
+        // Batch 3: the auréole floats where a hat sits, so it is one; the two new eye pieces never stack.
+        Is(Pick(W("bonnet_nuit"), null, 1, W("aureole")), "aureole", null, "bonnet_nuit", null,
+            "an auréole added beside the bonnet de nuit replaces it");
+        Is(TryOn(W("cache_oeil"), W("doudou", "gauche"), W("lunettes_coeur")), "lunettes_coeur", "doudou:gauche", "cache_oeil", null,
+            "lunettes en cœur tried on replace the cache-œil");
+        Is(Pick(W("doudou", "gauche"), null, 1, W("sucette", "gauche")), "doudou:droite", "sucette:gauche", null, "doudou",
+            "a sucette in the left hand moves the doudou to the right");
     }
 
     private static void Restyles()

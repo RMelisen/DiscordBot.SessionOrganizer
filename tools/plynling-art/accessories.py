@@ -353,6 +353,102 @@ EVENTAIL, EVENTAIL_GRIP = _eventail()
 EVENTAIL_COLOURS = {"rouge": {}, "indigo": {"e": "j", "r": "B", "R": "v"},
                     "sakura": {"e": "p", "r": "P", "R": "q"}}
 
+# ---- batch 3 (8.21.0) ----
+BONNET_NUIT = art(     # a night-blue nightcap dotted with stars, its tip flopping over to the right, a pompom
+    "........jBBJ....",
+    "......jBBBBBJww.",
+    ".....jByBBBBJws.",
+    "....jBBBBByJ....",
+    "....jBBBBBBJ....",
+    "...jBByBBBBBJ...",
+    "..wwwwwwwwwwww..",
+    "..swswswswswsw..",
+)
+SUCETTE = art(         # a swirled lollipop, its white stick slanting down to the hand
+    ".pPPp..",
+    "pPwwPq.",
+    "PwPPwq.",
+    "PwPwPq.",
+    ".qPPqw.",
+    ".....w.",
+    "......w",
+)
+SUCETTE_GRIP = (6, 6)
+CHAPEAU_CHAMPIGNON = art(  # a fly-agaric cap as a hat: red, white spots, an ink outline so it stands off a red cap
+    "....xxxx....",
+    "..xxerrrxx..",
+    ".xewwrrrwwx.",
+    ".xrwwrrrwwRx",
+    "xrrrrwwrrrRx",
+    "xwwrrwwrrwRx",
+    "xRRRRRRRRRRx",
+    ".xssswssssx.",
+)
+DOUDOU = art(          # a little teddy bear held by its arm, a pink ribbon at the neck
+    "O...O.",
+    "OooooO",
+    ".oxox.",
+    ".o44o.",
+    "..Pq..",
+    ".oooo.",
+    "oooooo",
+    ".o..o.",
+)
+DOUDOU_GRIP = (5, 6)
+AUREOLE = art(         # a golden ring floating over the cap; the glow round it is drawn half-clear
+    ".llllllll.",
+    "gl......lg",
+    ".dggggggd.",
+)
+
+
+def aureole(pen, b):
+    """The halo floats two rows over the cap (a hat, so it clashes with hats), with a faint golden
+    glow on the pixels round the ring."""
+    w, h = len(AUREOLE[0]), len(AUREOLE)
+    r = b.rest
+    x0 = 16 - w // 2
+    tops = [t for t in (r.cap_top_at(x) for x in range(x0, x0 + w)) if t is not None]
+    bottom = min(tops) - 3
+    if b.stage != "adult":
+        bottom = max(bottom, h - 1 + HOP)
+    ring = {(x0 + i, bottom - h + 1 + j) for j, row in enumerate(AUREOLE) for i, ch in enumerate(row) if ch != "."}
+    glow = {(x + dx, y + dy) for x, y in ring for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))} - ring
+    inside = {(x, bottom - 1) for x in range(x0 + 2, x0 + w - 2)}
+    for x, y in sorted(glow - inside):
+        pen.put(x, y, GOLD_L, 70)
+    pen.stamp(AUREOLE, x0, bottom - h + 1)
+
+
+def lunettes_coeur(pen, b):
+    """Pink heart-shaped lenses, a shine on each, a thin pink frame between and on the sides."""
+    e = b.eye
+    heart = ("PP.PP", "PPPPP", ".PPP.", "..P..")
+    for x0 in (10, 17):
+        for j, row in enumerate(heart):
+            for i, ch in enumerate(row):
+                if ch != ".":
+                    pen.put(x0 + i, e - 1 + j, PINK if (i, j) != (1, 0) else PINK_L)
+        pen.put(x0 + 1, e, PINK_L)
+    for x in (15, 16):
+        pen.put(x, e, PINK_D)
+    pen.put(9, e, PINK_D)
+    pen.put(22, e, PINK_D)
+
+
+def cache_oeil(pen, b):
+    """A black patch over the right eye, its strap running up and across to the left."""
+    e = b.eye
+    for x in range(17, 21):
+        for y in (e - 1, e, e + 1, e + 2):
+            if (x, y) not in ((17, e + 2), (20, e + 2)):
+                pen.put(x, y, LENS_FRAME if y != e - 1 else LENS)
+    pen.put(18, e, LENS)                      # a dull sheen on the cloth
+    for i, x in enumerate(range(16, 8, -1)):
+        pen.put(x, e - 1 - (i + 1) // 3, LENS_FRAME)
+    pen.put(21, e - 1, LENS_FRAME)
+    pen.put(22, e - 2, LENS_FRAME)
+
 
 def sugegasa(pen, b):
     """A wide, flat straw cone sized from the cap (two pixels past it on each side), sunk over the
@@ -703,6 +799,13 @@ ACCESSORIES = {
     "eventail": dict(family="held", styles=sided(
         lambda swap, side: held(recolour(EVENTAIL, swap), EVENTAIL_GRIP, side), EVENTAIL_COLOURS, "eventail")),
     "katana": dict(family="held", styles=held_sides(KATANA, KATANA_GRIP)),
+    "bonnet_nuit": dict(family="hat", styles={"": hat(BONNET_NUIT)}),
+    "sucette": dict(family="held", styles=held_sides(SUCETTE, SUCETTE_GRIP)),
+    "chapeau_champignon": dict(family="hat", styles={"": hat(CHAPEAU_CHAMPIGNON)}),
+    "doudou": dict(family="held", styles=held_sides(DOUDOU, DOUDOU_GRIP)),
+    "lunettes_coeur": dict(family="eyes", styles={"": lunettes_coeur}),
+    "cache_oeil": dict(family="eyes", styles={"": cache_oeil}),
+    "aureole": dict(family="hat", styles={"": aureole}),
 }
 
 

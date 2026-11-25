@@ -45,7 +45,8 @@ public static class AccessoryStyles
         "cos.accessory.tulipe" or "cos.accessory.glace" or "cos.accessory.plume_doree"
             or "cos.accessory.bocal" or "cos.accessory.canne_peche" or "cos.accessory.lanterne" or "cos.accessory.cafe"
             or "cos.accessory.canne" or "cos.accessory.montre_gousset"
-            or "cos.accessory.onigiri" or "cos.accessory.katana" => new[] { Hand },
+            or "cos.accessory.onigiri" or "cos.accessory.katana"
+            or "cos.accessory.sucette" or "cos.accessory.doudou" => new[] { Hand },
         _ => Array.Empty<Choice>(),
     };
 

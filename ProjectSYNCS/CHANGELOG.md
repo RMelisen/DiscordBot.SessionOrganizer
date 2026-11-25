@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.21.0 — 2026-11-25
+
+- New in the weekly rotation: a bonnet de nuit and a lollipop (commun); a mushroom hat, a little teddy bear, heart-shaped glasses and two auras, Petits cœurs and Gouttes de pluie (peu commun); a pirate eye patch (rare); a floating halo (légendaire).
+- They join the Ciel de nuit, Jour de fête, Cœur de la Lisière, Tout doux, Au fil de la Sommeille and Chasse au trésor collections; the halo is a hat and joins none.
+
 ## 8.20.0 — 2026-11-25
 
 - New cosmetic collection, Soleil-Levant, all in the weekly rotation: an onigiri, a sugegasa and Le Zen (commun); a kanzashi pin, a folding fan in red, indigo or sakura, the Jardin de bambou thème and the Bambous cadre (peu commun); a chapeau chinois, Le Sensei and the Torii thème (rare); a katana and the Carpes koï aura (épique).
