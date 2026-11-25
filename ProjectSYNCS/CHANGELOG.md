@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.18.0 — 2026-11-25
+
+- Ready for more than one server: home-only people and in-jokes stay on the home server, and `/shame`'s built-in voters only vote there.
+- Silence mode is now per server.
+- `/config setup`: a guided setup, page by page (channels, roles, then a summary).
+- `/config show` opens with a health check: what she can't do in each channel, and what isn't set yet.
+- A hello card when she joins a new server, pointing to the setup and a new guide page on inviting her.
+- The welcome rush limit is counted per server.
+- `/config feature enable|disable`: the morning hello (and `/shoutout`), her ambient life, the weekend poll, Quokka's visits, the voice spectator and the member welcome can be switched on or off per server. All on at home as before; elsewhere only the welcome until staff turn the rest on (also on a new page of `/config setup`).
+- The main and idle channels can be set on any server; `/config show` lists the features and warns when one needs a main channel.
+
 ## 8.17.0 — 2026-11-24
 
 - Three seasonal auras in the cosmetics shop, each on sale in its season: Lucioles d'été (summer), Feuilles mortes (autumn) and Flocons (winter), beside Pétales for spring.

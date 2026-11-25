@@ -243,7 +243,9 @@ Timing rules are pure, in `Helpers/Scheduling/SessionAttendance`.
 ## Weekend poll — `WeekendPollService`
 
 Every Wednesday at a minute drawn from the week between 18:00 and 20:00 (`Helpers/Scheduling/WeekendPoll`),
-an ordinary date poll in her main channel (home guild): Friday, Saturday and Sunday at 21:00,
+an ordinary date poll in the main channel of every server with the `weekend-poll` feature on (home
+by default, `/config feature`; decided per server, each in its own `try`; no main channel there =
+nothing decided): Friday, Saturday and Sunday at 21:00,
 organizer = her id. Posted Wednesday so the default two days close it Friday evening, before the
 first slot; nothing is posted after 22:00.
 

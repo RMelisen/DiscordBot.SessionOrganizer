@@ -280,4 +280,17 @@ internal static partial class BotResponses
         "Il y a une fête et on m'a pas prévenue ? Bienvenue à tout le monde, j'accueille par paquets maintenant." + Sticker.Shocked,
         "Bienvenue à toute la vague. J'ouvre les fiches une par une, promis. Mais plus tard ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Happy,
     };
+
+    // She was just added to a server (GuildHelloService): the opening line of her hello card, to the
+    // whole server (« vous » allowed), before the setup steps. Any hour, so no « bonjour »; never
+    // gendered; no placeholder. A V2 card, not BotChat: no sticker.
+    public static readonly string[] GuildHelloLines =
+    {
+        "Salut tout le monde ! Moi c'est SYNCS. J'organise les sessions, je compte l'XP et je retiens tout. Avant ça, il faut juste m'installer (˶ᵔ ᵕ ᵔ˶)",
+        "Nouveau serveur, nouvelles fiches à ouvrir. Je suis SYNCS, et j'ai besoin qu'un admin me fasse visiter ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Coucou ! On vient de m'inviter, alors je m'installe. Un admin me dit où poser mes affaires, et je m'occupe du reste ♡",
+        "Me voilà. SYNCS : organisatrice, compteuse d'XP, gardienne des logs. Il me manque juste un admin et cinq minutes de réglages (ᵕ • ᴗ •)",
+        "Salut ! Je suis la petite bot qui fait tourner les soirées depuis un grenier. Ici, tout est encore à régler. Un admin, s'il vous plaît ?",
+        "Arrivée enregistrée. Je suis SYNCS. Avant que je parle trop, un admin devrait me dire où j'ai le droit de le faire (˶˃ ᵕ ˂˶)",
+    };
 }

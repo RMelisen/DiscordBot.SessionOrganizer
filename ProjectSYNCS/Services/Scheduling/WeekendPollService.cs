@@ -10,7 +10,7 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Services;
 
 // She starts things herself: every Wednesday evening, a « qui est dispo ce weekend ? » poll in
-// her main channel (home guild), with Friday, Saturday and Sunday at 21:00 (Helpers/Scheduling/WeekendPoll).
+// her main channel, on every server where the weekend-poll feature is on (home by default), with Friday, Saturday and Sunday at 21:00 (Helpers/Scheduling/WeekendPoll).
 // It is an ordinary /when — same card, same buttons, same two-day auto-close — whose organizer
 // is her; when it closes ReminderService creates the session itself for a clear winner, or announces
 // the result, and whoever voted for a winning slot may turn it into a session (PollModule.OnToSessionAsync).
@@ -35,9 +35,10 @@ internal sealed class WeekendPollService : BackgroundService
     private readonly ILogger<WeekendPollService> _logger;
     private readonly SilenceService _silence;
 
-    // The Wednesday already decided this run (posted or stood down), so the window isn't
-    // re-checked every tick. In memory: a restart re-decides, and the poll itself is the claim.
-    private DateTime _decided = DateTime.MinValue;
+    // The Wednesday already decided this run (posted or stood down), per server, so the window isn't
+    // re-checked every tick. In memory: a restart re-decides, and the poll itself is the claim. Read
+    // and written by the loop only.
+    private readonly Dictionary<ulong, DateTime> _decided = new();
 
     public WeekendPollService(
         IServiceProvider services, DiscordSocketClient client, GuildConfigService config,
@@ -59,29 +60,34 @@ internal sealed class WeekendPollService : BackgroundService
             await Task.Delay(CheckInterval, stoppingToken);
             if (_client.ConnectionState != ConnectionState.Connected) continue;
 
-            // One try around the tick: there is one item, and an exception escaping
-            // ExecuteAsync stops the whole host.
-            try
+            if (!WeekendPoll.IsDue(DateTimeOffset.UtcNow, out var wednesday)) continue;
+
+            // One try per server: an exception escaping ExecuteAsync stops the whole host.
+            foreach (var guild in _client.Guilds)
             {
-                await TickAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Weekend poll tick failed.");
+                try
+                {
+                    await TickAsync(guild, wednesday);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Weekend poll tick failed in guild {GuildId}.", guild.Id);
+                }
             }
         }
     }
 
-    private async Task TickAsync()
+    private async Task TickAsync(SocketGuild guild, DateTime wednesday)
     {
-        if (!WeekendPoll.IsDue(DateTimeOffset.UtcNow, out var wednesday) || wednesday == _decided) return;
+        if (_decided.TryGetValue(guild.Id, out var decided) && decided == wednesday) return;
+        var config = await _config.GetAsync(guild.Id);
+        if (!config.IsOn(ServerFeatures.WeekendPoll, guild.Id)) return;
         // Silence mode: not decided, so the poll still goes out if silence lifts within its window.
-        if (_silence.IsSilent) return;
+        if (_silence.IsSilent(guild.Id)) return;
 
-        var guild = _client.GetGuild(HomeGuild.Id);
-        var channelId = await MorningGreetingService.MainChannelIdAsync(_config);
-        // In the dev guild the channel never resolves: nothing to post, nothing to decide.
-        if (guild?.GetTextChannel(channelId) is not { } channel) return;
+        var channelId = MorningGreetingService.MainChannelOf(config, guild.Id);
+        // No main channel here (or not delivered yet): nothing to post, nothing to decide.
+        if (guild.GetTextChannel(channelId) is not { } channel) return;
 
         await using var scope = _services.CreateAsyncScope();
         var polls = scope.ServiceProvider.GetRequiredService<PollService>();
@@ -91,13 +97,13 @@ internal sealed class WeekendPollService : BackgroundService
         var reason = await StandDownReasonAsync(polls, events, guild.Id, botId, wednesday);
         if (reason is not null)
         {
-            _decided = wednesday;
-            _logger.LogInformation("Weekend poll skipped: {Reason}.", reason);
+            _decided[guild.Id] = wednesday;
+            _logger.LogInformation("Weekend poll skipped in guild {GuildId}: {Reason}.", guild.Id, reason);
             return;
         }
 
         // Claimed before the send: a failed send costs this week's poll, never a second one.
-        _decided = wednesday;
+        _decided[guild.Id] = wednesday;
         var poll = await polls.CreatePollAsync(guild.Id, channel.Id, botId, Title, WeekendPoll.Slots(wednesday));
         var full = await polls.GetPollWithVotesAsync(poll.Id);
         IUserMessage? line = null;

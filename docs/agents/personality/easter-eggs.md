@@ -49,6 +49,9 @@ word smeared with combining strokes, sometimes the end cut off) and is edited ba
    halved.
 3. The roll comes before the daily claim, so a lost roll doesn't use up the day. Skipped during a
    breakdown. The restore runs off the gateway handler. Absent from `README.md` and `/help`.
+4. **The daily claim is global, on purpose**, like the Synthia flinch's (`CooldownGate<int>`, key
+   `0`): she glitches once a day, not once a day per server — it's her body misfiring, and a second
+   server must not double it.
 
 
 ## Premium easter egg

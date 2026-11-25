@@ -200,7 +200,7 @@ public sealed class QuizMasterService : BackgroundService
     private async Task PostIfDueAsync(SocketGuild guild, DateTimeOffset now)
     {
         // Silence mode: no pop quiz on her own; /debug quiz still posts one.
-        if (_silence.IsSilent) return;
+        if (_silence.IsSilent(guild.Id)) return;
         var config = await _config.GetAsync(guild.Id);
         if (config.QuizChannelId == 0) return;
 

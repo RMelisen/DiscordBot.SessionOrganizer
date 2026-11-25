@@ -341,7 +341,8 @@ internal static partial class BotResponses
     // Per-person extra comebacks, keyed by Discord user ID. These are folded into
     // that user's normal pool (twice, for double weight), so each custom line has
     // the same odds as any other. Same {0}=name / {1}=weekday formatting.
-    public static readonly Dictionary<ulong, string[]> PersonalComebacks = new()
+    // Read only through PersonalComebacksFor: home in-jokes stay on the home server.
+    private static readonly Dictionary<ulong, string[]> PersonalComebacks = new()
     {
         [324768221372743681] = new[]    // Amandine
         {
@@ -418,6 +419,15 @@ internal static partial class BotResponses
         },
     };
 
+    /// <summary>
+    /// Someone's personal comebacks, or null. Home in-jokes about home people, so they are
+    /// home-server only — except Tata's, which are part of her tier and follow her like the
+    /// rest of it (the owner's call). A DM (null guild) is not the home server.
+    /// </summary>
+    public static string[]? PersonalComebacksFor(ulong userId, ulong? guildId) =>
+        (HomeGuild.Is(guildId) || userId == TataId)
+        && PersonalComebacks.TryGetValue(userId, out var lines) ? lines : null;
+
     // Overrides the Discord display name entirely for specific people, wherever a
     // reply addresses them by name. Separate from RealNames below, which is only for
     // the breakdown reveal and wants an actual human name for the "mask slipping"
@@ -465,7 +475,7 @@ internal static partial class BotResponses
     // reviewer doesn't have to cross-reference the other dictionary to know who a row
     // is about. Literal snowflakes tied to this one server, like RealNames and
     // PersonalComebacks.
-    public static readonly Dictionary<ulong, PersonGender> KnownGenders = new()
+    private static readonly Dictionary<ulong, PersonGender> KnownGenders = new()
     {
         [AvailabilityService.OwnerId] = PersonGender.Boy,   // Romain
         [779321171212632097] = PersonGender.Girl,           // Lorena
@@ -498,13 +508,19 @@ internal static partial class BotResponses
     /// <summary>
     /// The pool the rare praise turnabout should draw from for this person — null for
     /// anyone not in <see cref="KnownGenders"/>, which callers read as "use the neutral
-    /// pool" rather than as a failure.
+    /// pool" rather than as a failure. Home-server only: what home people told us isn't
+    /// carried to another server (a DM is not the home server); Papa and Tata follow.
     /// </summary>
-    public static PersonGender? GenderFor(ulong userId) =>
-        KnownGenders.TryGetValue(userId, out var gender) ? gender : null;
+    public static PersonGender? GenderFor(ulong userId, ulong? guildId) =>
+        (HomeGuild.Is(guildId) || IsFamily(userId))
+        && KnownGenders.TryGetValue(userId, out var gender) ? gender : null;
+
+    // Papa and Tata: their tiers follow them to every server (the owner's call).
+    private static bool IsFamily(ulong userId) =>
+        userId == AvailabilityService.OwnerId || userId == TataId;
 
     // Real first names, keyed by Discord user ID. Used by the breakdown reveal.
-    public static readonly Dictionary<ulong, string> RealNames = new()
+    private static readonly Dictionary<ulong, string> RealNames = new()
     {
         [345917214966415362] = "Romain",
         [779321171212632097] = "Lorena",
@@ -534,7 +550,8 @@ internal static partial class BotResponses
         [689127159662510089] = "Soleyne",
     };
 
-    // Real first name for a user, or the supplied fallback when unknown.
-    public static string RealNameFor(ulong userId, string fallback) =>
-        RealNames.TryGetValue(userId, out var name) ? name : fallback;
+    // Real first name for a user, or the supplied fallback when unknown. Home-server only,
+    // with no family exception: a real name never shows on another server or in a DM.
+    public static string RealNameFor(ulong userId, ulong? guildId, string fallback) =>
+        HomeGuild.Is(guildId) && RealNames.TryGetValue(userId, out var name) ? name : fallback;
 }

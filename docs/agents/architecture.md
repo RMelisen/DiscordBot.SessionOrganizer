@@ -11,7 +11,9 @@ a server-specific id, and update it when you do.
 services: `MessageReceived`, `MessageUpdated`, `MessageDeleted`, `MessagesBulkDeleted`,
 `ReactionAdded`, `ReactionRemoved`, `UserJoined`. Connection-lifecycle hooks (`Ready`,
 `Connected`, `Disconnected`) live in the service that needs them: `PresenceService`,
-`AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`.
+`AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`. So does
+`JoinedGuild` (she was added to a server): `PlynlingMascotService` (Ping-Qilin there too) and
+`GuildHelloService` (her hello card, see admin).
 
 ## Dated rankings
 
@@ -78,8 +80,9 @@ Seventeen `BackgroundService` loops, each with **its own interval on purpose** �
 
 Services with another shape:
 
-- **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
-  (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`) — see personality.
+- **`MorningGreetingService`** has no interval: it sleeps until the earliest pending morning slot
+  among the servers with the hello on (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`),
+  never more than 5 minutes — see personality.
   **`QuokkaRaidService`** is the same shape: it sleeps until each of the day's Quokka visits
   (0–4, 12:00–23:00 Paris, `QuokkaRaid.SlotsFor`) — see arcade.
 - **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
@@ -108,8 +111,27 @@ leveling bot's id in `Helpers/Xp/LevelUpAnnouncement`; the custom emote ids in `
 `RobotHeartService.EveStrictChannelId` (where « eve » means the game, so EVE needs WALL-E beside her);
 the voice channels in `Helpers/Voice/VoiceRoom` (which spectator pool each one gets, and where she
 waits for a session nobody has joined yet);
-`Helpers/Core/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in);
+`Helpers/Core/HomeGuild.Id` (the home of her single-instance life — voice seat, Voyager, the
+monthly digest — and the server where the `/config feature` switches default to on);
 `Helpers/Core/BotsChannel.DefaultId` (« spam-bots », where her low-stakes posts go).
+
+**On other servers.** Channel ids are global, so the hardcoded channel sets (`ExcludedChannels`,
+`IdleChannelIds`, the defaults) are inert elsewhere: they only ever match home channels; `/config
+show` lists them on the home server only. User ids are not: anything keyed by a person is gated by
+`HomeGuild.Is(guildId)` — `ShameModule.HardcodedExtraVotersFor`, `BotResponses.RealNameFor`,
+`PersonalComebacksFor`, `GenderFor` — except Papa (`OwnerId`) and Tata (`TataId`), whose tiers follow
+them everywhere (`personality/people.md`).
+
+**Per-server state in the singletons.** The home features other servers can switch on (`/config
+feature`, see admin) keep their claims per guild in a dictionary under the service's one lock
+(`AmbientService.GuildAmbient`, `MorningGreetingService`'s per-guild day and slot,
+`QuokkaRaidService`'s activity ticks, `WeekendPollService`'s decisions, `VoiceSpectatorService`'s
+line day, `WelcomeService`'s rush limit), the pattern of `QuizMasterService._plans`. Their loops walk
+`_client.Guilds`, skip a guild whose feature is off or that is silenced, and **catch per guild**. What
+is hers alone stays process-wide: the wake decision after a crash (one wake, told on every server),
+PiHealth's heat record and router outage (one decision, told in every ambient main channel), her
+voice seat, Voyager. `morning-state.json` and `silence-state.json` are keyed by guild and read their
+old one-server shape as home.
 
 `ExcludedChannels`, `ExtraVoters` and `IdleChannelIds` are *floors*: `/config` can add to them but
 never remove from them. The game, main and bots channels are *defaults*: a channel set with

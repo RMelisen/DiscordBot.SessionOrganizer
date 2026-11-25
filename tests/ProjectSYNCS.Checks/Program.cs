@@ -153,5 +153,8 @@ PaintChecks.Run(Fail);
 // 71. Wearing two accessories (categories, sides, picks, try-ons, restyles): AccessoryFitChecks.cs.
 AccessoryFitChecks.Run(Fail);
 
+// 72. More than one server: home-only people and voters, per-server silence: MultiServerChecks.cs.
+MultiServerChecks.Run(Fail);
+
 Console.WriteLine(Failures == 0 ? "ALL CHECKS PASSED" : $"{Failures} FAILURE(S)");
 return Failures == 0 ? 0 : 1;

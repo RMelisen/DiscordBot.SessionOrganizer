@@ -539,9 +539,13 @@ public partial class DebugModule : SyncsModuleBase
             ephemeral: true);
     }
 
-    [SlashCommand("silence", "La faire taire : elle ne parle plus que pour répondre aux commandes")]
+    // One server at a time (the owner's call): the server it's run in, or the one picked in
+    // `server` — required from a DM. A DM itself falls under the home server's switch.
+    [SlashCommand("silence", "La faire taire sur un serveur : elle n'y parle plus que pour répondre aux commandes")]
     public async Task SetSilenceAsync(
-        [Summary("state", "Activer ou désactiver le mode silence")] SilenceState state)
+        [Summary("state", "Activer ou désactiver le mode silence")] SilenceState state,
+        [Summary("server", "Le serveur (par défaut : celui-ci)"), Autocomplete(typeof(GuildAutocompleteHandler))]
+        string? server = null)
     {
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
@@ -549,20 +553,39 @@ public partial class DebugModule : SyncsModuleBase
             return;
         }
 
-        bool silent = state == SilenceState.On;
-        var since = _silence.Since;
-        _silence.Set(silent);
+        var client = (DiscordSocketClient)Context.Client;
+        SocketGuild? guild = server is null
+            ? Context.Guild as SocketGuild
+            : ulong.TryParse(server, out var id) ? client.GetGuild(id) : null;
+        if (guild is null)
+        {
+            await RespondAsync(server is null
+                ? "Ici, c'est un DM : dis-moi quel serveur avec `server`."
+                : "Je ne connais pas ce serveur. Choisis-le dans la liste.", ephemeral: true);
+            return;
+        }
 
+        bool silent = state == SilenceState.On;
+        var since = _silence.Since(guild.Id);
+        _silence.Set(guild.Id, silent);
+
+        var where = $"**{Format.Sanitize(guild.Name)}**";
         string reply = (silent, since) switch
         {
-            (true, { } already) => $"Je suis déjà muette, depuis le <t:{already.ToUnixTimeSeconds()}:f>. Chut.",
-            (true, null) => "Mode silence **activé**. Plus de bavardage, de réactions, de bonjour ni d'annonces : "
-                            + "je ne parle que pour répondre aux commandes. Les rappels de sessions, les tirages "
+            (true, { } already) => $"Je suis déjà muette sur {where}, depuis le <t:{already.ToUnixTimeSeconds()}:f>. Chut.",
+            (true, null) => $"Mode silence **activé** sur {where}. Plus de bavardage, de réactions, de bonjour ni d'annonces : "
+                            + "je n'y parle que pour répondre aux commandes. Les rappels de sessions, les tirages "
                             + "et les `/remindme` partent toujours. Même après un redémarrage. 🤐",
-            (false, { } began) => $"Mode silence **désactivé** : j'étais muette depuis le <t:{began.ToUnixTimeSeconds()}:f>. "
+            (false, { } began) => $"Mode silence **désactivé** sur {where} : j'y étais muette depuis le <t:{began.ToUnixTimeSeconds()}:f>. "
                                   + "J'ai plein de choses à dire (˶˃ ᵕ ˂˶)",
-            (false, null) => "Je n'étais pas en mode silence. Je parle, je parle.",
+            (false, null) => $"Je n'étais pas en mode silence sur {where}. Je parle, je parle.",
         };
-        await RespondAsync(reply, ephemeral: true);
+
+        var others = _silence.SilencedGuilds.Where(g => g != guild.Id)
+            .Select(g => client.GetGuild(g)?.Name is { } name ? $"**{Format.Sanitize(name)}**" : $"`{g}`")
+            .ToList();
+        if (others.Count > 0) reply += $"\nToujours muette ailleurs : {string.Join(", ", others)}.";
+
+        await RespondAsync(reply, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 }

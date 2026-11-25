@@ -421,8 +421,6 @@ public class ReminderService : BackgroundService
     // closes on its own). The flag is set before the DMs: a crash costs the nudge, never a second one.
     private async Task ProcessMaybeNudgesAsync()
     {
-        if (_silence.IsSilent) return;
-
         await using var scope = _services.CreateAsyncScope();
         var eventService = scope.ServiceProvider.GetRequiredService<EventService>();
 
@@ -439,6 +437,7 @@ public class ReminderService : BackgroundService
 
         foreach (var sessionEvent in events)
         {
+            if (_silence.IsSilent(sessionEvent.GuildId)) continue;
             try
             {
                 await eventService.MarkMaybeNudgeSentAsync(sessionEvent.Id);

@@ -66,11 +66,18 @@ public class ShameModule : SyncsModuleBase
     // configured role *adds* voters, it never removes them. Configuring a role that
     // happens to omit one of these people must not silently revoke access they already
     // had — a config change should not be able to take something away by accident.
+    //
+    // **Home server only**: they are home people, and on another server a home member
+    // must not arrive with a vote nobody there gave them.
     /// <summary>
-    /// The hardcoded voters, for <c>/config shame-voters</c> to refuse removing (and adding
-    /// again) and for <c>/config show</c>.
+    /// The hardcoded voters of this server — the list on the home server, none elsewhere — for
+    /// the vote, for <c>/config shame-voters</c> to refuse removing (and adding again) and for
+    /// <c>/config show</c>.
     /// </summary>
-    public static IReadOnlySet<ulong> HardcodedExtraVoters => ExtraVoters;
+    public static IReadOnlySet<ulong> HardcodedExtraVotersFor(ulong guildId) =>
+        HomeGuild.Is(guildId) ? ExtraVoters : NoVoters;
+
+    private static readonly HashSet<ulong> NoVoters = new();
 
     private static readonly HashSet<ulong> ExtraVoters = new()
     {
@@ -97,7 +104,8 @@ public class ShameModule : SyncsModuleBase
     // already said no.
     private async Task<bool> CanVoteAsync(IUser user)
     {
-        if (SessionPermissions.IsStaff(user) || ExtraVoters.Contains(user.Id)) return true;
+        if (SessionPermissions.IsStaff(user)
+            || HardcodedExtraVotersFor(Context.Guild.Id).Contains(user.Id)) return true;
 
         var config = await _config.GetAsync(Context.Guild.Id);
         if (config.ShameVoters.Contains(user.Id)) return true;

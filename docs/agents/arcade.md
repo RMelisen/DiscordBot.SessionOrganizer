@@ -143,6 +143,7 @@ Game notes:
   against her move only the human's wallet. Five idle minutes on your turn loses.
 - **Quokka** (`QuokkaRaidService`): 0–4 slots a day, one per distinct hour between 12:00 and 23:00
   Paris, computed from the date (`QuokkaRaid.SlotsFor`, nothing stored, restart-safe). A slot only
-  fires if a human spoke in a counted home-guild channel in the last 30 minutes (BotService feeds the
-  clock). Posts in the bots channel (`BotsChannel.ResolveAsync`). **Quokka is a name**: « Quokka »,
+  fires on a server with the `quokka` feature on (home by default, `/config feature`) where a human
+  spoke in a counted channel in the last 30 minutes (BotService feeds one clock per server). Posts in
+  that server's bots channel (`BotsChannel.ResolveAsync`). **Quokka is a name**: « Quokka »,
   never « le quokka ». `/debug quokka` spawns one now.

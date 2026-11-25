@@ -5,9 +5,14 @@ that apply to all of it) first.
 
 ## Morning hello
 
-`MorningGreetingService` posts one `MorningGreetings` line a day in her main channel
-(`/config main-channel` in the home guild, else `MorningGreetingService.DefaultChannelId`), at a random slot from `Helpers/Personality/MorningGreeting` (8:00–10:00 in
-`AppTime.Zone`). It sleeps until the slot rather than ticking. A `MorningFunFacts` line
+`MorningGreetingService` posts one `MorningGreetings` line a day in the main channel of every
+server where the `morning` feature is on (`/config feature`, see admin: on at home by default, off
+elsewhere) — `/config main-channel`, else `MorningGreetingService.DefaultChannelId` on home only —
+at a random slot from `Helpers/Personality/MorningGreeting` (8:00–10:00 in
+`AppTime.Zone`), each server its own slot and claim. It sleeps until the earliest pending slot
+among those servers rather than ticking, never more than 5 minutes, so a server switched on is
+picked up. `morning-state.json` keeps the last day per guild (the old one-server `LastDay` is read
+as home). The lines are the same on every server that day (`DailyRotation`, accepted). A `MorningFunFacts` line
 always goes underneath. **Both lines come from `Helpers/Core/DailyRotation`, not `ResponsePicker`**: a
 shuffled walk through the pool, one step per calendar day, computed from the date, so restarts
 don't reset it and an early hello says what the slot would have. No line repeats until the whole
@@ -65,8 +70,14 @@ doesn't make it certain. Messages aimed at her are skipped: `ChatterService` alr
 
 ## Ambient life
 
-Her life in the main channel (`MorningGreetingService.MainChannelIdAsync`, the same one as the
-morning hello) when nobody is talking to her.
+Her life in the main channel (`MorningGreetingService.MainChannelOf`, the same one as the
+morning hello) when nobody is talking to her, on every server where the `ambient` feature is on
+(home by default). `AmbientService` is a partial over `Services/Personality/AmbientService/` (core,
+`.Night`, `.Idle`, `.Wake`, `.Voyager`); each server's clocks and claims are a `GuildAmbient` under
+the one lock, seeded lazily, each server in its own `try` in the tick. **Process-wide on purpose**:
+the abrupt wake (one decision, one glitch roll, told in each server's main channel, each with its
+own « first_wake »), PiHealth's heat record and router line (one a day, told in each ambient main
+channel), `ambient-state.json`, Voyager (home only).
 Rare on purpose: the point is that she seems to be there, not that she talks. Odds, windows and
 thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, so DST never moves a rule).
 
@@ -75,13 +86,13 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
 | Idle moon + `NightPresenceFillers` | `PresenceService` | 1:00–7:00 |
 | 3 a.m. line (`NightLines`) | `AmbientService` tick | decided once a night (25%, random minute 3:00–3:49), main channel quiet ≥ 1 h; posted in the bots channel (`/config bots-channel`) |
 | Night scolding (`NightScoldLines`) | `AmbientService.HandleMessageAsync` | a human message **answering** tonight's line before 5:30 — a Discord reply to it, or any message in the channel it sits in unless that is the main channel — once a person a night, verdicts excepted; a reply, and `ChatterService` is skipped for that message. Chatting in the main channel at night is not answering: people talk to each other there |
-| Idle turn | `AmbientService` tick | 10:00–23:00, **all idle channels** (`IdleChannelIds`, plus `/config idle-channels`, plus the main channel) quiet ≥ 6 h (threads count for their parent), one 50% roll per silence, max 1/day, posted in the main channel: 30% late `SeenReactions` on the main channel's last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (edited 5 min later, or 2 s after someone speaks in the main channel after it) |
+| Idle turn | `AmbientService` tick | 10:00–23:00, **all idle channels** (`IdleChannelIds` on home, plus `/config idle-channels`, plus the main channel) quiet ≥ 6 h (threads count for their parent), one 50% roll per silence, max 1/day, posted in the main channel: 30% late `SeenReactions` on the main channel's last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (edited 5 min later, or 2 s after someone speaks in the main channel after it) |
 | Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
 | Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
 | Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, `PowerCutWakeLines` / `CrashWakeLines`, or 35% of the time a corrupted `GlitchWakeLines` pair (posted glitched with the glitch strip under it, edited clean 2 min later, or 2 s after someone speaks in the main channel, the strip deleted then) |
 | Hot status | `PresenceService` | awake, Pi ≥ 70 °C: half the rotations `HotPresenceFillers` |
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
-| Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/Voice/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
+| Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a voice channel, on a server with `voice-spectator` on (home by default), where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/Voice/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel — every channel elsewhere), max 1/day per server across all rooms, any hour |
 | Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
 | Robot heart | `RobotHeartService`, after `SynthiaService` | WALL-E, EVE (alone, except in `RobotHeartService.EveStrictChannelId` and its threads, where only beside WALL-E; never « EVE Online »), GLaDOS, Wheatley, a robot vacuum, Monika, 2B, Voyager 1 (« voyager 1 », « sonde Voyager »), JARVIS (« jarvis », or spelled out « J.A.R.V.I.S. ») named in any guild message, verdicts and emote markup excepted; **no limits**. Named in passing: an emote reaction every time, taken back 2–4 s later for WALL-E, Voyager, Wheatley and the vacuum (`RobotHeart.TakesBackReaction`), kept for EVE, GLaDOS, Monika, 2B and JARVIS; then 40% of the time (`RobotHeart.AmbientSpeakChance`) the same words as below, without a second reaction, and returns true; otherwise returns false, so `ChatterService` still runs. Named to her face (a mention, a reply to her, or her name said — so the robot wins over *Talked about*): always words — 60% a reaction + a line (`HeartReactions`, `HeartLines` via `ResponsePicker`; the reaction taken back for WALL-E and Voyager; WALL-E's line followed by its strip 2 times in 3), 40% the character's word performance (a `HeartVanishLines` reply deleted 4–6 s later, a `HeartEditLines` slip edited 3.5–5 s later; the vacuum has none); returns true so no comeback lands on top |
 | Voyager's letters | `AmbientService` tick | about one a fortnight (`Helpers/Personality/Voyager`: gaps of 10–18 days, slot 10:00–22:00), in their own channel (`AmbientService.VoyagerChannelId`, home guild only): `VoyagerLetterLines` with his real light time; half the time `VoyagerAnswerLines` 2–6 h later (before 23:00); on 18 Nov 2026 only, `VoyagerCrossingLine` instead; claimed in `ambient-state.json` |
@@ -200,10 +211,12 @@ are pure, in `Helpers/Voice/VoiceSeat`.
 She answers Discord's own join line (`SocketSystemMessage`, `MessageType.GuildMemberJoin`, which
 every other handler skips) as a reply, so there is one welcome and she follows Discord's timing
 (membership screening included). `WelcomeLines` pings the newcomer, narrowed to them, whether
-or not they were here before: there is no welcome back. More than 3 welcomes in an hour → one
-`WelcomeRushLines`, then silence for the hour. Bots are skipped there; a bot gets `RivalJoinLines`
-in her main channel through `UserJoined` (home guild), since an OAuth-added bot may get no join
-line. Departures are deliberately silent: without the audit log she can't tell a leave from a ban.
+or not they were here before: there is no welcome back. More than 3 welcomes in an hour on one server → one
+`WelcomeRushLines`, then silence there for the hour (counted per server: a raid elsewhere mutes nothing
+here). Bots are skipped there; a bot gets `RivalJoinLines`
+in that server's main channel through `UserJoined` (when one resolves), since an OAuth-added bot may
+get no join line. Both ride the `welcome` feature, **on everywhere by default** (it already ran
+everywhere). Departures are deliberately silent: without the audit log she can't tell a leave from a ban.
 
 ## Her body — `PiHealthService`
 

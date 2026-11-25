@@ -13,7 +13,10 @@ counters in one `SaveChanges`.
 **Staff-only, and the daily cap is on the target, not the voter.** Anyone may open the wall; only
 `SessionPermissions.IsStaff`, a name in `ShameModule.ExtraVoters`, someone added with
 `/config shame-voters`, or the `/config` moderator role may vote (`CanVoteAsync` checks staff and
-`ExtraVoters` before asking the database). Restricting
+`ExtraVoters` before asking the database). **`ExtraVoters` count on the home server only**
+(`HardcodedExtraVotersFor(guildId)`, empty elsewhere): they are home people, and a home member must
+not arrive on another server with a vote nobody there gave them. `/config show` and the
+`shame-voters` refusals ask the same method. Restricting
 *who* makes it a deterrent rather than a game; the thing to prevent is a dogpile, not a moderator
 voting twice.
 

@@ -20,6 +20,12 @@ that apply to all of it) first.
   Wiring a new favourite to one pool on both paths reads as her not noticing.
 - **Her name is overridden**: `FamilyNicknames` maps Tata's id to "Tata", applied by
   `DisplayNameFor`. `RealNames` is *not* overridden (the breakdown reveal wants a real name).
+- **On other servers** (the owner's call): **Papa and Tata follow** — their tiers, pools, Tata's
+  « Tata » and her personal comebacks apply on any server and in DMs. What only home people told
+  us stays home: `RealNameFor`, `PersonalComebacksFor` and `GenderFor` take the guild id and fall
+  back (the pseudo, no personal lines, the neutral turnabout) anywhere but `HomeGuild` — a DM
+  counts as elsewhere. The maps themselves are private, so nothing reads them ungated. Real names
+  have no family exception. Section 72 of the checks holds this.
 - **Papa on the listening paths** (see *Listening*): his own twins for twenty-two intents
   (`OwnerIntentLines`) and requests (`OwnerRequestLines`), the same opinions and ships as anyone, and nothing
   else new — no reply context, no facts, no streak. Tata goes

@@ -322,7 +322,7 @@ public sealed class ChannelMilestoneService : BackgroundService
     private async Task<bool> AnnounceAsync(SocketMessage message, long milestone)
     {
         if (message is not IUserMessage reachedBy || message.Channel is not SocketGuildChannel channel) return false;
-        if (_silence.IsSilent || _hush.IsHushed(channel.Id, DateTimeOffset.UtcNow) || _breakdown.IsActive(channel.Id))
+        if (_silence.IsSilent(channel.Guild.Id) || _hush.IsHushed(channel.Id, DateTimeOffset.UtcNow) || _breakdown.IsActive(channel.Id))
             return false;
         if (XpTracker.HardcodedExcludedChannels.Contains(channel.Id)
             || (await _config.GetAsync(channel.Guild.Id)).ExcludedChannels.Contains(channel.Id)) return false;

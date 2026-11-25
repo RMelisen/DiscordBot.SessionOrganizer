@@ -150,8 +150,8 @@ public class HelpModule : SyncsModuleBase
                 "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
                 "**`/admin warn`** · **`/admin warnings`** · **`/admin unwarn`** — Avertissements, reçus en DM.\n" +
                 "**`/admin mute|unmute`** — Exclusion temporaire.\n" +
-                "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu, " +
-                "le salon du quiz, le salon des bots, le salon principal et les rôles Plynling et Grosse tête. **`/config show`** affiche la configuration actuelle.\n" +
+                "**`/config setup`** · **`/config feature`** — Me mettre en place : salons, rôles, ce que je fais de moi-même. " +
+                "**`/config show`** — Les réglages, et ce qui me manque ici.\n" +
                 "**`/health`** — Mon bilan de santé : température, mémoire, connexion, pannes.\n" +
                 "**`/help`** — Affiche ce message.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")

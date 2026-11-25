@@ -50,6 +50,7 @@ public class AppDbContext : DbContext
     public DbSet<GuildExcludedChannel> GuildExcludedChannels => Set<GuildExcludedChannel>();
     public DbSet<GuildIdleChannel> GuildIdleChannels => Set<GuildIdleChannel>();
     public DbSet<GuildShameVoter> GuildShameVoters => Set<GuildShameVoter>();
+    public DbSet<GuildFeatureSetting> GuildFeatureSettings => Set<GuildFeatureSetting>();
     public DbSet<MemberWarning> MemberWarnings => Set<MemberWarning>();
     public DbSet<MemberDailyStat> MemberDailyStats => Set<MemberDailyStat>();
     public DbSet<Giveaway> Giveaways => Set<Giveaway>();
@@ -341,6 +342,12 @@ public class AppDbContext : DbContext
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
             e.HasIndex(x => x.GuildId);
+        });
+
+        modelBuilder.Entity<GuildFeatureSetting>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.Feature }).IsUnique();
         });
 
         modelBuilder.Entity<AnonymousConfession>(e =>

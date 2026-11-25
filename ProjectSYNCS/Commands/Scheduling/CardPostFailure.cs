@@ -1,5 +1,7 @@
 using Discord;
 using Discord.WebSocket;
+using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
@@ -15,13 +17,11 @@ public static class CardPostFailure
         var me = (guild as SocketGuild)?.CurrentUser;
         if (me is not null && channel is IGuildChannel guildChannel)
         {
-            var perms = me.GetPermissions(guildChannel);
-            var missing = new List<string>();
-            if (!perms.ViewChannel) missing.Add("« Voir le salon »");
-            if (!perms.SendMessages) missing.Add("« Envoyer des messages »");
-            if (!perms.EmbedLinks) missing.Add("« Intégrer des liens »");
+            // The French names live in ServerHealth, so the health check and this refusal agree.
+            var missing = ServerHealth.Missing(ChannelNeed.View | ChannelNeed.Send | ChannelNeed.Embed,
+                ServerHealthProbe.Have(me.GetPermissions(guildChannel)));
             if (missing.Count > 0)
-                return $"Je n'ai pas pu poster {what} ici : il me manque la permission {string.Join(" et ", missing)} dans ce salon. "
+                return $"Je n'ai pas pu poster {what} ici : il me manque la permission {ServerHealth.JoinNames(missing)} dans ce salon. "
                     + "Rien n'a été créé. Demande à un admin, ou relance la commande dans un autre salon.";
         }
         return $"Je n'ai pas pu poster {what} ici, et rien n'a été créé. Réessaie dans un instant — le détail est dans mes logs.";

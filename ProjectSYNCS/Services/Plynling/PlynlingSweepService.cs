@@ -112,7 +112,7 @@ public sealed class PlynlingSweepService : BackgroundService
                 // retried every hour.
                 if (await plynlings.SweepOneAsync(id, now) is not { } item) continue;   // abandoned meanwhile
                 var plynling = item.Plynling;
-                bool silent = _silence.IsSilent;
+                bool silent = _silence.IsSilent(plynling.GuildId);
 
                 switch (item.Notice)
                 {

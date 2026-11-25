@@ -454,14 +454,17 @@ public sealed class PiHealthService : BackgroundService
             old = toBeat;
         }
 
-        var channel = await ResolveMainChannelAsync();
-        if (channel is null || _breakdown.IsActive(channel.Id) || _silence.IsSilent) return;
-
         var line = string.Format(
             DailyRotation.Pick(BotResponses.HeatRecordLines, AppTime.DayNumber(now), RecordSalt),
             PiHealth.Celsius(todayMax), PiHealth.Celsius(old));
-        var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "heat record", AllowedMentions.None);
-        if (sent is null) return;
+        // One record, told on every server whose main channel she lives in (the ambient feature).
+        bool any = false;
+        foreach (var channel in await ResolveMainChannelsAsync())
+        {
+            if (_breakdown.IsActive(channel.Id)) continue;
+            any |= await BotChat.PostWithTypingAsync(channel, line, _logger, "heat record", AllowedMentions.None) is not null;
+        }
+        if (!any) return;
 
         Update(s => s with { LastRecordDay = day });
         _logger.LogInformation("Pi health: heat record announced ({New} over {Old}).", todayMax, old);
@@ -517,28 +520,21 @@ public sealed class PiHealthService : BackgroundService
             lock (_gate)
                 if (_state.LastRouterDay == day) return;
 
-            if (_silence.IsSilent) return;
-            var channel = await WaitForMainChannelAsync();
-            if (channel is null || _breakdown.IsActive(channel.Id)) return;
-
-            // What was said in the main channel while she was gone.
-            var recent = (await channel.GetMessagesAsync(MissedHistoryDepth).FlattenAsync()).ToList();
-            var missed = recent.Count(m => !m.Author.IsBot && m.Timestamp >= start && m.Timestamp <= end);
-            // A full page whose oldest message is still inside the outage: there was more.
-            bool more = recent.Count >= MissedHistoryDepth && recent.Min(m => m.Timestamp) > start;
-
-            var dayNumber = AppTime.DayNumber(end);
-            var duration = PiHealth.Duration(end - start);
-            var line = missed > 0
-                ? string.Format(DailyRotation.Pick(BotResponses.RouterReturnLines, dayNumber, RouterSalt),
-                    duration, PiHealth.Missed(missed, more))
-                : string.Format(DailyRotation.Pick(BotResponses.RouterReturnQuietLines, dayNumber, RouterQuietSalt), duration);
-
-            var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "router line", AllowedMentions.None);
-            if (sent is null) return;
-            _herMessages.Remember(sent, ReplyContext.Wake);
-
-            Update(s => s with { LastRouterDay = day });
+            // One outage, told on every server whose main channel she lives in, each its own count.
+            bool any = false;
+            foreach (var channel in await WaitForMainChannelsAsync())
+            {
+                if (_breakdown.IsActive(channel.Id)) continue;
+                try
+                {
+                    any |= await RouterLineAsync(channel, start, end);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Pi health: router line failed in channel {ChannelId}.", channel.Id);
+                }
+            }
+            if (any) Update(s => s with { LastRouterDay = day });
         }
         catch (Exception ex)
         {
@@ -546,23 +542,57 @@ public sealed class PiHealthService : BackgroundService
         }
     }
 
-    private async Task<IMessageChannel?> WaitForMainChannelAsync()
+    // What was said in that main channel while she was gone, and her line about it. True when it went out.
+    private async Task<bool> RouterLineAsync(IMessageChannel channel, DateTimeOffset start, DateTimeOffset end)
     {
-        var deadline = DateTimeOffset.UtcNow + ChannelWait;
-        IMessageChannel? channel;
-        while ((channel = await ResolveMainChannelAsync()) is null)
-        {
-            // In the dev guild the channel never appears; this just runs out.
-            if (DateTimeOffset.UtcNow >= deadline) return null;
-            await Task.Delay(ChannelPollInterval);
-        }
-        return channel;
+        var recent = (await channel.GetMessagesAsync(MissedHistoryDepth).FlattenAsync()).ToList();
+        var missed = recent.Count(m => !m.Author.IsBot && m.Timestamp >= start && m.Timestamp <= end);
+        // A full page whose oldest message is still inside the outage: there was more.
+        bool more = recent.Count >= MissedHistoryDepth && recent.Min(m => m.Timestamp) > start;
+
+        var dayNumber = AppTime.DayNumber(end);
+        var duration = PiHealth.Duration(end - start);
+        var line = missed > 0
+            ? string.Format(DailyRotation.Pick(BotResponses.RouterReturnLines, dayNumber, RouterSalt),
+                duration, PiHealth.Missed(missed, more))
+            : string.Format(DailyRotation.Pick(BotResponses.RouterReturnQuietLines, dayNumber, RouterQuietSalt), duration);
+
+        var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "router line", AllowedMentions.None);
+        if (sent is null) return false;
+        _herMessages.Remember(sent, ReplyContext.Wake);
+        return true;
     }
 
-    private async Task<IMessageChannel?> ResolveMainChannelAsync() =>
-        _client.ConnectionState == ConnectionState.Connected
-            ? _client.GetChannel(await MorningGreetingService.MainChannelIdAsync(_config)) as IMessageChannel
-            : null;
+    // After a reconnect the guilds come back one by one: wait until at least one main channel is
+    // there, never past ChannelWait (a server with none just runs it out).
+    private async Task<IReadOnlyList<IMessageChannel>> WaitForMainChannelsAsync()
+    {
+        var deadline = DateTimeOffset.UtcNow + ChannelWait;
+        IReadOnlyList<IMessageChannel> channels;
+        while ((channels = await ResolveMainChannelsAsync()).Count == 0)
+        {
+            if (DateTimeOffset.UtcNow >= deadline) return channels;
+            await Task.Delay(ChannelPollInterval);
+        }
+        return channels;
+    }
+
+    // The main channel of every server where she lives ambiently (the ambient feature, on at home by
+    // default) and isn't silenced.
+    private async Task<IReadOnlyList<IMessageChannel>> ResolveMainChannelsAsync()
+    {
+        var channels = new List<IMessageChannel>();
+        if (_client.ConnectionState != ConnectionState.Connected) return channels;
+        foreach (var guild in _client.Guilds)
+        {
+            if (_silence.IsSilent(guild.Id)) continue;
+            var config = await _config.GetAsync(guild.Id);
+            if (!config.IsOn(ServerFeatures.Ambient, guild.Id)) continue;
+            if (guild.GetChannel(MorningGreetingService.MainChannelOf(config, guild.Id)) is IMessageChannel channel)
+                channels.Add(channel);
+        }
+        return channels;
+    }
 
     // Every change goes through here: the state and its file move together under the lock, so
     // two writers (the tick, a router line) can't put an older copy on disk after a newer one.

@@ -694,6 +694,11 @@ is gone).
 ### Staff & owner
 
 - **`/config`** — per-server configuration, applied without a redeploy:
+  - `setup` — the guided setup (see *Inviting her to a server*); `show` — everything on one card,
+    opening with the health check;
+  - `feature enable|disable` — the home features a server can have (morning hello, ambient life,
+    weekend poll, Quokka's visits, voice spectator, member welcome): on at home, off elsewhere
+    until enabled, except the welcome;
   - `moderator-role set|clear` and `shame-voters add|remove` — who may vote with `/shame`;
   - `excluded-channels add|remove` — channels where nothing counts (no XP, ignored by the wall);
   - `game-channel set|clear` — where Plynling deaths, comebacks and event stories are announced;
@@ -709,7 +714,8 @@ is gone).
   - `quiz-role create|set|clear` — the « Grosse tête de la semaine » role, handed every Monday to
     last week's best quiz answerer; no role, no crown;
   - `main-channel set|clear` and `idle-channels add|remove` — her morning hello and night life, and
-    the channels that must all be quiet before she talks into the silence (main server only).
+    the channels that must all be quiet before she talks into the silence (the home server has
+    defaults; elsewhere the main channel must be set for those features).
 
   Lists are *additive*: the defaults built into the code stay in force, so configuring something
   can never revoke an existing right or un-exclude a channel. A configured game or main channel
@@ -979,11 +985,29 @@ on connect, since Discord otherwise caches only the people seen since the last r
 and every avatar on `/level`, `/leaderboard` and `/shame` falls back to a generic
 placeholder.
 
-It also needs the usual channel permissions where you want it active: send messages,
-embed links, add reactions, and *Manage Events* if you want sessions mirrored into
-the server's Events tab (that one degrades gracefully if missing). *Manage Roles* is needed only
-for `/config plynling-role` and `/config quiz-role`, and her top role must sit above those roles (a
-role she creates starts below hers).
+### Inviting her to a server
+
+Invite with the scopes `bot` and `applications.commands`
+(`https://discord.com/oauth2/authorize?client_id=<application id>&scope=bot+applications.commands&permissions=…`).
+The recommended permissions are *View Channels*, *Send Messages*, *Read Message History*,
+*Embed Links*, *Attach Files*, *Add Reactions*, *Use External Emojis* (her emotes live on the home
+server), *Connect*, *Manage Events* and, optionally, *Manage Roles*: permission integer
+`8859798592`, or `8591363136` without *Manage Roles*. *Manage Events* mirrors sessions into the
+server's Events tab and degrades gracefully if missing. *Manage Roles* is needed only for the
+Plynling and Grosse tête roles, and her top role must sit above them (a role she creates starts
+below hers). `/admin mute` also needs *Timeout Members*.
+
+On joining she posts a hello card in the system channel (else the first channel she can write in)
+pointing to **`/config setup`**, a guided setup (channels, roles, the home features to switch on,
+then a summary). **`/config show`** opens with a health check: for each channel she uses, whether she
+can view, send, embed, attach, react and use external emojis there, plus *Manage Events* and her
+rank against the roles she manages, each ⚠️ with a one-line fix.
+
+Each server is its own world: XP, Cailloux, inventory, Plynlings, `/shame` and the quiz are per
+server. Her voice seat and the monthly digest stay on the home server; the morning hello, ambient
+life, the weekend poll, Quokka's visits and the voice spectator are off on a new server until staff
+turn them on (`/config feature enable`), and on at home. The member welcome is on everywhere.
+Silence mode (`/debug silence`) is per server.
 
 ## Running locally
 

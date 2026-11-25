@@ -46,7 +46,7 @@ public sealed class PremiumPrankService
     {
         if (interaction is not SocketSlashCommand slash) return false;
         // The roll first: it skips the command lookup for 499 commands in 500.
-        if (!PremiumPrank.Rolls(Random.Shared) || _silence.IsSilent) return false;
+        if (!PremiumPrank.Rolls(Random.Shared) || _silence.IsSilent(slash.GuildId ?? HomeGuild.Id)) return false;
         var search = _interactions.SearchSlashCommand(slash);
         if (!search.IsSuccess || IsExempt(search.Command)) return false;
 

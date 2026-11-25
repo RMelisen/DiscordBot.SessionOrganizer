@@ -139,7 +139,7 @@ public sealed class QuizCrownService
         // no announcement until staff fix it — /config show and the log say why.
         bool roleWorks = RoleMirror.Problem(guild, guild.GetRole(config.QuizRoleId), adopting: false, RoleKind.QuizCrown) is null;
         // Silence mode mutes the Monday crowning only (purse and role still move); /debug's dry run speaks.
-        if (champions.Count > 0 && roleWorks && !(pay && _silence.IsSilent))
+        if (champions.Count > 0 && roleWorks && !(pay && _silence.IsSilent(guild.Id)))
             await AnnounceAsync(guild, champions, week, purse);
         return champions;
     }

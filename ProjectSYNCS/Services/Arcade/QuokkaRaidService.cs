@@ -9,12 +9,13 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Services;
 
 /// <summary>
-/// Whack-a-Quokka: up to four times a day (12:00–23:00 Paris, home guild only) Quokka slips into
+/// Whack-a-Quokka: up to four times a day (12:00–23:00 Paris, on every server where the quokka feature is on — home by default) Quokka slips into
 /// the bots channel, and the first to hit him wins a few cailloux. No interval, like
 /// MorningGreetingService: it sleeps until each of the day's slots, which are computed from the
 /// date (<see cref="QuokkaRaid.SlotsFor"/>) — a restart finds the same ones, nothing is stored.
 /// A slot is skipped when nobody has spoken in the server for half an hour: he never shows up to
-/// an empty room. BotService feeds it the messages that keep that clock.
+/// an empty room. BotService feeds it the messages that keep that clock, one per server. The slots
+/// are the same on every server (they come from the date).
 /// </summary>
 public sealed class QuokkaRaidService : BackgroundService
 {
@@ -28,7 +29,8 @@ public sealed class QuokkaRaidService : BackgroundService
     private readonly ILogger<QuokkaRaidService> _logger;
     private readonly SilenceService _silence;
 
-    private long _lastActivityTicks;
+    // When a human last spoke, per server (ticks, UTC).
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<ulong, long> _lastActivityTicks = new();
 
     public QuokkaRaidService(DiscordSocketClient client, ArcadeTables tables, PartyRunner party, GuildConfigService config,
         PlynlingAnnouncer announcer, ResponsePicker picker, IServiceProvider services, ILogger<QuokkaRaidService> logger, SilenceService silence)
@@ -44,23 +46,24 @@ public sealed class QuokkaRaidService : BackgroundService
         _logger = logger;
     }
 
-    /// <summary>A human spoke in the home guild, in a channel that counts: the room is awake.</summary>
+    /// <summary>A human spoke on a server, in a channel that counts: that room is awake.</summary>
     public async Task HandleMessageAsync(SocketMessage message)
     {
-        if (message.Author.IsBot || message.Channel is not SocketGuildChannel { Guild.Id: HomeGuild.Id } channel) return;
+        if (message.Author.IsBot || message.Channel is not SocketGuildChannel channel) return;
         try
         {
-            if (await _services.GetRequiredService<XpTracker>().IsChannelExcludedAsync(HomeGuild.Id, channel)) return;
+            if (await _services.GetRequiredService<XpTracker>().IsChannelExcludedAsync(channel.Guild.Id, channel)) return;
         }
         catch
         {
             return;
         }
-        Interlocked.Exchange(ref _lastActivityTicks, DateTimeOffset.UtcNow.UtcTicks);
+        _lastActivityTicks[channel.Guild.Id] = DateTimeOffset.UtcNow.UtcTicks;
     }
 
-    private bool RoomAwake =>
-        DateTimeOffset.UtcNow - new DateTimeOffset(Interlocked.Read(ref _lastActivityTicks), TimeSpan.Zero) <= QuokkaRaid.ActiveWithin;
+    private bool RoomAwake(ulong guildId) =>
+        _lastActivityTicks.TryGetValue(guildId, out var ticks)
+        && DateTimeOffset.UtcNow - new DateTimeOffset(ticks, TimeSpan.Zero) <= QuokkaRaid.ActiveWithin;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -77,15 +80,23 @@ public sealed class QuokkaRaidService : BackgroundService
             }
 
             await Task.Delay(next - now, stoppingToken);
-            try
+            if (_client.ConnectionState == ConnectionState.Connected)
             {
-                // Silence mode skips the slot; /debug quokka still brings him (the owner's own call).
-                if (_client.ConnectionState == ConnectionState.Connected && RoomAwake && !_silence.IsSilent)
-                    await SpawnAsync(HomeGuild.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Quokka's visit failed.");
+                // One try per server: an exception escaping ExecuteAsync stops the whole host.
+                foreach (var guild in _client.Guilds)
+                {
+                    try
+                    {
+                        // Silence mode skips the slot; /debug quokka still brings him (the owner's own call).
+                        if (RoomAwake(guild.Id) && !_silence.IsSilent(guild.Id)
+                            && (await _config.GetAsync(guild.Id)).IsOn(ServerFeatures.Quokka, guild.Id))
+                            await SpawnAsync(guild.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Quokka's visit failed in guild {GuildId}.", guild.Id);
+                    }
+                }
             }
             // Past this slot either way.
             await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);

@@ -265,7 +265,7 @@ internal sealed class BotFeedbackTracker
 
         await RecordAsync(guildChannel.Guild.Id, message.Author.Id, verdict);
         // Silence mode: counted (and the XP below), never answered.
-        if (!_silence.IsSilent) await RespondAsync(message, verdict, form);
+        if (!_silence.IsSilent(guildChannel.Guild.Id)) await RespondAsync(message, verdict, form);
 
         // Deliberately last: her comeback must read as immediate, and a level-up line
         // (if any) is a separate follow-up that should never delay her acknowledgement
@@ -623,7 +623,7 @@ internal sealed class BotFeedbackTracker
     // more praise looping is not the runaway-negativity problem that guard exists for.
     private async Task SendTurnaboutAsync(SocketUserMessage message)
     {
-        var pool = BotResponses.GenderFor(message.Author.Id) switch
+        var pool = BotResponses.GenderFor(message.Author.Id, (message.Channel as IGuildChannel)?.GuildId) switch
         {
             BotResponses.PersonGender.Boy => BotResponses.TurnaboutBoyLines,
             BotResponses.PersonGender.Girl => BotResponses.TurnaboutGirlLines,

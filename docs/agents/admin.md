@@ -2,6 +2,9 @@
 
 The three authorization models are summarised in the root `CLAUDE.md`. Don't conflate them.
 
+**The owner is staff on every server, on purpose** (the owner's call when she went multi-server):
+`IsStaff` is not narrowed to the home server, and his mute and warn immunity follow him too.
+
 ## `/admin`
 
 Holds `xp`, `plynling` (`rename`, `resurrect`, `passion-reset`, `cure`), `pebble`, `stats`,
@@ -68,10 +71,39 @@ setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-vote
 `moderator-role set|clear`, `plynling-role create|set|clear`, `quiz-role create|set|clear`,
 `game-channel set|clear`,
 `main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`, `levelup-channel set|clear`,
-`confess-channel set|clear`, `freegames-channel set|clear`. Three levels is
+`confess-channel set|clear`, `freegames-channel set|clear`, `feature enable|disable`, and the flat
+`setup`. Three levels is
 Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
 needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
-defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
+defer); no `[DefaultMemberPermissions]`, same reason as `/admin`. `ConfigModule` is a partial over
+`Commands/Admin/ConfigModule/` (the class and shared helpers, `.Lists`, `.Roles`, `.Channels`,
+`.Setup`, `.Features`); `/config` has 16 of Discord's 25 top-level children.
+
+### `/config setup`, the health check, the hello card
+
+- **`/config setup`** is the guided setup: one ephemeral V2 message, a page at a time
+  (`ConfigSetupCards`, `SetupPage`: the channels, the optional channels, the roles, her life here —
+  the main channel and a multi-select of the features —, a summary).
+  **Stateless**: every pick is saved at once by `ConfigSetupComponentHandler`, through the very rules
+  of the commands (`CanSendIn` refusal, the default stored as zero, the mirrored roles through
+  `ConfigModule.SetManagedRoleAsync` / `CreateManagedRoleAsync`, an emptied select = `clear`); the
+  page name rides each custom-id (`cfgsetup:ch:{slot}:{page}`, `…:role:{kind}:{page}`,
+  `…:create:{kind}:{page}`, `…:feat:{page}`, `…:prev:{page}`, `…:next:{page}`, `…:done`), so a restart mid-setup loses
+  nothing. `IsStaff` on every click; a refusal or a role's result comes as a private follow-up, then
+  the page is redrawn. Channel selects read the raw values (an emptied select sends none). Default
+  values carry only ids that still exist (Discord refuses the others).
+- **The health check** is `Helpers/Admin/ServerHealth` (pure; facts from
+  `Services/Admin/ServerHealthProbe`): each slot's channel against what it needs
+  (`ServerHealth.NeedsOf`), named with Discord's French permission names, only the ones to give
+  first (no « Voir le salon » → nothing else named; no « Envoyer des messages » → no links or
+  files named: Discord denies those anyway), the fix said once (`HowToGrant`); no game nor bots
+  channel; « Gérer les évènements »; the mirrored roles through `RoleMirror.Problem`. It opens
+  `/config show` (`ConfigCards.HealthText`, with « Pas encore réglé ») and ends the setup.
+  `CardPostFailure` takes its permission names from it. **Text budget**: a V2 message carries 4000
+  characters; the checks build the worst `/config show` and measure it.
+- **The hello card** (`GuildHelloService`, `JoinedGuild`; `GuildHelloCards`, `GuildHelloLines`):
+  on being added to a server other than home, in its system channel if she may view, send and embed
+  there, else the first text channel where she may. Swallow-and-log; not silence-gated (a notice).
 
 **Two rules, by the shape of the setting — and one exception.** An unconfigured guild behaves exactly as before either way.
 
@@ -103,11 +135,26 @@ defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
   click). `clear` only stops managing it: it touches no member and deletes nothing. After creation
   she never edits the role — name, colour and position are staff's.
 
-**Main and idle channels are home-guild only.** `MorningGreetingService` and `AmbientService` keep
-one state each, so they live in `Helpers/Core/HomeGuild.Id` and read that guild's config
-(`MorningGreetingService.MainChannelIdAsync` / `MainChannelOf`, shared by both). Elsewhere those
-subcommands refuse rather than store a row nothing reads. The main channel always counts as an idle
-channel wherever it is set. The game channel is per guild (`PlynlingAnnouncer.ResolveGameChannelAsync`),
+**Main and idle channels are per server.** `MorningGreetingService.MainChannelIdAsync` /
+`MainChannelOf(config, guildId)` is the one resolver (morning, ambient, weekend poll, welcome's
+new-bot line, PiHealth's lines): the configured channel, else `DefaultChannelId` **on home only**,
+else 0 — the feature can't post there, and `/config show` warns « Sans salon principal : … ne font
+rien ». The main channel always counts as an idle channel wherever it is set.
+
+### `/config feature` — what she does on her own
+
+`Helpers/Admin/ServerFeatures` (named so to stay clear of `Discord.GuildFeatures`): the keys
+`morning`, `ambient`, `quokka`, `weekend-poll`, `voice-spectator`, `welcome` — **stored strings,
+append-only**; `ConfigModule.FeatureChoice` mirrors them (the checks hold the two together).
+`GuildFeatureSetting` (guild + feature, unique) stores **only staff's explicit choices**; with no
+row a feature takes `DefaultFor(key, isHome)`: **all on at home, only `welcome` elsewhere** — so an
+untouched home server behaves as before, and a new server stays quiet until staff opt in.
+`GuildConfigService` loads the rows into `GuildConfig.Features` (cached like the rest);
+`GuildConfig.IsOn(key, guildId)` is the one test. Set by `/config feature enable|disable` and the
+setup's life page (`cfgsetup:feat:{page}`); `/config show` lists them on/off. Who reads which key:
+`personality/ambient.md` (morning, ambient, voice spectator, welcome), scheduling (weekend poll),
+arcade (Quokka), economy (`/shoutout` rides `morning`). **No switch, home only** (her single-instance
+life): her voice seat, Voyager's letters, the monthly digest. The game channel is per guild (`PlynlingAnnouncer.ResolveGameChannelAsync`),
 so a dev guild gets announcements once it configures one.
 
 **`GuildConfigService` is a singleton that reads the database — the cache is why.** It takes
@@ -150,9 +197,15 @@ explicit refusal — it truncates a body rather than rejecting a title, so it pr
 
 ### `/debug silence`
 
-`SilenceService` (singleton) holds one switch, kept in `silence-state.json` beside the database so it
-**survives a restart** (unlike `absent`: the owner silences her for a reason that a power cut
-doesn't end). While it is on she says nothing on her own initiative; **answers to commands, buttons
+`SilenceService` (singleton) holds **one switch per server** (the owner's call: per server only, no
+global switch), kept in `silence-state.json` beside the database so it **survives a restart** (unlike
+`absent`: the owner silences her for a reason that a power cut doesn't end). `/debug silence
+state:[server:]` acts on the server it's run in, or the one picked (`GuildAutocompleteHandler`,
+owner-only suggestions, needed from a DM); the reply lists the other silenced servers. **A DM falls
+under the home server's switch** (`IsSilentIn`). The file's older one-switch shape (`Silent: true`)
+reads as the home server silenced (`SilenceStateFile`, pure, checked in section 72). Every check asks
+with the server the post would land in: `IsSilent(guildId)` in loops, `IsSilentIn(channel)` on the
+gateway paths. While it is on she says nothing on her own initiative; **answers to commands, buttons
 and `;` shortcuts still go out**, and so do the notices someone set up with a command: session
 reminders, recaps and the roll call, giveaway draws, `/remindme`, the weekend poll's result, and
 Plynling DMs to owners (warnings, sickness). **Level-up cards go out too**, the one exception that

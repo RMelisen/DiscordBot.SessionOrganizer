@@ -312,7 +312,7 @@ internal sealed class VoiceSeatService
                 desired = null;
 
             // Silence mode: no seat anywhere; one already taken is left at the next settled sweep.
-            if (_silence.IsSilent)
+            if (_silence.IsSilent(HomeGuild.Id))
                 desired = null;
 
             // Drop the gatherings that ended, so the dictionary only holds what's going on.
@@ -325,7 +325,7 @@ internal sealed class VoiceSeatService
         }
 
         // Silence mode: no line, no mic flicker (the seat itself is dropped above).
-        bool silent = _silence.IsSilent;
+        bool silent = _silence.IsSilent(HomeGuild.Id);
         foreach (var (channelId, line, what) in said)
             if (!silent && guild.GetVoiceChannel(channelId) is { } where)
                 await BotChat.PostWithTypingAsync(where, line, _logger, what, AllowedMentions.None);
@@ -459,7 +459,7 @@ internal sealed class VoiceSeatService
         _logger.LogInformation("Voice seat: thrown out of {ChannelId} ({Kicks}), {Reaction}.", channelId, kicks, pout ? "pouting" : "angry");
         await NotifyAsync();
 
-        if (_silence.IsSilent || guild.GetVoiceChannel(channelId) is not { } channel) return;
+        if (_silence.IsSilent(HomeGuild.Id) || guild.GetVoiceChannel(channelId) is not { } channel) return;
         var line = _picker.Pick(pout ? BotResponses.VoiceKickPoutLines : BotResponses.VoiceKickAngryLines);
         _herMessages.Remember(
             await BotChat.PostWithTypingAsync(channel, line, _logger, pout ? "voice pout line" : "voice angry line", AllowedMentions.None),

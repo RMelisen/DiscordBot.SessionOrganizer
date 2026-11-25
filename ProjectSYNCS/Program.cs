@@ -40,8 +40,8 @@ var host = Host.CreateDefaultBuilder(args)
             // Helpers/Core/AvatarUi then falls back to Discord's generic blue logo — so every
             // ranking of *historic* totals was showing that placeholder for exactly the
             // people who had not spoken since the last restart, which on an all-time
-            // board is most of them. Cheap here (one small private guild); it would be a
-            // real startup and memory cost on a large one.
+            // board is most of them. Cheap here (a few small servers: a few KB per member);
+            // it would be a real startup and memory cost on a large one.
             AlwaysDownloadUsers = true
         };
         services.AddSingleton(socketConfig);
@@ -231,6 +231,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService(sp => sp.GetRequiredService<PlynlingSweepService>());
         services.AddHostedService<ApplicationEmojiService>();
         services.AddHostedService<PlynlingMascotService>();
+        services.AddHostedService<GuildHelloService>();
         services.AddHostedService<SeasonalAvatarService>();
         // Quokka's visits. One instance for both roles: the host runs its slots, BotService feeds it
         // messages (the room-is-awake clock), /debug quokka spawns one on demand.

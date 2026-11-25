@@ -6,8 +6,8 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Commands;
 
 // /config show — one Components V2 card, a section per setting. Static and Context-free, so
-// its size is checkable without a gateway: 1 container + 1 title + 13 × (separator + text)
-// = 28 of the 40 components.
+// its size is checkable without a gateway: 1 container + 1 title + 16 × (separator + text)
+// = 34 of the 40 components. The checks build it and measure the text too (4000 per message).
 //
 // Every list shows its hardcoded part and its configured part apart: only one of them can
 // be edited, and merging them would invite someone to remove a hardcoded entry and be
@@ -21,12 +21,18 @@ public static class ConfigCards
     /// <param name="defaultBotsChannelHere">Whether the hardcoded bots channel lives in this guild.</param>
     /// <param name="plynlingRoleProblem">Why she can't manage the configured Plynling role, or null.</param>
     /// <param name="quizRoleProblem">Same, for the Grosse tête role.</param>
+    /// <param name="health">ServerHealth's lines for this server.</param>
+    /// <param name="unset">What is not set here yet (ServerHealth.Unset).</param>
     public static MessageComponent Build(GuildConfig config, bool isHomeGuild, bool defaultGameChannelHere,
-        bool defaultBotsChannelHere, string? plynlingRoleProblem, string? quizRoleProblem)
+        bool defaultBotsChannelHere, string? plynlingRoleProblem, string? quizRoleProblem,
+        IReadOnlyList<HealthLine> health, IReadOnlyList<string> unset)
     {
         var container = new ContainerBuilder()
             .WithAccentColor(Color.Purple)
             .AddComponent(new TextDisplayBuilder("## Configuration du serveur"));
+
+        // First, because it is what to act on: what fails here, and what is not set yet.
+        Section(container, HealthText(health, unset));
 
         Section(container,
             "**Rôle modérateur** — peut voter avec `/shame`",
@@ -39,15 +45,18 @@ public static class ConfigCards
                 : $"> <@&{config.PlynlingRoleId}>" + (plynlingRoleProblem is null ? "" : $"\n> ⚠️ {plynlingRoleProblem}"));
 
         Section(container,
-            "**Rôle Grosse tête** — la meilleure tête du quiz de la semaine passée, couronnée le lundi à 10 h",
+            "**Rôle Grosse tête** — la meilleure tête du quiz de la semaine, couronnée le lundi",
             config.QuizRoleId == 0
                 ? "> *non configuré : pas de couronne*"
                 : $"> <@&{config.QuizRoleId}>" + (quizRoleProblem is null ? "" : $"\n> ⚠️ {quizRoleProblem}"));
 
+        // The hardcoded parts exist on the home server only: elsewhere a « Par défaut » line
+        // would list home people and home channels that mean nothing here.
         Section(container,
             "**Votants `/shame`** — en plus du staff et du rôle modérateur",
-            $"> Par défaut : {Users(ShameModule.HardcodedExtraVoters)}",
-            $"> Ajoutés ici : {Users(config.ShameVoters)}");
+            isHomeGuild
+                ? $"> Par défaut : {Users(ShameModule.HardcodedExtraVotersFor(HomeGuild.Id))}\n> Ajoutés ici : {Users(config.ShameVoters)}"
+                : $"> {Users(config.ShameVoters)}");
 
         Section(container,
             "**Salon de jeu** — morts, retours et histoires des Plynlings",
@@ -68,7 +77,7 @@ public static class ConfigCards
                 : $"> <#{config.LevelUpChannelId}>");
 
         Section(container,
-            "**Salon du quiz** — où elle pose ses questions, deux ou trois fois par semaine",
+            "**Salon du quiz** — ses questions, deux ou trois par semaine",
             "> " + Single(config.QuizChannelId, 0, "*aucun : pas de quiz sur ce serveur*"));
 
         Section(container,
@@ -76,33 +85,56 @@ public static class ConfigCards
             "> " + Single(config.ConfessChannelId, 0, "*aucun : `/confess` est fermé*"));
 
         Section(container,
-            "**Salon des jeux gratuits** — les jeux Steam gratuits à garder, dès qu'elle les voit",
+            "**Salon des jeux gratuits** — les jeux Steam gratuits à garder",
             "> " + Single(config.FreeGamesChannelId, 0, "*aucun : pas d'annonces*"));
 
-        if (isHomeGuild)
-        {
-            Section(container,
-                "**Salon principal** — bonjour du matin, ligne de 3 h, retour après un redémarrage",
-                "> " + Single(config.MainChannelId, MorningGreetingService.DefaultChannelId, "*aucun*"));
+        Section(container,
+            "**Salon principal** — bonjour du matin, vie ambiante, sondage du week-end",
+            "> " + Single(config.MainChannelId, isHomeGuild ? MorningGreetingService.DefaultChannelId : 0,
+                "*aucun : rien de tout ça ici*"));
 
-            Section(container,
-                "**Salons calmes** — s'ils se taisent tous, elle parle dans le vide (le salon principal compte toujours)",
-                $"> Par défaut : {Channels(AmbientService.HardcodedIdleChannels)}",
-                $"> Ajoutés ici : {Channels(config.IdleChannels)}");
-        }
-        else
-        {
-            Section(container,
-                "**Salon principal et salons calmes**",
-                "> *seulement sur le serveur principal*");
-        }
+        Section(container,
+            "**Salons calmes** — tous silencieux, elle parle dans le vide (le principal compte)",
+            isHomeGuild
+                ? $"> Par défaut : {Channels(AmbientService.HardcodedIdleChannels)}\n> Ajoutés ici : {Channels(config.IdleChannels)}"
+                : $"> {Channels(config.IdleChannels)}");
+
+        Section(container, FeaturesText(config, isHomeGuild));
 
         Section(container,
             "**Salons sans XP** — ni XP, ni mur de la honte",
-            $"> Par défaut (non modifiables) : {Channels(XpTracker.HardcodedExcludedChannels)}",
-            $"> Ajoutés ici : {Channels(config.ExcludedChannels)}");
+            isHomeGuild
+                ? $"> Par défaut (non modifiables) : {Channels(XpTracker.HardcodedExcludedChannels)}\n> Ajoutés ici : {Channels(config.ExcludedChannels)}"
+                : $"> {Channels(config.ExcludedChannels)}");
 
         return new ComponentBuilderV2().AddComponent(container).Build();
+    }
+
+    // What she does of her own here (ServerFeatures), and a warning when one that needs the main
+    // channel is on without one.
+    private static string FeaturesText(GuildConfig config, bool isHomeGuild)
+    {
+        var on = ServerFeatures.All.Where(f => ServerFeatures.IsOn(config.Features, f.Key, isHomeGuild)).ToList();
+        var off = ServerFeatures.All.Except(on).ToList();
+        string Names(IEnumerable<ServerFeature> features) =>
+            features.Any() ? string.Join(", ", features.Select(f => f.Label)) : "*aucune*";
+
+        var sb = new StringBuilder("**Fonctionnalités** — `/config feature`");
+        sb.Append("\n> Allumées : ").Append(Names(on));
+        sb.Append("\n> Éteintes : ").Append(Names(off));
+        bool noMain = config.MainChannelId == 0 && !isHomeGuild;
+        if (noMain && on.Any(f => f.NeedsMainChannel))
+            sb.Append("\n> ⚠️ Sans salon principal : ").Append(Names(on.Where(f => f.NeedsMainChannel))).Append(" ne font rien.");
+        return sb.ToString();
+    }
+
+    /// <summary>The « État » section: the health lines, then what is not set yet. Shared with /config setup's summary.</summary>
+    public static string HealthText(IReadOnlyList<HealthLine> health, IReadOnlyList<string> unset)
+    {
+        var sb = new StringBuilder("**État** — ce que je peux faire ici");
+        foreach (var line in health) sb.Append("\n> ").Append(line);
+        if (unset.Count > 0) sb.Append("\n> Pas encore réglé : ").Append(string.Join(", ", unset)).Append(". `/config setup` s'en occupe.");
+        return sb.ToString();
     }
 
     private static void Section(ContainerBuilder container, params string[] lines)

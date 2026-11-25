@@ -16,22 +16,35 @@ public class ShoutoutModule : SyncsModuleBase
 {
     private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
-    public const string HomeOnly = "Les dédicaces, c'est dans mon bonjour du matin, et je ne le dis que sur mon serveur.";
+    // A dedication rides the morning hello: where there is none, there is nothing to bid on.
+    public const string NoHello = "Les dédicaces, c'est dans mon bonjour du matin, et ici je ne dis pas bonjour le matin. "
+                                  + "Le staff peut l'allumer avec `/config feature enable`.";
 
     private readonly ShoutoutService _shoutouts;
+    private readonly GuildConfigService _config;
 
-    public ShoutoutModule(ShoutoutService shoutouts)
+    public ShoutoutModule(ShoutoutService shoutouts, GuildConfigService config)
     {
         _shoutouts = shoutouts;
+        _config = config;
+    }
+
+    // From GuildConfigService's cache, so it answers inside the 3 s before any defer (the refusal
+    // is private, the bid reply public).
+    private async Task<bool> HelloHereAsync()
+    {
+        var config = await _config.GetAsync(Context.Guild.Id);
+        return config.IsOn(ServerFeatures.Morning, Context.Guild.Id)
+               && MorningGreetingService.MainChannelOf(config, Context.Guild.Id) != 0;
     }
 
     [SlashCommand("bid", "Enchérir pour une dédicace dans son bonjour de demain")]
     public async Task BidAsync(
         [Summary("amount", "Ta mise (rendue si quelqu'un enchérit plus haut)"), MinValue(Shoutouts.MinOpening), MaxValue(Shoutouts.MaxBid)] long amount)
     {
-        if (Context.Guild.Id != HomeGuild.Id)
+        if (!await HelloHereAsync())
         {
-            await RespondAsync(HomeOnly, ephemeral: true);
+            await RespondAsync(NoHello, ephemeral: true);
             return;
         }
 
@@ -54,9 +67,9 @@ public class ShoutoutModule : SyncsModuleBase
     [SlashCommand("status", "Où en sont les enchères pour la prochaine dédicace")]
     public async Task StatusAsync()
     {
-        if (Context.Guild.Id != HomeGuild.Id)
+        if (!await HelloHereAsync())
         {
-            await RespondAsync(HomeOnly, ephemeral: true);
+            await RespondAsync(NoHello, ephemeral: true);
             return;
         }
 

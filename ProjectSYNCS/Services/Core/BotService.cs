@@ -167,7 +167,7 @@ internal sealed class BotService : IHostedService
     {
         // Silence mode (/debug silence): the trackers still count, but nothing that can answer runs.
         // A shortcut is a command, so it still answers.
-        bool silent = _silence.IsSilent;
+        bool silent = _silence.IsSilentIn(rawMessage.Channel);
         // Every message counts towards its channel's milestones, hers, bots' and shortcuts included:
         // first, before anything below can end the fan-out (ChannelMilestoneService).
         await _milestones.HandleMessageAsync(rawMessage);
@@ -238,7 +238,7 @@ internal sealed class BotService : IHostedService
     {
         await _emotes.HandleReactionAddedAsync(message, channel, reaction);
         await _xp.HandleReactionAddedAsync(message, channel, reaction);
-        if (!_silence.IsSilent) await _reactions.HandleReactionAddedAsync(message, channel, reaction);
+        if (!_silence.IsSilentIn(reaction.Channel ?? channel.Value)) await _reactions.HandleReactionAddedAsync(message, channel, reaction);
         await _feedback.HandleReactionAddedAsync(message, channel, reaction);
     }
 

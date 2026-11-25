@@ -21,8 +21,8 @@ namespace ProjectSYNCS.Commands;
 // message. In both, the text goes out as the bot's own words by default; "announce" opts into
 // a herald line naming the owner. /debug absent flags him as absent: while absent, the bot
 // intercepts mentions of him and replies, formally, that he is unavailable (in memory only — a
-// restart clears the flag). /debug silence mutes everything she says on her own initiative
-// (SilenceService); unlike absent, it survives a restart.
+// restart clears the flag). /debug silence mutes everything she says on her own initiative, one server
+// at a time (SilenceService); unlike absent, it survives a restart.
 //
 // No [CommandContextType]: tell, dm and absent never read Context.Guild and work from a DM;
 // /debug plynling does, and checks for a DM itself rather than hiding the whole group there.

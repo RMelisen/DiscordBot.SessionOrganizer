@@ -186,14 +186,14 @@ internal sealed class XpTracker
     /// <summary>
     /// Phase 2 entry point — the periodic voice sweep grants through here too, so
     /// announcing and level-up detection stay in one place regardless of signal.
-    /// <paramref name="voiceChannelId"/> is both where the XP was earned and where the
-    /// card is posted: a voice channel carries its own text chat, and that is the
-    /// conversation the people who earned it are actually looking at.
+    /// <paramref name="voiceChannelId"/> is where the XP was earned. The card goes to the
+    /// level-up channel like every other (BotsChannel.ResolveLevelUpAsync: /config
+    /// levelup-channel, else the bots channel, else the game channel); the voice channel's
+    /// own chat is only the fallback when none of those resolves (a fresh server), and the
+    /// system channel only when the voice channel itself can't be resolved.
     /// </summary>
     /// <remarks>
-    /// The system channel remains the fallback, for the case where the voice channel
-    /// cannot be resolved from the gateway cache. If it resolves but the bot may not
-    /// post in its chat, the send fails and is swallowed and logged like every other
+    /// If the bot may not post where the card lands, the send fails and is swallowed and logged like every other
     /// Discord side effect — the XP is already recorded either way, and a celebration
     /// is never worth breaking a grant over.
     /// </remarks>

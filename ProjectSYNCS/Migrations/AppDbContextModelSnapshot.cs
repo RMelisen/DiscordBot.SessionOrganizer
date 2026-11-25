@@ -656,6 +656,30 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("GuildExcludedChannels");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.GuildFeatureSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Feature")
+                        .IsUnique();
+
+                    b.ToTable("GuildFeatureSettings");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.GuildIdleChannel", b =>
                 {
                     b.Property<int>("Id")

@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Services;
 
 // The jealous spectator: she organises the game nights and can't play in them. When a voice
 // get-together of an hour or more ends (Helpers/Voice/VoiceStretch), she posts one line in that voice
-// channel's own text chat, at most once a day, home guild only. The pool follows what the channel
+// channel's own text chat, at most once a day per server, where the voice-spectator feature is on (home by default). The pool follows what the channel
 // is for (Helpers/Voice/VoiceRoom): a game night, a film, a study session or just talking.
 //
 // When she sat in the call herself (VoiceSeatService, muted and deafened), the room pools —
@@ -28,16 +28,19 @@ internal sealed class VoiceSpectatorService
     private readonly HerMessages _herMessages;
     private readonly ILogger<VoiceSpectatorService> _logger;
     private readonly SilenceService _silence;
+    private readonly GuildConfigService _config;
 
     // Guards both. The sweep is sequential today; the lock keeps it safe if that changes.
     private readonly object _gate = new();
     private readonly Dictionary<ulong, VoiceStretch> _stretches = new();
-    private int _lastLineDay;
+    // The once-a-day cap, per server: a line on one server costs another nothing.
+    private readonly Dictionary<ulong, int> _lastLineDay = new();
 
     public VoiceSpectatorService(
         XpTracker xp, BreakdownService breakdown, VoiceSeatService seat, HerMessages herMessages,
-        ILogger<VoiceSpectatorService> logger, SilenceService silence)
+        ILogger<VoiceSpectatorService> logger, SilenceService silence, GuildConfigService config)
     {
+        _config = config;
         _silence = silence;
         _xp = xp;
         _breakdown = breakdown;
@@ -53,7 +56,8 @@ internal sealed class VoiceSpectatorService
     /// </summary>
     public async Task ObserveAsync(SocketVoiceChannel channel, int active, int humans, TimeSpan tick)
     {
-        if (channel.Guild.Id != HomeGuild.Id) return;
+        // A feature a server switches on (/config feature voice-spectator); on at home by default.
+        if (!(await _config.GetAsync(channel.Guild.Id)).IsOn(ServerFeatures.VoiceSpectator, channel.Guild.Id)) return;
 
         TimeSpan? ended;
         lock (_gate)
@@ -70,7 +74,7 @@ internal sealed class VoiceSpectatorService
 
         var today = AppTime.DayKey(DateTimeOffset.UtcNow);
         lock (_gate)
-            if (_lastLineDay == today) return;
+            if (_lastLineDay.TryGetValue(channel.Guild.Id, out var last) && last == today) return;
 
         if (_breakdown.IsActive(channel.Id)) return;
         // Same exclusions as voice XP: a channel the server keeps out of everything stays out.
@@ -91,12 +95,12 @@ internal sealed class VoiceSpectatorService
             DailyRotation.Pick(pool, AppTime.DayNumber(DateTimeOffset.UtcNow), SpectatorSalt + (seated ? SeatedSalt : (ulong)room)),
             LevelCardUi.Duration((long)together.TotalMinutes));
         // A voice channel carries its own text chat: the line lands where the session was.
-        if (_silence.IsSilent) return;
+        if (_silence.IsSilent(channel.Guild.Id)) return;
         var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "voice spectator line", AllowedMentions.None);
         if (sent is null) return;
         _herMessages.Remember(sent, ReplyContext.Lonely);
 
-        lock (_gate) _lastLineDay = today;
+        lock (_gate) _lastLineDay[channel.Guild.Id] = today;
         _logger.LogInformation("Spectator: {Minutes:0} min together in {ChannelId} ({Room}, seated: {Seated}), line posted.", together.TotalMinutes, channel.Id, room, seated);
     }
 }

@@ -83,7 +83,6 @@ public sealed class SteamFreeGamesService : BackgroundService
 
     private async Task TickAsync(CancellationToken ct)
     {
-        if (_silence.IsSilent) return;
 
         var channels = await ResolveChannelsAsync();
         if (channels.Count == 0) return;
@@ -128,7 +127,7 @@ public sealed class SteamFreeGamesService : BackgroundService
         foreach (var guild in _client.Guilds)
         {
             var config = await _config.GetAsync(guild.Id);
-            if (config.FreeGamesChannelId != 0 && guild.GetTextChannel(config.FreeGamesChannelId) is { } channel)
+            if (config.FreeGamesChannelId != 0 && !_silence.IsSilent(guild.Id) && guild.GetTextChannel(config.FreeGamesChannelId) is { } channel)
                 channels.Add(channel);
         }
         return channels;

@@ -12,10 +12,11 @@ namespace ProjectSYNCS.Services;
 // - Whoever joins gets WelcomeLines, a real ping narrowed to them (root CLAUDE.md, mentions),
 //   whether or not they were here before.
 // - Past MaxPerHour welcomes in an hour (a raid, an invite wave), one WelcomeRushLines line,
-//   then silence until the hour has rolled on.
+//   then silence until the hour has rolled on. Counted per server.
 // - A bot gets no welcome there; as far as we know Discord posts no join line for one added
 //   through OAuth, so BotService feeds UserJoined here too, and a new bot gets RivalJoinLines in
-//   her main channel (home guild only).
+//   her main channel (where one is set; the home server has a default).
+// - Both are the welcome feature (/config feature), on everywhere unless staff turn it off.
 //
 // A singleton: the hourly window is in-memory, and resets on restart by design.
 internal sealed class WelcomeService
@@ -30,9 +31,15 @@ internal sealed class WelcomeService
     private readonly ILogger<WelcomeService> _logger;
     private readonly SilenceService _silence;
 
+    // Per server: a raid on one must not mute the welcomes of another.
+    private sealed class Rush
+    {
+        public readonly Queue<DateTimeOffset> Recent = new();
+        public DateTimeOffset LineAt = DateTimeOffset.MinValue;
+    }
+
     private readonly object _gate = new();
-    private readonly Queue<DateTimeOffset> _recent = new();
-    private DateTimeOffset _rushLineAt = DateTimeOffset.MinValue;
+    private readonly Dictionary<ulong, Rush> _rush = new();
 
     public WelcomeService(
         GuildConfigService config, ResponsePicker picker,
@@ -53,16 +60,19 @@ internal sealed class WelcomeService
         if (joined.Channel is not SocketTextChannel channel) return;
         if (joined.Author.IsBot) return;
         if (_breakdown.IsActive(channel.Id)) return;
+        if (!(await _config.GetAsync(channel.Guild.Id)).IsOn(ServerFeatures.Welcome, channel.Guild.Id)) return;
 
         var now = DateTimeOffset.UtcNow;
         bool welcome, rush;
         lock (_gate)
         {
-            while (_recent.Count > 0 && now - _recent.Peek() >= Window) _recent.Dequeue();
-            welcome = _recent.Count < MaxPerHour;
-            rush = !welcome && now - _rushLineAt >= Window;
-            if (welcome) _recent.Enqueue(now);
-            if (rush) _rushLineAt = now;
+            if (!_rush.TryGetValue(channel.Guild.Id, out var state))
+                _rush[channel.Guild.Id] = state = new Rush();
+            while (state.Recent.Count > 0 && now - state.Recent.Peek() >= Window) state.Recent.Dequeue();
+            welcome = state.Recent.Count < MaxPerHour;
+            rush = !welcome && now - state.LineAt >= Window;
+            if (welcome) state.Recent.Enqueue(now);
+            if (rush) state.LineAt = now;
         }
 
         var reference = new MessageReference(joined.Id, channel.Id, channel.Guild.Id);
@@ -84,12 +94,12 @@ internal sealed class WelcomeService
     /// <summary>A member joined: only a bot is handled here (see the class comment).</summary>
     public async Task HandleUserJoinedAsync(SocketGuildUser user)
     {
-        if (!user.IsBot || user.Id == user.Guild.CurrentUser?.Id || _silence.IsSilent) return;
-        if (user.Guild.Id != HomeGuild.Id) return;
-
+        if (!user.IsBot || user.Id == user.Guild.CurrentUser?.Id || _silence.IsSilent(user.Guild.Id)) return;
         try
         {
-            var channelId = await MorningGreetingService.MainChannelIdAsync(_config);
+            var config = await _config.GetAsync(user.Guild.Id);
+            if (!config.IsOn(ServerFeatures.Welcome, user.Guild.Id)) return;
+            var channelId = MorningGreetingService.MainChannelOf(config, user.Guild.Id);
             if (user.Guild.GetTextChannel(channelId) is not { } channel) return;
             if (_breakdown.IsActive(channel.Id)) return;
 

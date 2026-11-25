@@ -178,7 +178,10 @@ single-step drops.
 
 **Every level-up card, voice included, goes to the level-up channel** (`BotsChannel.ResolveLevelUpAsync`:
 `/config levelup-channel`, else the bots channel), not to where the XP was earned; the earning channel is only the fallback
-if the bots channel doesn't resolve.
+if the bots channel doesn't resolve. On a fresh server (nothing configured, no home default there) that
+means a voice level-up lands in the voice channel's own chat, and the server's system channel only when
+the voice channel can't be resolved; `/config show`'s health check flags a server with no level-up
+destination.
 
 ## Shared ranking vocabulary — `/emotestats`, `/goodbot`, `/leaderboard`, `/shame`
 

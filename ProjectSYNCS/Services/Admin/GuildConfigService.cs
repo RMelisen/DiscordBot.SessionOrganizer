@@ -31,11 +31,16 @@ public sealed record GuildConfig(
     ulong BotsChannelId,
     ulong LevelUpChannelId,
     ulong ConfessChannelId,
-    ulong FreeGamesChannelId)
+    ulong FreeGamesChannelId,
+    IReadOnlyDictionary<string, bool> Features)
 {
+    /// <summary>Whether a feature is on here: staff's choice, else its default (ServerFeatures).</summary>
+    public bool IsOn(string feature, ulong guildId) => ServerFeatures.IsOn(Features, feature, guildId);
+
     /// <summary>What an unconfigured guild looks like — nothing set, nothing added.</summary>
     public static readonly GuildConfig Empty = new(0, 0, 0,
-        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0, 0, 0, 0, 0, 0, 0);
+        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0, 0, 0, 0, 0, 0, 0,
+        new Dictionary<string, bool>());
 }
 
 // Per-guild settings an admin can change at runtime, and the cache that makes them
@@ -104,6 +109,9 @@ public sealed class GuildConfigService
                 .Where(v => v.GuildId == guildId)
                 .Select(v => v.UserId)
                 .ToListAsync();
+            var features = await db.GuildFeatureSettings
+                .Where(f => f.GuildId == guildId)
+                .ToDictionaryAsync(f => f.Feature, f => f.Enabled);
 
             loaded = new GuildConfig(
                 settings?.ModeratorRoleId ?? 0,
@@ -117,7 +125,8 @@ public sealed class GuildConfigService
                 settings?.BotsChannelId ?? 0,
                 settings?.LevelUpChannelId ?? 0,
                 settings?.ConfessChannelId ?? 0,
-                settings?.FreeGamesChannelId ?? 0);
+                settings?.FreeGamesChannelId ?? 0,
+                features);
         }
         catch (Exception ex)
         {
@@ -177,6 +186,23 @@ public sealed class GuildConfigService
     public Task<bool> RemoveShameVoterAsync(ulong guildId, ulong userId) =>
         RemoveRowAsync(guildId, db => db.GuildShameVoters,
             v => v.GuildId == guildId && v.UserId == userId);
+
+    /// <summary>Switches a feature on or off here (a ServerFeatures key). The row is kept even when it
+    /// matches the default: staff chose, and a later change of default must not undo the choice.</summary>
+    public async Task SetFeatureAsync(ulong guildId, string feature, bool enabled)
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var row = await db.GuildFeatureSettings.FirstOrDefaultAsync(f => f.GuildId == guildId && f.Feature == feature);
+        if (row is null)
+            db.GuildFeatureSettings.Add(new GuildFeatureSetting { GuildId = guildId, Feature = feature, Enabled = enabled });
+        else
+            row.Enabled = enabled;
+        await db.SaveChangesAsync();
+
+        Invalidate(guildId);
+    }
 
     /// <summary>
     /// Sets the moderator role, or clears it with <paramref name="roleId"/> of zero.

@@ -68,7 +68,7 @@ public static class StaffHelpCards
                 "**`react`** — Me fait réagir à un message avec l'émoji de ton choix, par son lien (ou retirer ma réaction).\n" +
                 "**`sticker`** — Poste ici une de mes images, au choix de l'humeur.")
             .AddField("Mon comportement",
-                "**`silence`** — Je ne parle plus que pour répondre aux commandes et aux boutons. Les rappels, " +
+                "**`silence`** — Sur un serveur (celui-ci, ou `server`), je ne parle plus que pour répondre aux commandes et aux boutons. Les rappels, " +
                 "récaps et tirages programmés partent quand même. Tient après un redémarrage.\n" +
                 "**`absent`** — Quand on te mentionne, je réponds que tu n'es pas disponible et je te transmets le message. " +
                 "S'efface au redémarrage.\n" +

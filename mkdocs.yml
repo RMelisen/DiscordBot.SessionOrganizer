@@ -98,5 +98,7 @@ nav:
       - L'arcade: arcade.md
       - Petites commandes: amusement.md
       - Minecraft: minecraft.md
-  - Staff: staff.md
+  - Staff:
+      - Le staff: staff.md
+      - Inviter SYNCS sur ton serveur: inviter.md
   - Questions fréquentes: faq.md

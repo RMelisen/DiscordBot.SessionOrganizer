@@ -273,7 +273,7 @@ internal sealed partial class ChatterService
             {
                 var pool = BotResponses.BackbiteRoasts;
                 // Same double weight as the reply path's roast.
-                if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
+                if (BotResponses.PersonalComebacksFor(message.Author.Id, GuildIdOf(message)) is { } personal)
                     pool = pool.Concat(personal).Concat(personal).ToArray();
                 pick = IntentPick.Of(pool, AnswerKinds.Backbite);
             }
@@ -491,7 +491,7 @@ internal sealed partial class ChatterService
         if (Random.Shared.NextDouble() < BreakdownChance && _breakdown.TryBegin(message.Channel.Id))
         {
             _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
-            var realName = BotResponses.RealNameFor(message.Author.Id, name);
+            var realName = BotResponses.RealNameFor(message.Author.Id, GuildIdOf(message), name);
             Count(message, ChatPath.Mention, AnswerKinds.Breakdown);
             Award(message, MemberBadges.Keys.Breakdown);
             await _breakdown.PlayAsync(message, name, realName, intro: "Tu veux qu-");
@@ -587,7 +587,7 @@ internal sealed partial class ChatterService
             _logger.LogInformation("Easter egg triggered: consciousness breakdown.");
             // Intro uses the pseudo; the breakdown reveal uses the real name when known.
             // A kind message opens with a glitching thank-you instead of a roast.
-            var realName = BotResponses.RealNameFor(message.Author.Id, name);
+            var realName = BotResponses.RealNameFor(message.Author.Id, GuildIdOf(message), name);
             var intro = secretTrigger ? BotResponses.BreakdownIntroCake
                 : nice ? BotResponses.BreakdownIntroNice
                 : BotResponses.BreakdownIntroRoast;
@@ -727,7 +727,7 @@ internal sealed partial class ChatterService
         {
             var pool = BotResponses.Comebacks;
             // Fold in this person's custom lines twice, so each has double weight.
-            if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
+            if (BotResponses.PersonalComebacksFor(message.Author.Id, GuildIdOf(message)) is { } personal)
                 pool = pool.Concat(personal).Concat(personal).ToArray();
             await SendFallbackAsync(message, ChatPath.Reply, AnswerKinds.Comeback, pool, name, weekday, what);
             return;
@@ -837,4 +837,8 @@ internal sealed partial class ChatterService
     // BotResponses.FamilyNicknames) first, then server nickname, then global display
     // name, then username.
     private static string ResolveName(IUser user) => BotResponses.DisplayNameFor(user);
+
+    // The server a message came from, null in a DM: the home-only maps (real names,
+    // personal comebacks) are asked with it.
+    private static ulong? GuildIdOf(IMessage message) => (message.Channel as IGuildChannel)?.GuildId;
 }

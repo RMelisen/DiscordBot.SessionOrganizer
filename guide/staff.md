@@ -86,7 +86,9 @@ Quand ça ne marche pas, je dis pourquoi : il me manque la permission **Exclure 
 
 Mes réglages pour ce serveur. Toutes les réponses sont **visibles par toi uniquement**. Un serveur que personne n'a configuré fonctionne normalement, avec mes valeurs par défaut.
 
-**`/config show`** — Toute la configuration actuelle, en une carte.
+**`/config setup`** — La mise en place, étape par étape : les salons où je poste, les salons en option (quiz, confessions, jeux gratuits), les rôles, le salon principal et ce que je fais de moi-même ici, puis un bilan. Chaque choix est enregistré tout de suite ; laisser un salon vide l'éteint (ou revient au salon par défaut). Tu peux la relancer quand tu veux. Elle est faite pour un nouveau serveur : voir [Inviter SYNCS sur ton serveur](inviter.md).
+
+**`/config show`** — Toute la configuration actuelle, en une carte. Elle commence par l'**état** du serveur : pour chaque salon que j'utilise, ✅ si j'y peux tout ce qu'il faut, ⚠️ avec la permission qui manque sinon ; puis « Gérer les évènements », les rôles que je gère, et ce qui n'est pas encore réglé.
 
 ### Les salons où rien ne compte
 
@@ -97,7 +99,7 @@ Certains salons sont exclus d'office (le spam, entre autres). Tu peux en **ajout
 
 ### Les salons calmes
 
-Avant de parler dans le vide, j'attends que ces salons se taisent tous. Serveur principal uniquement.
+Avant de parler dans le vide, j'attends que ces salons se taisent tous (le salon principal compte toujours). Ça ne sert que si ma vie ambiante est allumée ici.
 
 - **`/config idle-channels add`** — ajoute le salon `channel` à surveiller.
 - **`/config idle-channels remove`** — retire un salon `channel` ajouté ici.
@@ -120,10 +122,19 @@ Chaque salon a son `set` (option `channel`) et son `clear`. Je refuse un salon o
 | `/config game-channel set` · `/config game-channel clear` | les annonces Plynling (morts, retours, histoires) | le salon de jeu par défaut |
 | `/config bots-channel set` · `/config bots-channel clear` | ce qui compte peu : Quokka, mes annonces sans importance | le salon des bots par défaut, sinon le salon de jeu |
 | `/config levelup-channel set` · `/config levelup-channel clear` | les cartes de passage de niveau | le salon des bots |
-| `/config main-channel set` · `/config main-channel clear` | mon bonjour du matin, ma vie la nuit (serveur principal uniquement) | le salon principal par défaut |
+| `/config main-channel set` · `/config main-channel clear` | mon bonjour du matin, ma vie ambiante, le sondage du week-end | le salon principal par défaut sur le serveur d'origine, **aucun** ailleurs |
 | `/config quiz-channel set` · `/config quiz-channel clear` | le [quiz](quiz.md) | **pas de quiz** : `clear` l'arrête |
 | `/config confess-channel set` · `/config confess-channel clear` | les confessions anonymes | **`/confess` fermé** |
 | `/config freegames-channel set` · `/config freegames-channel clear` | les jeux Steam gratuits à garder | pas d'annonce |
+
+### Ce que je fais de moi-même
+
+Mon bonjour du matin, ma vie ambiante, le sondage du week-end, les visites de Quokka, mes mots de spectatrice en vocal et l'accueil des nouveaux. Sur le serveur d'origine, tout est allumé ; ailleurs, seul l'accueil l'est, le reste attend qu'on me le demande (le détail : [Inviter SYNCS sur ton serveur](inviter.md#ce-que-je-fais-de-moi-meme)).
+
+- **`/config feature enable`** — allume la fonctionnalité `feature` ici.
+- **`/config feature disable`** — l'éteint.
+
+`/config show` dit ce qui est allumé, et prévient s'il manque le salon principal.
 
 ### Les rôles que je gère
 

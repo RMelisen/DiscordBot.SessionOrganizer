@@ -93,7 +93,7 @@ internal sealed class RivalryService
 
         RecordAction(message.Channel.Id, message.Id, message.Author.Id);
         // Silence mode: still on record (verdict attribution needs it), but no reaction, no line.
-        if (_silence.IsSilent) return;
+        if (_silence.IsSilentIn(message.Channel)) return;
 
         // Two independent rolls against two independent gates. Each claims its own
         // only after winning its own roll, so a losing roll never burns the other's
@@ -130,7 +130,7 @@ internal sealed class RivalryService
         // Praising a rival in front of her is the secret, humans only.
         if (!praise.Author.IsBot && praise.Channel is SocketGuildChannel praiseChannel)
             _badges.Award(praiseChannel.Guild.Id, praise.Author.Id, MemberBadges.Keys.Traitor);
-        if (_silence.IsSilent) return;
+        if (_silence.IsSilentIn(praise.Channel)) return;
 
         // No cooldown and no roll: this is the moment the whole thing exists for. Her
         // creator doing it is a different injury from anyone else doing it — everyone

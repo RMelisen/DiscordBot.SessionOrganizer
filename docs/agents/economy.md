@@ -65,8 +65,8 @@ after each purchase; a failed load answers « no » and retries on the next mess
 is `ShameService.ForgiveOneAsync` (see `shame.md`), run with `ExecuteUpdate` inside the bribe's
 transaction, so each bribe is `BeginTransaction` … `SaveChanges` … `Commit` inside `EconomySave`.
 
-**`/shoutout bid amount` and `/shoutout status`** (`ShoutoutService`, `ShoutoutModule`, home guild only:
-the hello is only said there): an auction for a dedication in the morning hello. `Shoutouts.OpenDay`:
+**`/shoutout bid amount` and `/shoutout status`** (`ShoutoutService`, `ShoutoutModule`, only where the
+`morning` feature is on — `ShoutoutModule.NoHello` refuses elsewhere): an auction for a dedication in the morning hello. `Shoutouts.OpenDay`:
 before 20:00 Paris a bid is for tomorrow, from 20:00 for the day after. Opening 50, each raise +10,
 so no ties. One `ShoutoutBid` row per (guild, day), overwritten by each new leader; `Amount` is a
 concurrency token, so two racing bids re-check. **The bid is held, not spent**: debited at once (the
