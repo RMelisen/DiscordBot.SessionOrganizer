@@ -136,6 +136,24 @@ public static class CosmeticCatalog
         _ => "Cadre de tombe",
     };
 
+    // A slot's place in SlotOrder, for sorting lists by slot.
+    public static int SlotRank(CosmeticSlot slot)
+    {
+        for (var i = 0; i < SlotOrder.Count; i++)
+            if (SlotOrder[i] == slot) return i;
+        return SlotOrder.Count;
+    }
+
+    // What a slot is, in a few words: the Garde-robe's caption after the slot's name.
+    public static string SlotBlurb(CosmeticSlot slot) => slot switch
+    {
+        CosmeticSlot.Theme => "la couleur et la bannière de sa carte",
+        CosmeticSlot.Title => "un surnom affiché au-dessus de son nom",
+        CosmeticSlot.Accessory => "jusqu'à trois à la fois, dessinés sur son portrait",
+        CosmeticSlot.Aura => "un effet animé autour de son portrait",
+        _ => "orne sa tombe, le jour venu",
+    };
+
     public static string TitleFor(CosmeticInfo title, PlynlingGender gender) =>
         gender == PlynlingGender.Female && title.NameF is { } f ? f : title.Name;
 

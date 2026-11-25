@@ -52,6 +52,15 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         var now = DateTimeOffset.UtcNow;
         await DeferAsync();
 
+        // « ◀ » / « ▶ » on a long select: only the page turns. The recipes' last segment says which
+        // of their two selects; every other tab has one list select here.
+        var select = tab == CosmeticTab.Craft && int.TryParse(weekStr, out var index) ? index : 0;
+        if (CosmeticCards.PageTurn(tab, select, value) is { } paged)
+        {
+            await RedrawAsync(paged, null);
+            return;
+        }
+
         switch (tab)
         {
             case CosmeticTab.Wardrobe:
@@ -66,8 +75,8 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
         }
     }
 
-    // The second and third accessories' selects (cosm:pick2:{i}, cosm:pick3:{i}, i numbering the
-    // selects; CosmeticCards.AccessoryPickerIds): the same pick, into that slot. « Aucun » takes it off.
+    // The second and third accessories' selects (cosm:pick2:0, cosm:pick3:0; CosmeticCards.AccessoryPickerIds):
+    // the same pick, into that slot. « Aucun » takes it off.
     [ComponentInteraction("cosm:pick2:*", ignoreGroupNames: true)]
     public Task OnPickSecondAsync(string indexStr, string[] selected) => AccessoryPickAsync(1, selected);
 
@@ -78,6 +87,11 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
     {
         var value = selected.FirstOrDefault() ?? "";
         await DeferAsync();
+        if (CosmeticCards.PageTurn(CosmeticTab.Wardrobe, picker, value) is { } paged)
+        {
+            await RedrawAsync(paged, null);
+            return;
+        }
         await WardrobePickAsync(value, picker, DateTimeOffset.UtcNow);
     }
 

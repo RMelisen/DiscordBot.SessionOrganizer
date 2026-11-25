@@ -304,7 +304,8 @@ they work in any server), and **the bot uploads them itself**.
 - **`ApplicationEmojiService`**, on the first Ready, lists the application's emojis, uploads any
   missing sprite (from both folders via `ItemEmojis.Sources`), and records the markup in the static
   `ItemEmojis` map. Names: mushrooms `shroom_<slug>`, the rest `ItemEmojis.EmojiName`'s short
-  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr2_`, `b_`) — Discord caps names at 32 chars. Each
+  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr2_`, `b_`, and `ui_` for interface marks,
+  `Helpers/Core/UiIcons`) — Discord caps names at 32 chars. Each
   application (dev, prod) gets its own copy with no manual step.
 - **An existing emoji is reused by name, never replaced** — to change a picture, delete the emoji in
   the developer portal and restart. To redraw a few icons, add their keys to `ItemEmojis.Revisions`
@@ -315,7 +316,7 @@ they work in any server), and **the bot uploads them itself**.
   application emoji named with one of the bot's prefixes (today's, `shroom_`, or retired) that no
   shipped sprite claims — earlier revisions, old family prefixes, retired items. A name outside
   those prefixes is never touched, so **don't upload a hand-made application emoji whose name
-  starts with one** (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr_`, `tr2_`, `b_`, `shroom_`).
+  starts with one** (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr_`, `tr2_`, `b_`, `ui_`, `shroom_`).
   Nothing is deleted when a sprite folder is missing or yields no sprite, so a broken publish can't
   wipe the list. Messages already posted with a deleted emoji show its `:name:` instead.
 - **Emoji properties are computed**: `ItemInfo.Emoji`, `CollectionSet.Emoji`, `CosmeticInfo.Emoji`,
@@ -378,8 +379,8 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   (read them through `CosmeticSlots.Accessories` or `Outfit.Items`). The card line reads « Porte A, B
   et C ». A new accessory needs a category in `AccessoryFit.Category`. **A fourth slot** is a column
   pair, `MaxWorn`, one entry in `AccessoryPickerIds` (and a handler verb) and `PlynlingLook` — but the
-  Garde-robe's worst case is already 37 of 40 components (section 59 prints it): it would need the
-  pickers on their own view first.
+  Garde-robe's worst case is already 39 of 40 components (section 59 prints it; the gaps between
+  pickers cost two): it would need the pickers on their own view first.
 - **Accessory styles** (`AccessoryStyles`): some accessories have one or two choices — a colour (nœud,
   fleur, écharpe, casquette, ballon, moufles), a place at the neck (écharpe, collier, médaillon), and
   the **side** of the sided ones (« Côté » for nœud and fleur, « Main » for held items). A side is a
@@ -443,9 +444,14 @@ redraws in place.
   the card: it is not a purchase.
 - **Custom-ids use the `cosm:` prefix**, one verb per control: `cosm:tab:{tab}`, `cosm:slot:{slot}`,
   `cosm:pick:{tab}:{week}` (the shop's select; the wardrobe's « Aucun » is `none:{slot}`). **A select
-  holds 25 options**: the Fabrication tab has one select per group (`:0` Ouvrages, `:1` Chefs-d'œuvre)
-  and a wardrobe slot splits « Aucun » + what is owned into selects of 25 (`:0`, `:1`, … — titles and
-  cadres pass 25); the handler reads that segment only on the shop. Checks section 59 measures it with everything owned.
+  holds 25 options, so every list select pages** (`Helpers/Core/SelectPages`): past 25, pages of 23
+  with « ◀ » / « ▶ » options valued `page:{page}:{slot}:{picked}` (`CosmeticCards.PageTurn`), one
+  select whatever the count — a split would cost 2 components a select, and the Garde-robe has none
+  to spare. A select opens on the page of its default option; `CosmeticView.PagedSelect` says which
+  select's page was turned. The Fabrication tab keeps one select per group (`:0` Ouvrages, `:1`
+  Chefs-d'œuvre; the handler reads that segment for a page turn); wardrobe ids end in `:0`. The shop
+  (per section) and the recipes (per group) list by `CosmeticCatalog.SlotRank`. Checks section 59
+  measures it with everything owned and walks a paged select.
   `cosm:buy`/`cosm:buyw:{week}:{key}`, `cosm:make`/`cosm:makew:{key}`, `cosm:wear:{tab}:{key}`,
   `cosm:back:{tab}`, `cosm:pick2:{i}` and `cosm:pick3:{i}` (the second and third accessory pickers), `cosm:style:{choice}:{key}` (the worn accessory's colour, place or side, on the Accessoire
   slot; refused if that accessory is no longer worn). The view (tab, slot, picked key) lives only in the

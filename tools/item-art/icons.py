@@ -3336,3 +3336,23 @@ MEMBER_SECRETS = (("night_owl", "Oiseau de nuit", "🌙"), ("breakdown", "Point 
 for kind, group, badges in (("moment", "badges_moments", MEMBER_MOMENTS), ("secret", "badges_secrets", MEMBER_SECRETS)):
     for badge_key, name, emoji in badges:
         icon(group, f"badge.{badge_key}", name, emoji, *shield(kind, *outlined(*MEMBER_BADGE_SUBJECTS[badge_key])))
+
+# ---- Interface ---------------------------------------------------------------------------------
+# Marks the screens print inline (ui.<key>, Helpers/Core/UiIcons), not items. The check is drawn
+# small inside its frame on purpose: ✅ fills the whole 22 px and shouts beside a price.
+
+icon("ui", "ui.check", "Coche", "✅", *outlined(
+     "..............",
+     "..............",
+     "..............",
+     "..............",
+     "..........Yl..",
+     ".........lL...",
+     "..lL....lL....",
+     "...lL..lL.....",
+     "....lLlL......",
+     ".....LL.......",
+     "..............",
+     "..............",
+     "..............",
+     ".............."))

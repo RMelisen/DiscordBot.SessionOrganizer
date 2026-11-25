@@ -9,9 +9,11 @@ namespace ProjectSYNCS.Commands;
 public enum CosmeticTab { Wardrobe, Shop, Craft }
 
 // Where the screen stands: its tab, the wardrobe's slot, and the item picked in the shop or the
-// recipes — tried on in the preview, nothing bought. All of it rides in the custom-ids, so a
-// restart loses nothing.
-public sealed record CosmeticView(CosmeticTab Tab, CosmeticSlot Slot = CosmeticSlot.Theme, string? Picked = null);
+// recipes — tried on in the preview, nothing bought — and, after a page turn, which of the tab's
+// selects (PagedSelect, by its order on the tab; -1 none) shows which page. All of it rides in the
+// custom-ids and option values, so a restart loses nothing.
+public sealed record CosmeticView(CosmeticTab Tab, CosmeticSlot Slot = CosmeticSlot.Theme, string? Picked = null,
+    int PagedSelect = -1, int Page = 0);
 
 // What the screen is drawn from: the person's living Plynling (null without one), everything they
 // hold by key, their cailloux, and what the card's heading shows besides the Plynling.
@@ -28,17 +30,52 @@ public sealed record CosmeticScreenData(
 // Static and Context-free, so the checks measure it.
 //
 // One verb per control, so no id repeats on a message: cosm:tab:{tab}, cosm:slot:{slot},
-// cosm:pick:{tab}:{week} (the shop's select; the wardrobe and the recipes number theirs instead, as a
-// slot or the recipes need more than one; « Aucun » is none:{slot}), cosm:buy:{week}:{key},
+// cosm:pick:{tab}:{week} (the shop's select; the wardrobe's ends in 0, the recipes' two in 0 and 1;
+// « Aucun » is none:{slot}), cosm:buy:{week}:{key},
 // cosm:buyw:{week}:{key}, cosm:make:{key}, cosm:makew:{key}, cosm:wear:{tab}:{key}, cosm:back:{tab},
 // cosm:style:{choice}:{key} (the worn accessory's colour or position).
 // The prefix is new (the old screens used cos:), so no handler here answers an old screen's select.
+// Every list select is paged (SelectPages): past 25 options its « ◀ » / « ▶ » options turn the page
+// (value page:{page}:{slot}:{picked}, read by PageTurn), so a select never splits in two.
 public static class CosmeticCards
 {
     public const string NonePrefix = "none:";
+    public const string PagePrefix = "page:";
 
-    // Discord's cap on a select's options.
-    private const int MaxOptions = 25;
+    // The air between the screen's blocks: a gap, no line.
+    private static SeparatorBuilder Gap() => new(false, SeparatorSpacingSize.Large);
+
+    // A page-turn option's value: the page, plus the slot and the try-on, which the redraw keeps.
+    private static string PageValue(CosmeticView view, int page) => $"{PagePrefix}{page}:{view.Slot}:{view.Picked}";
+
+    /// <summary>The view a page-turn option asks for (select: its order on the tab); null for any other value.</summary>
+    public static CosmeticView? PageTurn(CosmeticTab tab, int select, string value)
+    {
+        if (!value.StartsWith(PagePrefix, StringComparison.Ordinal)) return null;
+        var parts = value[PagePrefix.Length..].Split(':', 3);
+        if (parts.Length < 2 || !int.TryParse(parts[0], out var page) || !Enum.TryParse<CosmeticSlot>(parts[1], out var slot))
+            return new CosmeticView(tab);
+        return new CosmeticView(tab, slot, parts.Length > 2 && parts[2].Length > 0 ? parts[2] : null, select, page);
+    }
+
+    // A list select on one page or several (SelectPages): it opens on the page holding its default
+    // option, unless this select (index: its order on the tab) is the one whose page was turned.
+    private static SelectMenuBuilder Paged(string customId, string placeholder, List<SelectMenuOptionBuilder> options, CosmeticView view, int index)
+    {
+        var pages = SelectPages.Count(options.Count);
+        var page = SelectPages.Clamp(view.PagedSelect == index ? view.Page
+            : SelectPages.PageOf(options.FindIndex(o => o.IsDefault == true), options.Count), options.Count);
+        var (start, length) = SelectPages.Range(page, options.Count);
+        var shown = options.GetRange(start, length);
+        if (page > 0)
+            shown.Insert(0, new SelectMenuOptionBuilder("◀ Page précédente", PageValue(view, page - 1), $"Page {page} sur {pages}"));
+        if (page < pages - 1)
+            shown.Add(new SelectMenuOptionBuilder("Page suivante ▶", PageValue(view, page + 1), $"Page {page + 2} sur {pages}"));
+        return new SelectMenuBuilder()
+            .WithCustomId(customId)
+            .WithPlaceholder(pages > 1 ? $"{placeholder} (page {page + 1}/{pages})" : placeholder)
+            .WithOptions(shown);
+    }
 
     // The notice when « Aucun » takes a slot off, agreeing with the slot's label (« Aura » is feminine).
     public static string TakenOff(CosmeticSlot slot) =>
@@ -76,9 +113,9 @@ public static class CosmeticCards
 
         switch (view.Tab)
         {
-            case CosmeticTab.Wardrobe: WardrobeBody(container, view.Slot, data); break;
-            case CosmeticTab.Shop: ShopBody(container, shop, picked, data, now); break;
-            default: CraftBody(container, picked, data); break;
+            case CosmeticTab.Wardrobe: WardrobeBody(container, view, data); break;
+            case CosmeticTab.Shop: ShopBody(container, view, shop, picked, data, now); break;
+            default: CraftBody(container, view, picked, data); break;
         }
 
         if (notice is not null)
@@ -118,8 +155,9 @@ public static class CosmeticCards
 
     // ---- the wardrobe --------------------------------------------------------------------------
 
-    private static void WardrobeBody(ContainerBuilder container, CosmeticSlot slot, CosmeticScreenData data)
+    private static void WardrobeBody(ContainerBuilder container, CosmeticView view, CosmeticScreenData data)
     {
+        var slot = view.Slot;
         if (data.Plynling is not { } p)
         {
             var lines = CosmeticCatalog.SlotOrder
@@ -141,20 +179,20 @@ public static class CosmeticCards
         var owned = CosmeticCatalog.InSlot(slot).Where(data.Owns).ToList();
         var outfit = Outfit.Of(p);
         var worn = outfit.In(slot);
+        var caption = $"**{CosmeticCatalog.SlotLabel(slot)}** · {CosmeticCatalog.SlotBlurb(slot)}";
         if (owned.Count == 0)
         {
             container.AddComponent(new TextDisplayBuilder(
-                $"Rien à toi dans « {CosmeticCatalog.SlotLabel(slot)} » pour l'instant : la **Boutique** et la **Fabrication** en ont."));
+                caption + "\nRien à toi ici pour l'instant : la **Boutique** et la **Fabrication** en ont."));
             return;
         }
 
-        container.AddComponent(new TextDisplayBuilder(
-            $"**{CosmeticCatalog.SlotLabel(slot)}** · {owned.Count} à toi. Choisis : c'est porté tout de suite."));
+        container.AddComponent(new TextDisplayBuilder(caption));
         // The accessory slot has one picker per accessory worn plus one for the next, each followed by
-        // its own style selects; every other slot one.
+        // its own style selects and set apart from the next by a gap; every other slot one.
         if (slot != CosmeticSlot.Accessory)
         {
-            Picker(container, owned, slot, worn, $"cosm:pick:{CosmeticTab.Wardrobe}", CosmeticCatalog.SlotLabel(slot), p);
+            Picker(container, owned, slot, worn, $"cosm:pick:{CosmeticTab.Wardrobe}", CosmeticCatalog.SlotLabel(slot), p, view, 0);
             return;
         }
         var items = outfit.Items;
@@ -162,7 +200,8 @@ public static class CosmeticCards
         {
             var item = i < items.Count ? items[i].Item : null;
             var style = i < items.Count ? items[i].Style : null;
-            Picker(container, owned, slot, item, AccessoryPickerIds[i], AccessoryPickerLabels[i], p);
+            if (i > 0) container.AddComponent(Gap());
+            Picker(container, owned, slot, item, AccessoryPickerIds[i], AccessoryPickerLabels[i], p, view, i);
             StyleSelects(container, item, style);
         }
     }
@@ -171,19 +210,15 @@ public static class CosmeticCards
     public static readonly string[] AccessoryPickerIds = [$"cosm:pick:{CosmeticTab.Wardrobe}", "cosm:pick2", "cosm:pick3"];
     private static readonly string[] AccessoryPickerLabels = ["Premier accessoire", "Deuxième accessoire", "Troisième accessoire"];
 
-    // « Aucun » then everything owned, 25 to a select (a slot can hold more than one select's worth:
-    // titles and cadres do). The last segment numbers the selects; the handler ignores it here.
+    // « Aucun » then everything owned, on one paged select (titles and cadres pass 25). The id's last
+    // segment is always 0 now; it stays so the handlers' patterns hold. index: the picker's order on the tab.
     private static void Picker(ContainerBuilder container, List<CosmeticInfo> owned, CosmeticSlot slot, CosmeticInfo? worn, string idPrefix,
-        string label, Plynling p)
+        string label, Plynling p, CosmeticView view, int index)
     {
         var options = owned.Select(c => new SelectMenuOptionBuilder(Shown(c, p), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key))
             .Prepend(new SelectMenuOptionBuilder("Aucun", NonePrefix + slot, isDefault: worn is null))
-            .Chunk(MaxOptions).ToList();
-        for (var i = 0; i < options.Count; i++)
-            container.AddComponent(new ActionRowBuilder().WithSelectMenu(new SelectMenuBuilder()
-                .WithCustomId($"{idPrefix}:{i}")
-                .WithPlaceholder($"{label}…" + (options.Count > 1 ? $" ({i + 1}/{options.Count})" : ""))
-                .WithOptions(options[i].ToList())));
+            .ToList();
+        container.AddComponent(new ActionRowBuilder().WithSelectMenu(Paged($"{idPrefix}:0", $"{label}…", options, view, index)));
     }
 
     // A worn accessory's styles: one select per choice (« Couleur », « Position », « Côté »), free, worn at once.
@@ -206,29 +241,44 @@ public static class CosmeticCards
 
     // ---- the shop ------------------------------------------------------------------------------
 
-    private static void ShopBody(ContainerBuilder container, IReadOnlyList<CosmeticInfo> shop, CosmeticInfo? picked, CosmeticScreenData data,
-        DateTimeOffset now)
+    // The shop's sections, in this order; each lists its items by slot (SlotOrder).
+    private static readonly (CosmeticSource Source, string Title)[] ShopSections =
+        [(CosmeticSource.Basic, "Toujours"), (CosmeticSource.Rotating, "Cette semaine"), (CosmeticSource.Seasonal, "De saison")];
+
+    private static void ShopBody(ContainerBuilder container, CosmeticView view, IReadOnlyList<CosmeticInfo> shop, CosmeticInfo? picked,
+        CosmeticScreenData data, DateTimeOffset now)
     {
+        var sections = ShopSections
+            .Select(s => (s.Title, Items: shop.Where(c => c.Source == s.Source).OrderBy(c => CosmeticCatalog.SlotRank(c.Slot)).ToList()))
+            .Where(s => s.Items.Count > 0)
+            .ToList();
+        // The section already says basique or de saison; only this week's items name their rarity.
         string Line(CosmeticInfo c) =>
-            $"{c.Emoji} {CosmeticCatalog.Label(c)} · {SourceLabel(c)} · {PebbleEconomy.Cailloux(c.Price)}" + (data.Owns(c) ? " ✅" : "");
-        string Section(string title, CosmeticSource source) =>
-            shop.Any(c => c.Source == source) ? $"\n**{title}**\n" + string.Join("\n", shop.Where(c => c.Source == source).Select(Line)) : "";
+            $"{c.Emoji} {CosmeticCatalog.Label(c)} · " + (c.Source == CosmeticSource.Rotating ? $"{ItemCatalog.RarityLabel(c.Rarity)} · " : "") +
+            PebbleEconomy.Cailloux(c.Price) + (data.Owns(c) ? $" {UiIcons.Check}" : "");
+        string Title(string title, List<CosmeticInfo> items) =>
+            items[0].Source == CosmeticSource.Seasonal ? $"{title} · {ItemCatalog.SeasonLabel(items[0].Season)}" : title;
 
         container.AddComponent(new TextDisplayBuilder(
-            $"Tu as **{PebbleEconomy.Cailloux(data.Balance)}** · nouvelle sélection <t:{CosmeticCatalog.NextRotation(now).ToUnixTimeSeconds()}:R>" +
-            Section("Toujours", CosmeticSource.Basic) + Section("Cette semaine", CosmeticSource.Rotating) + Section("De saison", CosmeticSource.Seasonal)));
+            $"Tu as **{PebbleEconomy.Cailloux(data.Balance)}** · nouvelle sélection <t:{CosmeticCatalog.NextRotation(now).ToUnixTimeSeconds()}:R>"));
+        foreach (var (title, items) in sections)
+        {
+            container.AddComponent(Gap());
+            container.AddComponent(new TextDisplayBuilder($"**{Title(title, items)}**\n" + string.Join("\n", items.Select(Line))));
+        }
 
         var week = CosmeticCatalog.WeekKey(now);
-        var menu = new SelectMenuBuilder()
-            .WithCustomId($"cosm:pick:{CosmeticTab.Shop}:{week}")
-            .WithPlaceholder(data.Plynling is null ? "Voir un article…" : "Essayer un article…");
-        foreach (var c in shop)
-            menu.AddOption($"{CosmeticCatalog.Label(c)} — {PebbleEconomy.Cailloux(c.Price)}", c.Key,
+        var options = sections.SelectMany(s => s.Items)
+            .Select(c => new SelectMenuOptionBuilder($"{CosmeticCatalog.Label(c)} — {PebbleEconomy.Cailloux(c.Price)}", c.Key,
                 $"{CosmeticCatalog.SlotLabel(c.Slot)} · {(data.Owns(c) ? "déjà à toi" : SourceLabel(c))}", EmoteMarkup.Parse(c.Emoji),
-                isDefault: c.Key == picked?.Key);
-        container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+                isDefault: c.Key == picked?.Key))
+            .ToList();
+        container.AddComponent(Gap());
+        container.AddComponent(new ActionRowBuilder().WithSelectMenu(Paged($"cosm:pick:{CosmeticTab.Shop}:{week}",
+            data.Plynling is null ? "Voir un article…" : "Essayer un article…", options, view, 0)));
 
         if (picked is null) return;
+        container.AddComponent(Gap());
         var owned = data.Owns(picked);
         var poor = data.Balance < picked.Price;
         container.AddComponent(new TextDisplayBuilder(
@@ -250,31 +300,38 @@ public static class CosmeticCards
 
     // ---- the recipes ---------------------------------------------------------------------------
 
-    private static void CraftBody(ContainerBuilder container, CosmeticInfo? picked, CosmeticScreenData data)
+    private static void CraftBody(ContainerBuilder container, CosmeticView view, CosmeticInfo? picked, CosmeticScreenData data)
     {
-        // « Ouvrages » (duplicates) first, then « Chefs-d'œuvre » (aimed hunts); the select follows the same order.
-        var recipes = CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted).OrderBy(c => c.Trophy).ToList();
+        // « Ouvrages » (duplicates) first, then « Chefs-d'œuvre » (aimed hunts), each by slot
+        // (SlotOrder); the selects follow the same order.
+        var recipes = CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted)
+            .OrderBy(c => c.Trophy).ThenBy(c => CosmeticCatalog.SlotRank(c.Slot)).ToList();
         string Group(bool trophy) => string.Join("\n", recipes.Where(c => c.Trophy == trophy)
-            .Select(c => $"{c.Emoji} {CosmeticCatalog.Label(c)} · {RecipeStatus(c, data)}"));
+            .Select(c => $"{c.Emoji} {CosmeticCatalog.Label(c)} · {RecipeStatus(c, data, mark: true)}"));
         container.AddComponent(new TextDisplayBuilder(
             "Transforme tes objets de collection en cosmétiques. Les objets utilisés disparaissent, " +
-            "mais restent découverts dans ton carnet. Envoie ton Plynling fouiller au bon endroit : `/plynling forage place:`.\n" +
-            $"**Ouvrages**\n{Group(false)}\n**Chefs-d'œuvre**\n{Group(true)}"));
+            "mais restent découverts dans ton carnet. Envoie ton Plynling fouiller au bon endroit : `/plynling forage place:`."));
+        container.AddComponent(Gap());
+        container.AddComponent(new TextDisplayBuilder($"**Ouvrages**\n{Group(false)}"));
+        container.AddComponent(Gap());
+        container.AddComponent(new TextDisplayBuilder($"**Chefs-d'œuvre**\n{Group(true)}"));
+        container.AddComponent(Gap());
 
-        // One select per group: together they hold more than a select's 25 options. The last segment
-        // tells them apart; the handler ignores it here.
+        // One select per group, each paged. The last segment tells them apart (the handler reads it
+        // only for a page turn), and is the select's index for the page.
         foreach (var trophy in new[] { false, true })
         {
-            var menu = new SelectMenuBuilder()
-                .WithCustomId($"cosm:pick:{CosmeticTab.Craft}:{(trophy ? 1 : 0)}")
-                .WithPlaceholder(trophy ? "Voir un chef-d'œuvre…" : "Voir un ouvrage…");
-            foreach (var c in recipes.Where(c => c.Trophy == trophy))
-                menu.AddOption(CosmeticCatalog.Label(c), c.Key, $"{CosmeticCatalog.SlotLabel(c.Slot)} · {RecipeStatus(c, data)}",
-                    EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == picked?.Key);
-            container.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
+            var index = trophy ? 1 : 0;
+            var options = recipes.Where(c => c.Trophy == trophy)
+                .Select(c => new SelectMenuOptionBuilder(CosmeticCatalog.Label(c), c.Key, $"{CosmeticCatalog.SlotLabel(c.Slot)} · {RecipeStatus(c, data, mark: false)}",
+                    EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == picked?.Key))
+                .ToList();
+            container.AddComponent(new ActionRowBuilder().WithSelectMenu(Paged($"cosm:pick:{CosmeticTab.Craft}:{index}",
+                trophy ? "Voir un chef-d'œuvre…" : "Voir un ouvrage…", options, view, index)));
         }
 
         if (picked is null) return;
+        container.AddComponent(Gap());
         var owned = data.Owns(picked);
         var missing = Missing(picked, data);
         var lines = picked.Recipe.Select(r =>
@@ -310,11 +367,14 @@ public static class CosmeticCards
         return missing;
     }
 
-    private static string RecipeStatus(CosmeticInfo c, CosmeticScreenData data)
+    // mark: the small check after « déjà à toi » / « prêt » — in text only, a select's description
+    // can't show a custom emoji.
+    private static string RecipeStatus(CosmeticInfo c, CosmeticScreenData data, bool mark)
     {
-        if (data.Owns(c)) return "déjà à toi ✅";
+        var check = mark ? $" {UiIcons.Check}" : "";
+        if (data.Owns(c)) return "déjà à toi" + check;
         var missing = Missing(c, data).Count;
-        return missing == 0 ? "prêt ✅" : $"il manque {missing} {(missing > 1 ? "choses" : "chose")}";
+        return missing == 0 ? "prêt" + check : $"il manque {missing} {(missing > 1 ? "choses" : "chose")}";
     }
 
     // ---- shared pieces -------------------------------------------------------------------------

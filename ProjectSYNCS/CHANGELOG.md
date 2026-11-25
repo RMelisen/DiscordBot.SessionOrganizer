@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.18.1 — 2026-11-25
+
+- Cosmetics screen: more room between blocks, and the shop and recipes are listed by type (thème, titre, accessoire, aura, cadre).
+- Wardrobe: each slot says in a few words what it does, and the accessory pickers are spaced apart.
+- A small green check replaces ✅ for what you own or can craft.
+- Long cosmetic lists page with « ◀ » / « ▶ » inside one dropdown instead of splitting into several.
+
 ## 8.18.0 — 2026-11-25
 
 - Ready for more than one server: home-only people and in-jokes stay on the home server, and `/shame`'s built-in voters only vote there.

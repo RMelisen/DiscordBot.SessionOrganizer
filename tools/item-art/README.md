@@ -24,6 +24,7 @@ the pack's colours) to match it.
   8 px per art pixel, at 22 px (Discord's inline emoji size) beside the Unicode it replaces and a
   mushroom. 16×16 icons are exported ×8 (128 px), traits and badges ×4 (88 px, an exact multiple of
   the 44 px the CDN serves inline emojis at).
+- Interface marks (`ui.<key>`, `UiIcons`): 16×16 like items, e.g. the small check drawn small on purpose.
 - `check.py` — grid shape, palette, a 1-pixel `#272736` outline wherever the drawing meets air,
   nothing on the frame's edge, and an exact ×8 (or ×4) export.
 - `overrides/<key>.png` — a hand-edited grid at the key's size that replaces its grid (same checks).

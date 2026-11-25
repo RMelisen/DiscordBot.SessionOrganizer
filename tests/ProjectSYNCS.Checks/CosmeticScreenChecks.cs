@@ -19,7 +19,10 @@ public static class CosmeticScreenChecks
     public static void Run(Action<string> fail)
     {
         _fail = fail;
+        // The small check as uploaded (custom markup, not ✅'s two characters), so the caps count it.
+        ItemEmojis.Set(UiIcons.CheckKey, ItemEmojis.Markup("ui_" + new string('x', 29), ulong.MaxValue));
         Caps();
+        Paging();
         TryOnWritesNothing();
         MissingNamesItems();
         WhereToFind();
@@ -45,7 +48,7 @@ public static class CosmeticScreenChecks
         var o = list.IndexOf("Ouvrages", StringComparison.Ordinal);
         var t = list.IndexOf("Chefs-d'œuvre", StringComparison.Ordinal);
         Expect(o >= 0 && t > o, "Fabrication: no « Ouvrages » then « Chefs-d'œuvre » groups");
-        Expect(list.Split('\n').Any(l => l.Contains(CosmeticCatalog.Label(ready)) && l.Contains("✅")), "Fabrication: a ready recipe has no ✅");
+        Expect(list.Split('\n').Any(l => l.Contains(CosmeticCatalog.Label(ready)) && l.Contains(UiIcons.Check)), "Fabrication: a ready recipe has no check");
 
         var collier = CosmeticCatalog.ByKey("cos.accessory.collier_coquillages")!;
         var view = string.Join("\n", Texts(CosmeticCards.Build(new CosmeticView(CosmeticTab.Craft, Picked: collier.Key),
@@ -204,6 +207,71 @@ public static class CosmeticScreenChecks
             }
         }
         Console.WriteLine($"cosmetics screen at worst: {worst} components");
+    }
+
+    // A list select past 25 options stays one select and pages: walking its « ▶ » options through
+    // PageTurn reaches every option exactly once, each page inside 25, and « ◀ » walks back. The
+    // pager's arithmetic holds at the edges. The shop and the recipes list in slot order.
+    private static void Paging()
+    {
+        Expect(SelectPages.Count(25) == 1 && SelectPages.Count(26) == 2 && SelectPages.Count(46) == 2 && SelectPages.Count(47) == 3,
+            "SelectPages.Count at the edges");
+        Expect(SelectPages.Range(1, 30) == (23, 7) && SelectPages.Range(5, 30) == (23, 7) && SelectPages.Range(0, 10) == (0, 10),
+            "SelectPages.Range at the edges");
+        Expect(SelectPages.PageOf(22, 30) == 0 && SelectPages.PageOf(23, 30) == 1 && SelectPages.PageOf(-1, 30) == 0, "SelectPages.PageOf");
+
+        var now = new DateTimeOffset(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
+        var held = ItemCatalog.All.ToDictionary(i => i.Key, _ => 9999);
+        var p = Fullest();
+        p.TitleKey = null;                                      // « Aucun » is the default: the walk starts on page 1
+        var data = new CosmeticScreenData(p, held, 0);
+        var titles = CosmeticCatalog.InSlot(CosmeticSlot.Title).Select(c => c.Key).Prepend(CosmeticCards.NonePrefix + CosmeticSlot.Title).ToList();
+        var seen = new List<string>();
+        var view = new CosmeticView(CosmeticTab.Wardrobe, CosmeticSlot.Title);
+        for (var guard = 0; guard < 10; guard++)
+        {
+            var selects = Selects(CosmeticCards.Build(view, data, now, null).Components)
+                .Where(s => s.CustomId.StartsWith("cosm:pick:Wardrobe:", StringComparison.Ordinal)).ToList();
+            Expect(selects.Count == 1 && selects[0].CustomId == "cosm:pick:Wardrobe:0", $"titles page {guard + 1}: {selects.Count} pickers");
+            if (selects.Count == 0) return;
+            var options = selects[0].Options;
+            Expect(options.Count <= 25, $"titles page {guard + 1}: {options.Count} options");
+            seen.AddRange(options.Select(o => o.Value).Where(v => !v.StartsWith(CosmeticCards.PagePrefix, StringComparison.Ordinal)));
+            if (guard > 0)
+            {
+                var back = options.FirstOrDefault(o => o.Label.StartsWith('◀'));
+                Expect(back is not null && CosmeticCards.PageTurn(CosmeticTab.Wardrobe, 0, back.Value)?.Page == guard - 1,
+                    $"titles page {guard + 1}: no « ◀ » back to page {guard}");
+            }
+            var next = options.FirstOrDefault(o => o.Label.EndsWith('▶'));
+            if (next is null) break;
+            var turned = CosmeticCards.PageTurn(CosmeticTab.Wardrobe, 0, next.Value);
+            Expect(turned is { Slot: CosmeticSlot.Title, PagedSelect: 0 } && turned.Page == guard + 1, $"titles page {guard + 1}: « ▶ » reads as {turned}");
+            if (turned is null) return;
+            view = turned;
+        }
+        Expect(seen.Count == titles.Count && seen.ToHashSet().SetEquals(titles), $"titles: the pages show {seen.Count} of {titles.Count}, or some twice");
+        Expect(CosmeticCards.PageTurn(CosmeticTab.Shop, 0, "cos.title.reveur") is null, "PageTurn read an item as a page turn");
+        Expect(CosmeticCards.PageTurn(CosmeticTab.Shop, 0, "page:1:Theme:cos.theme.prairie") is { Picked: "cos.theme.prairie", Page: 1 },
+            "PageTurn drops the try-on");
+
+        // The shop (each section) and the recipes (each group) list by slot.
+        var rank = (string key) => CosmeticCatalog.SlotRank(CosmeticCatalog.ByKey(key)!.Slot);
+        foreach (var month in new[] { 1, 4, 7, 10 })
+        {
+            var at = new DateTimeOffset(2026, month, 15, 12, 0, 0, TimeSpan.Zero);
+            var shopSelect = Selects(CosmeticCards.Build(new CosmeticView(CosmeticTab.Shop), data, at, null).Components).Single();
+            var keys = shopSelect.Options.Select(o => o.Value).Where(v => !v.StartsWith(CosmeticCards.PagePrefix, StringComparison.Ordinal)).ToList();
+            var sources = keys.Select(k => CosmeticCatalog.ByKey(k)!.Source).ToList();
+            var sorted = keys.Select((k, i) => (Source: sources[i], Rank: rank(k))).ToList();
+            Expect(sorted.SequenceEqual(sorted.OrderBy(x => x.Source switch { CosmeticSource.Basic => 0, CosmeticSource.Rotating => 1, _ => 2 }).ThenBy(x => x.Rank)),
+                $"shop ({month:00}): not by section then slot: " + string.Join(", ", keys));
+        }
+        foreach (var select in Selects(CosmeticCards.Build(new CosmeticView(CosmeticTab.Craft), data, now, null).Components))
+        {
+            var ranks = select.Options.Select(o => o.Value).Where(v => !v.StartsWith(CosmeticCards.PagePrefix, StringComparison.Ordinal)).Select(rank).ToList();
+            Expect(ranks.SequenceEqual(ranks.Order()), $"recipes select {select.CustomId}: not by slot");
+        }
     }
 
     private static IEnumerable<Discord.SelectMenuComponent> Selects(IEnumerable<Discord.IMessageComponent> components)

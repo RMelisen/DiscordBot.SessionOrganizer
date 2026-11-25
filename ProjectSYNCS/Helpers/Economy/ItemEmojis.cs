@@ -40,6 +40,7 @@ public static class ItemEmojis
     {
         ("col.", "c_"), ("set.", "s_"), ("cos.theme.", "th_"), ("cos.title.", "ti_"),
         ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("cos.aura.", "au_"), ("trait.", "tr2_"), ("badge.", "b_"),
+        ("ui.", "ui_"),
     };
 
     // Redrawing one picture gives it a revision instead: « _v2 » after its name, so the new picture
@@ -133,7 +134,8 @@ public static class ItemEmojis
         ItemCatalog.IsIconKey(key)
         || key.StartsWith("trait.", StringComparison.Ordinal) && PlynlingTraits.ByKey(key["trait.".Length..]) is not null
         || CollectionTiers.IsBadgeKey(key)
-        || MemberBadges.IsIconKey(key);
+        || MemberBadges.IsIconKey(key)
+        || UiIcons.IsIconKey(key);
 
     private static string[] PngsIn(string dir) => Directory.Exists(dir) ? Directory.GetFiles(dir, "*.png") : Array.Empty<string>();
 
