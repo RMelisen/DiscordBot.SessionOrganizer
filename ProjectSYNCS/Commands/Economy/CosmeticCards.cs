@@ -306,16 +306,24 @@ public static class CosmeticCards
         // (SlotOrder); the selects follow the same order.
         var recipes = CosmeticCatalog.All.Where(c => c.Source == CosmeticSource.Crafted)
             .OrderBy(c => c.Trophy).ThenBy(c => CosmeticCatalog.SlotRank(c.Slot)).ToList();
-        string Group(bool trophy) => string.Join("\n", recipes.Where(c => c.Trophy == trophy)
-            .Select(c => $"{c.Emoji} {CosmeticCatalog.Label(c)} · {RecipeStatus(c, data, mark: true)}"));
-        container.AddComponent(new TextDisplayBuilder(
-            "Transforme tes objets de collection en cosmétiques. Les objets utilisés disparaissent, " +
-            "mais restent découverts dans ton carnet. Envoie ton Plynling fouiller au bon endroit : `/plynling forage place:`."));
-        container.AddComponent(Gap());
-        container.AddComponent(new TextDisplayBuilder($"**Ouvrages**\n{Group(false)}"));
-        container.AddComponent(Gap());
-        container.AddComponent(new TextDisplayBuilder($"**Chefs-d'œuvre**\n{Group(true)}"));
-        container.AddComponent(Gap());
+        // The overview lists every recipe, so it stays short per line (a title in its masculine form,
+        // an owned one just ticked) and gives way to the picked recipe: 36 lines plus a recipe's view
+        // passed the 4 000 characters of a Components V2 message.
+        string Line(CosmeticInfo c) =>
+            $"{c.Emoji} {(c.Slot == CosmeticSlot.Title ? $"Titre « {c.Name} »" : CosmeticCatalog.Label(c))} · " +
+            (data.Owns(c) ? UiIcons.Check : RecipeStatus(c, data, mark: true));
+        string Group(bool trophy) => string.Join("\n", recipes.Where(c => c.Trophy == trophy).Select(Line));
+        if (picked is null)
+        {
+            container.AddComponent(new TextDisplayBuilder(
+                "Transforme tes objets de collection en cosmétiques. Les objets utilisés disparaissent, " +
+                "mais restent découverts dans ton carnet. Envoie ton Plynling fouiller au bon endroit : `/plynling forage place:`."));
+            container.AddComponent(Gap());
+            container.AddComponent(new TextDisplayBuilder($"**Ouvrages**\n{Group(false)}"));
+            container.AddComponent(Gap());
+            container.AddComponent(new TextDisplayBuilder($"**Chefs-d'œuvre**\n{Group(true)}"));
+            container.AddComponent(Gap());
+        }
 
         // One select per group, each paged. The last segment tells them apart (the handler reads it
         // only for a page turn), and is the select's index for the page.

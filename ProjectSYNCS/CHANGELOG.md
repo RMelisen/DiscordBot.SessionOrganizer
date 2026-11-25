@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.22.0 — 2026-11-25
+
+- Eight cosmetics left the shop and are now crafted. New Ouvrages: the Chapeau-champignon, the Mouches aura, and the Plumes, Bonhomme de neige and Guirlande de fleurs cadres. New Chefs-d'œuvre: Le Gourmet, the Petite couronne and the Étoiles filantes aura. Copies you already own stay yours.
+- The Couronne de fleurs cadre is now called Guirlande de fleurs, so it no longer shares a name with the accessory.
+- The Fabrication tab's overview gives way to a picked recipe, and an owned recipe is just ticked.
+
 ## 8.21.1 — 2026-11-25
 
 - Pixel icons for the cosmetics that still showed an emoji: the Rivière and Sous-bois themes, seven accessories and eleven grave frames, and for every tier of the Mécène badge.

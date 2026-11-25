@@ -610,8 +610,8 @@ looks after her.
   stars, soap bubbles, buzzing flies, confetti, lightning, shooting stars, koï carp, rising hearts, rain, and one per season: falling
   petals, fireflies, autumn leaves, snowflakes), and a **cadre** for its grave. `/inventory cosmetics` is one screen
   with three tabs: the **wardrobe**, the **shop** (two basics per slot always on sale, auras aside, two items per slot
-  that change every Monday, and seasonal ones, 300 to 5 000 cailloux) and **crafting**: fourteen
-  *Ouvrages* made from duplicates of one place's common finds (a week or so of foraging), and fourteen
+  that change every Monday, and seasonal ones, 300 to 5 000 cailloux) and **crafting**: nineteen
+  *Ouvrages* made from duplicates of one place's common finds (a week or so of foraging), and seventeen
   *Chefs-d'œuvre* that are real hunts (a few weeks of foraging in the right place). Each recipe
   lists what is missing and where each ingredient is found, and a forage that completes one says
   so. Some ingredients are « any common mushrooms » or the like. Picking anything

@@ -4,6 +4,11 @@ Snapshot of `CosmeticCatalog` at the **Gentleman batch** (2026-11-25): 117 cosme
 come from the checks' simulation (section 61, `CraftingChecks.ExpectedForages`: mean of 300 aimed
 runs from nothing). Working sheet, not a rule file — regenerate it after a catalog change.
 
+**Partly stale:** sections 3–5 and 7 have the rows of 8.22.0's eight newly crafted pieces updated
+(Le Gourmet, Petite couronne, Chapeau-champignon, Mouches, Étoiles filantes, Plumes, Bonhomme de
+neige, Guirlande de fleurs — ex « Couronne de fleurs »); the counts, odds and totals of section 2
+are still the Gentleman snapshot (Soleil-Levant and batch 3 are not in them either).
+
 **Collections (section 7) are in the code**: a label only, each cosmetic in at most one, shown only
 on `/inventory view`'s garde-robe page.
 
@@ -109,7 +114,6 @@ season's items. Crafted items are never sold; cosmetics can't be sold back.
 |---|---|---|---|---|
 | Le Petit / La Petite | Basique | commun | 300 | Tout doux |
 | Le Gentil / La Gentille | Basique | commun | 300 | — |
-| Le Gourmet / La Gourmande | Rotation | commun | 600 | — |
 | Le Rêveur / La Rêveuse | Rotation | commun | 600 | Ciel de nuit |
 | Le Curieux / La Curieuse | Rotation | commun | 600 | Carnet du naturaliste |
 | Le Dormeur / La Dormeuse | Rotation | commun | 600 | Ciel de nuit |
@@ -146,18 +150,15 @@ season's items. Crafted items are never sold; cosmetics can't be sold back.
 | 🎩 Haut-de-forme | Rotation | rare | 2 400 | Gentleman |
 | 🧐 Monocle | Rotation | rare | 2 400 | Gentleman |
 | 🦯 Canne à pommeau | Rotation | épique | 3 600 | Gentleman |
-| 👑 Petite couronne | Rotation | légendaire | 5 000 | Cour royale |
 
 ### Auras
 
 | Item | Source | Tier | Price | Collection |
 |---|---|---|---|---|
-| 🪰 Mouches | Rotation | commun | 600 | — |
 | 🫧 Bulles | Rotation | peu commun | 1 200 | Jour de fête |
 | 🎊 Confettis | Rotation | peu commun | 1 200 | Jour de fête |
 | ✨ Scintillements | Rotation | rare | 2 400 | Ciel de nuit |
 | ⚡ Éclairs | Rotation | épique | 3 600 | — |
-| 🌠 Étoiles filantes | Rotation | légendaire | 5 000 | Ciel de nuit |
 
 ### Cadres de tombe
 
@@ -165,11 +166,9 @@ season's items. Crafted items are never sold; cosmetics can't be sold back.
 |---|---|---|---|---|
 | 🕯️ Bougies | Basique | commun | 500 | — |
 | 🌼 Pâquerettes | Basique | commun | 500 | — |
-| 💐 Couronne de fleurs | Rotation | commun | 600 | Jardin en fleurs |
 | 🍂 Feuilles | Rotation | commun | 600 | Veillée d'automne |
 | 🪨 Galets | Rotation | commun | 600 | Au fil de la Sommeille |
 | 🌾 Blé | Rotation | commun | 600 | Le Communal |
-| 🪶 Plumes | Rotation | commun | 600 | Le Communal |
 | ☁️ Nuages | Rotation | commun | 600 | Tout doux |
 | 🐚 Coquillages | Rotation | commun | 600 | Grandes Vacances |
 | ⭐ Étoiles | Rotation | peu commun | 1 200 | Ciel de nuit |
@@ -187,12 +186,13 @@ season's items. Crafted items are never sold; cosmetics can't be sold back.
 
 | Season | Thème (rare) | Titre (peu commun) | Accessoire (peu commun) | Aura (rare) | Cadre (rare) | Whole season | Season-locked crafts |
 |---|---|---|---|---|---|---|---|
-| 🌸 Printemps (Mar–May) | 🍒 Cerisiers | — | 🌷 Tulipe | — | — | 3 600 | Aura Pétales ★, Couronne de fleurs |
+| 🌸 Printemps (Mar–May) | 🍒 Cerisiers | — | 🌷 Tulipe | — | — | 3 600 | Aura Pétales ★, Le Gourmet ★, Couronne de fleurs, Guirlande de fleurs |
 | ☀️ Été (Jun–Aug) | 🏖️ Plage | Le Bronzé | 🍦 Glace, 👒 Chapeau de paille | 🌟 Lucioles d'été | — | 8 400 | Collier de coquillages ★ |
 | 🍁 Automne (Sep–Nov) | 🍂 Feuilles mortes | — | 🪔 Petite lanterne | 🍁 Feuilles mortes | — | 6 000 | — |
-| ❄️ Hiver (Dec–Feb) | ❄️ Flocons | Le Frileux | 🧤 Moufles, 🧶 Bonnet | ❄️ Flocons | ⛄ Bonhomme de neige | 10 800 | Cadre Cristaux ★ |
+| ❄️ Hiver (Dec–Feb) | ❄️ Flocons | Le Frileux | 🧤 Moufles, 🧶 Bonnet | ❄️ Flocons | — | 8 400 | Cadre Cristaux ★, Bonhomme de neige |
 
-★ = Chef-d'œuvre. Thème, aura and cadre are 2 400; titre and accessoire 1 200. Every seasonal item
+★ = Chef-d'œuvre. Thème, aura and cadre are 2 400; titre and accessoire 1 200. Since 8.22.0 no
+cadre is sold in a season (the Bonhomme de neige is crafted). Every seasonal item
 is in its season's collection: Jardin en fleurs, Grandes Vacances, Veillée d'automne, Grand-Froid.
 
 ## 5. Crafting recipes
@@ -217,10 +217,18 @@ coquelicot, flocon), Puits (trésors, citrouille). Sell value = what the ingredi
 | Accessoire | 🫙 Bocal à insectes | Fourmi ×2 C, Mouche ×1 C, Coccinelle ×1 U | Mouilles | 22 | 11 | Carnet du naturaliste |
 | Accessoire | 🎣 Petite canne à pêche | Silex ×2 C, Caillou plat ×2 C, Galet ×1 C | Sommeille | 22 | 10 | Au fil de la Sommeille |
 | Accessoire | 💐 Couronne de fleurs | Primevère ×1 C (printemps), any nature ×3 C | Communal | 16 | 8 | Jardin en fleurs |
+| Accessoire | 🍄 Chapeau-champignon | any champignon ×5 C | Lisière | 13 | 10 | Cœur de la Lisière |
+| Aura | 🪰 Mouches | Mouche ×3 C, Moustique ×1 C | Mouilles | 24 | 8 | — |
 | Cadre | 💫 Lucioles | Moustique ×2 C, Fourmi ×1 C, Chenille ×1 U | Mouilles | 20 | 11 | Ciel de nuit |
 | Cadre | 🌰 Glands | any nature ×4 C, Pomme de pin ×1 U | Communal | 16 | 13 | Cœur de la Lisière |
 | Cadre | 🌿 Mousse | any caillou ×6 C | Sommeille | 16 | 12 | Au fil de la Sommeille |
 | Cadre | 🌾 Roseaux | any insecte ×6 C | Mouilles | 16 | 12 | Carnet du naturaliste |
+| Cadre | 🪶 Plumes | Plume ×1 C, Feuille de chêne ×1 C | Communal | 19 | 4 | Le Communal |
+| Cadre | ⛄ Bonhomme de neige | Flocon ×1 C (hiver), any nature ×2 C | Communal | 14 | 6 | Grand-Froid |
+| Cadre | 💐 Guirlande de fleurs | Primevère ×1 C (printemps), Trèfle ×1 C | Communal | 17 | 4 | Jardin en fleurs |
+
+The Guirlande de fleurs was the « Couronne de fleurs » cadre until 8.22.0 (key
+`cos.grave.couronne_fleurs` kept): a crafted name must be unique, and the accessory has it.
 
 ### Chefs-d'œuvre — mythique, band 60–150 forages, cailloux by effort
 
@@ -233,11 +241,14 @@ coquelicot, flocon), Puits (trésors, citrouille). Sell value = what the ingredi
 | Titre | Le Naturaliste | Morpho bleu ×1 L, Coccinelle ×2 U, Chenille ×2 U | Mouilles | 86 | 200 | 70 | Carnet du naturaliste |
 | Titre | Le Mycologue | Lactaire indigo ×1 R, Pholiote dorée ×1 U, Polypore soufré ×1 U | Lisière | 123 | 400 | 25 | Cœur de la Lisière |
 | Titre | L'Entomologiste | Grillon ×2 R, Abeille ×1 R, Coccinelle ×2 U | Mouilles | 73 | 200 | 55 | Carnet du naturaliste |
+| Titre | Le Gourmet | Morille conique ×1 R (printemps), Cèpe de Bordeaux ×1 R, Girolle ×1 U | Lisière | 144 | 400 | 35 | — |
+| Accessoire | 👑 Petite couronne | Couronne ×1 L, Pièce ancienne ×3 U, Améthyste ×1 R | Puits + Sommeille | 116 | 400 | 80 | Cour royale |
 | Accessoire | 🪶 Plume d'or | Plume ×5 C, Plume dorée ×1 L | Communal | 102 | 300 | 60 | Le Communal |
 | Accessoire | 🐚 Collier de coquillages | Coquillage ×2 R (été), Galet ×3 C | Sommeille | 101 | 300 | 36 | Grandes Vacances |
 | Accessoire | 📿 Médaillon ancien | Couronne ×1 L, Bague ×2 U | Puits | 85 | 200 | 60 | Cour royale |
 | Accessoire | 🕰️ Montre à gousset | Boussole ×2 R, Pièce ancienne ×3 U, Bague ×2 U | Puits | 71 | 200 | 55 | Gentleman |
 | Aura | 🌸 Pétales | Primevère ×8 C, Cerise ×2 R (printemps) | Communal | 110 | 300 | 46 | Jardin en fleurs |
+| Aura | 🌠 Étoiles filantes | Météorite ×1 L, Quartz ×3 U, Opale ×1 R | Sommeille | 91 | 300 | 80 | Ciel de nuit |
 | Cadre | 💎 Cristaux | Cristal de givre ×2 R, Flocon ×3 C (hiver) | Sommeille + Communal | 127 | 400 | 36 | Grand-Froid |
 | Cadre | 🍄 Cercle de fées | Russule dorée ×1 U, Trompette de la mort ×1 R | Lisière | 111 | 300 | 20 | Cœur de la Lisière |
 
@@ -251,9 +262,10 @@ coquelicot, flocon), Puits (trésors, citrouille). Sell value = what the ingredi
 4. **Spring has the thinnest seasonal shop** (2 items, 3 600 for the lot, against 10 800 in winter).
    Spring and autumn have no seasonal title; only winter has a seasonal cadre.
 5. **The « any commons » Ouvrages all sit at 16 forages**; the named ones take 20–24 for the same 100.
-6. **Two Chefs-d'œuvre sit near a price line**: Champignonnière (118) and Cercle de fées (111) are
-   3–4 forages from the 115 line. A small retune of either recipe moves its price, and the checks
-   will say so.
+6. **Four Chefs-d'œuvre sit near a price line**: Champignonnière (118) and Cercle de fées (111) are
+   3–4 forages from the 115 line, the Petite couronne (116) one above it and Étoiles filantes (91)
+   one above the 90 line. A small retune of any of them — or of the draw — moves its price, and the
+   checks will say so.
 7. **Basics still split by slot** (300 / 500) and read « commun » while costing less than a commun.
    There are now two per slot, except Aura (8 in all, 3 200 cailloux for the lot).
 8. ~~`/inventory view`'s garde-robe page broke for a big collector~~ — fixed in 8.19.0: a slot past
@@ -299,9 +311,9 @@ the recipes' means added up (an upper bound: one forage can serve two recipes).
 | Grand-Froid | Flocons | Le Frileux | Bonnet, Écharpe, Moufles | Flocons | Bonhomme de neige, Cristaux ★ |
 | Grandes Vacances | Plage | Le Bronzé | Chapeau de paille, Glace, Lunettes de soleil, Collier de coquillages ★ | Lucioles d'été | Coquillages |
 | Veillée d'automne | Feuilles mortes, Braises | — | Petite lanterne | Feuilles mortes | Feuilles, Lanternes |
-| Jardin en fleurs | Cerisiers, Aurore | — | Tulipe, Fleur, Couronne de fleurs | Pétales ★ | Couronne de fleurs, Papillons |
-| Cour royale | Royal | Le Légendaire | Petite couronne, Médaillon ancien ★ | — | Halo doré |
-| Ciel de nuit | Nuit étoilée, Aurore boréale | Le Rêveur, Le Dormeur | — | Scintillements, Étoiles filantes | Étoiles, Clair de lune, Lucioles |
+| Jardin en fleurs | Cerisiers, Aurore | — | Tulipe, Fleur, Couronne de fleurs | Pétales ★ | Guirlande de fleurs, Papillons |
+| Cour royale | Royal | Le Légendaire | Petite couronne ★, Médaillon ancien ★ | — | Halo doré |
+| Ciel de nuit | Nuit étoilée, Aurore boréale | Le Rêveur, Le Dormeur | — | Scintillements, Étoiles filantes ★ | Étoiles, Clair de lune, Lucioles |
 | Gentleman | Velours | Le Mystérieux, Le Fripon, Le Distingué, Le Magnifique | Haut-de-forme, Nœud papillon, Monocle, Canne à pommeau, Montre à gousset ★ | — | Roses rouges |
 | Jour de fête | Arc-en-ciel | Le Farceur, Le Bavard | Ballon | Bulles, Confettis | Bulles de savon, Notes de musique |
 | Tout doux | Lavande | Le Petit, Le Câlin, Le Timide | Nœud | — | Cœurs, Nuages |
@@ -309,7 +321,7 @@ the recipes' means added up (an upper bound: one forage can serve two recipes).
 | Au fil de la Sommeille | Rivière, Océan | Le Sommeillant | Petite canne à pêche | — | Galets, Mousse |
 | Carnet du naturaliste | — | Le Naturaliste ★, L'Entomologiste ★, Le Botaniste ★, Le Mouillé, Le Curieux | Bocal à insectes | — | Roseaux |
 | Chasse au trésor | Caverne aux trésors ★ | Le Chercheur de trésors ★, L'Aventurier, Le Brocanteur, Le Puisatier | — | — | — |
-| Le Communal | Prairie | Le Glaneur | Plume d'or ★ | — | Blé, Plumes |
+| Le Communal | Prairie | Le Glaneur | Plume d'or ★ | — | Blé, Plumes (Ouvrage) |
 
 ★ = Chef-d'œuvre (mythique).
 
@@ -318,9 +330,9 @@ the recipes' means added up (an upper bound: one forage can serve two recipes).
 | Slot | Items |
 |---|---|
 | Thème | Ciel, Désert |
-| Titre | Le Gentil, Le Gourmet, Le Grognon, Le Distrait, Le Studieux, Le Champion, Le Sage, L'Immortel |
+| Titre | Le Gentil, Le Gourmet ★, Le Grognon, Le Distrait, Le Studieux, Le Champion, Le Sage, L'Immortel |
 | Accessoire | Tasse de café, Lunettes rondes, Casquette |
-| Aura | Mouches, Éclairs |
+| Aura | Mouches (Ouvrage), Éclairs |
 | Cadre | Bougies, Pâquerettes, Colombes |
 
 ### Choices made, to revisit

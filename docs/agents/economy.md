@@ -405,7 +405,9 @@ thème or cadre), so a newcomer has a choice; checks section 61 pins the two.
   items (8.17.0). Mouches (commun), Confettis (peu commun), Éclairs (épique) and Étoiles filantes
   (légendaire) joined the rotation with the Gentleman batch, Carpes koï (épique, `cos.aura.koi`) with
   Soleil-Levant, Petits cœurs and Gouttes de pluie (peu commun; key `cos.aura.averse`, renamed before
-  release because « Entouré d'averse » read wrong — a name must read after « Entouré de ») in 8.21.0. Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
+  release because « Entouré d'averse » read wrong — a name must read after « Entouré de ») in 8.21.0.
+  Since 8.22.0 Mouches is the Aura's one *Ouvrage* and Étoiles filantes a *Chef-d'œuvre* (around the
+  Météorite); both left the rotation, which now holds seven. `Label` is
   « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line, « d' » before a vowel
   (« Entouré d'éclairs », `AccessoryNotices.StartsWithVowelSound`). Not drawn on
   the sick and frozen faces: the try-on then says « Son aura ne se voit pas tant qu'il est malade ou gelé. »
@@ -478,7 +480,10 @@ redraws in place.
   select's page was turned. The Fabrication tab keeps one select per group (`:0` Ouvrages, `:1`
   Chefs-d'œuvre; the handler reads that segment for a page turn); wardrobe ids end in `:0`. The shop
   (per section) and the recipes (per group) list by `CosmeticCatalog.SlotRank`. Checks section 59
-  measures it with everything owned and walks a paged select.
+  measures it with everything owned and walks a paged select. **The Fabrication overview (every
+  recipe, one line each) shows only while nothing is picked**: a picked recipe's view replaces it,
+  the selects staying above. Its lines are short on purpose (a titre in its masculine form, an owned
+  recipe just ticked): 36 lines plus a recipe's view passed a V2 message's 4 000 characters.
   `cosm:buy`/`cosm:buyw:{week}:{key}`, `cosm:make`/`cosm:makew:{key}`, `cosm:wear:{tab}:{key}`,
   `cosm:back:{tab}`, `cosm:pick2:{i}` and `cosm:pick3:{i}` (the second and third accessory pickers), `cosm:style:{choice}:{key}` (the worn accessory's colour, place or side, on the Accessoire
   slot; refused if that accessory is no longer worn). The view (tab, slot, picked key) lives only in the
@@ -489,21 +494,28 @@ redraws in place.
 
 ### Crafting — Ouvrages and Chefs-d'œuvre
 
-28 recipes, each made **once per person** (`AlreadyOwned`). `CosmeticInfo.Trophy` splits them, and the
+36 recipes, each made **once per person** (`AlreadyOwned`). `CosmeticInfo.Trophy` splits them, and the
 Fabrication tab lists them in that order:
 
-- **Ouvrages** (14: Thème 2, Titre 5, Accessoire 3, Cadre 4, ~100 cailloux; the per-slot counts are pinned
+- **Ouvrages** (19: Thème 2, Titre 5, Accessoire 4, Aura 1, Cadre 7, ~100 cailloux; the per-slot counts are pinned
   in `CraftingChecks.OuvragesPerSlot`): commons (at most one peu commun) found at **one place**, every
   place served, for the duplicates. Three titles are named after their place (Sommeillant, Mouillé,
   Puisatier). **Band: 10–25 aimed forages.**
-- **Chefs-d'œuvre** (14): aimed hunts. **Band: 60–150 aimed forages.** Their cailloux follow the
+- **Chefs-d'œuvre** (17): aimed hunts. **Band: 60–150 aimed forages.** Their cailloux follow the
   effort: **200 under 90 forages, 300 up to 115, 400 above** (`CraftingChecks.TrophyPrice`).
+- **A shop item can become a recipe** (8.22.0 moved eight: Le Gourmet, the Petite couronne, the
+  Chapeau-champignon, the auras Mouches and Étoiles filantes, the cadres Plumes, Bonhomme de neige
+  and Couronne de fleurs). The source is never stored, so nothing migrates: owners keep their copy,
+  only its tier label changes. A crafted name must be unique among items and cosmetics, so the
+  cadre became « Guirlande de fleurs » (the accessory had the name; the key stays).
 - **The bands are enforced** (checks section 61, `CraftingChecks.ExpectedForages`: 300 seeded runs from
   nothing, aiming each time at the place covering the most missing units, in the ingredients' season or
   mid-April). A recipe outside its band fails the checks: retune it, never widen the band to fit.
 - **« Any commons of a set »** is an ingredient (`Recipes.AnyCommon(set)`, key `any:<set>`, never stored):
-  any of the set's communs, counted together. La Lisière's Ouvrage must use it (12 common mushrooms
-  dilute any named one); le Communal's two do too. **A craft takes from the largest stack, one unit at a
+  any of the set's communs, counted together. La Lisière's Ouvrages must use it (12 common mushrooms
+  dilute any named one); some of le Communal's do too. **A recipe never names an item its « any »
+  ingredient also counts** (checks section 61): `ItemsReady` counts each ingredient whole, so the
+  overlap would read ready and craft short. **A craft takes from the largest stack, one unit at a
   time** (ties: catalog order), so the single copies a turn-in needs go last. All ingredient logic lives
   in `Recipes` (`Have`, `Take`, `Lacking`, `ItemsReady`, `Where`): the craft, the tab and the checks
   share it.

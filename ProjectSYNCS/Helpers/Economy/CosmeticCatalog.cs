@@ -339,7 +339,9 @@ public static class CosmeticCatalog
         // Titres
         Title("petit", "Le Petit", "La Petite", B);
         Title("gentil", "Le Gentil", "La Gentille", B);
-        Title("gourmet", "Le Gourmet", "La Gourmande", Rot, C);
+        // Crafted since 8.22.0: a morel, a cèpe and a girolle from la Lisière (spring only: the morel).
+        Title("gourmet", "Le Gourmet", "La Gourmande", Cr, craftPrice: 400, trophy: true,
+            recipe: new[] { ("col.morille_conique", 1), ("col.cepe_bordeaux", 1), ("col.girolle", 1) });
         Title("reveur", "Le Rêveur", "La Rêveuse", Rot, C);
         Title("curieux", "Le Curieux", "La Curieuse", Rot, C);
         Title("dormeur", "Le Dormeur", "La Dormeuse", Rot, C);
@@ -393,7 +395,9 @@ public static class CosmeticCatalog
         Accessory("ballon", "🎈", "un ballon", Rot, U);
         Accessory("lunettes", "🕶️", "des lunettes de soleil", Rot, U);
         Accessory("haut_de_forme", "🎩", "un haut-de-forme", Rot, R);
-        Accessory("couronne", "👑", "une petite couronne", Rot, L);
+        // Crafted since 8.22.0, around the Couronne found at the Puits.
+        Accessory("couronne", "👑", "une petite couronne", Cr, craftPrice: 400, trophy: true,
+            recipe: new[] { ("col.couronne", 1), ("col.piece_ancienne", 3), ("col.amethyste", 1) });
         Accessory("lunettes_rondes", "👓", "des lunettes rondes", Rot, C);
         Accessory("noeud_papillon", "🎀", "un nœud papillon", Rot, U);
         Accessory("monocle", "🧐", "un monocle", Rot, R);
@@ -428,7 +432,9 @@ public static class CosmeticCatalog
         // Cadres de tombe
         Grave("bougies", "🕯️", "Bougies", B);
         Grave("paquerettes", "🌼", "Pâquerettes", B);
-        Grave("couronne_fleurs", "💐", "Couronne de fleurs", Rot, C);
+        // Crafted since 8.22.0, renamed from « Couronne de fleurs »: a crafted name is unique and the accessory has it (spring only: the primevère).
+        Grave("couronne_fleurs", "💐", "Guirlande de fleurs", Cr, craftPrice: 100,
+            recipe: new[] { ("col.primevere", 1), ("col.trefle", 1) });
         Grave("feuilles", "🍂", "Feuilles", Rot, C);
         Grave("galets", "🪨", "Galets", Rot, C);
         Grave("ble", "🌾", "Blé", Rot, C);
@@ -447,7 +453,8 @@ public static class CosmeticCatalog
             recipe: new[] { ("col.moustique", 2), ("col.fourmi", 1), ("col.chenille", 1) });
         Grave("glands", "🌰", "Glands", Cr, craftPrice: 100,
             recipe: new[] { Any("nature", 4), ("col.pomme_pin", 1) });
-        Grave("plumes", "🪶", "Plumes", Rot, C);
+        Grave("plumes", "🪶", "Plumes", Cr, craftPrice: 100,
+            recipe: new[] { ("col.plume", 1), ("col.feuille_chene", 1) });
         Grave("nuages", "☁️", "Nuages", Rot, C);
         Grave("coquillages", "🐚", "Coquillages", Rot, C);
         Grave("bulles_savon", "🫧", "Bulles de savon", Rot, U);
@@ -455,7 +462,9 @@ public static class CosmeticCatalog
         Grave("notes_musique", "🎶", "Notes de musique", Rot, R);
         Grave("roses", "🌹", "Roses rouges", Rot, U);
         // cos.grave.citrouilles (autumn) was retired in 8.8.0 (RetirePumpkinGraveFrame): never reuse the key.
-        Grave("bonhomme_neige", "⛄", "Bonhomme de neige", S, R, season: Season.Winter);
+        // Crafted since 8.22.0 (winter only: the snow), commons of the Communal for the nose and arms.
+        Grave("bonhomme_neige", "⛄", "Bonhomme de neige", Cr, craftPrice: 100,
+            recipe: new[] { ("col.flocon", 1), Any("nature", 2) });
         // Moss on the river stones; reeds of the marsh.
         Grave("mousse", "🌿", "Mousse", Cr, craftPrice: 100,
             recipe: new[] { Any("cailloux", 6) });
@@ -476,10 +485,14 @@ public static class CosmeticCatalog
         Aura("lucioles", "🌟", "Lucioles d'été", S, R, season: Season.Summer);
         Aura("feuilles", "🍁", "Feuilles mortes", S, R, season: Season.Autumn);
         Aura("flocons", "❄️", "Flocons", S, R, season: Season.Winter);
-        Aura("mouches", "🪰", "Mouches", Rot, C);
+        // Crafted since 8.22.0: the Aura's one Ouvrage, from les Mouilles.
+        Aura("mouches", "🪰", "Mouches", Cr, craftPrice: 100,
+            recipe: new[] { ("col.mouche", 3), ("col.moustique", 1) });
         Aura("confettis", "🎊", "Confettis", Rot, U);
         Aura("eclairs", "⚡", "Éclairs", Rot, E);
-        Aura("etoiles_filantes", "🌠", "Étoiles filantes", Rot, L);
+        // Crafted since 8.22.0: shooting stars around the Météorite, la Sommeille's rarest stone.
+        Aura("etoiles_filantes", "🌠", "Étoiles filantes", Cr, craftPrice: 300, trophy: true,
+            recipe: new[] { ("col.meteorite", 1), ("col.quartz", 3), ("col.opale", 1) });
 
         // Soleil-Levant (CosmeticCollections): Japan and East Asia, all in the weekly rotation.
         Accessory("onigiri", "🍙", "un onigiri", Rot, C);
@@ -498,7 +511,9 @@ public static class CosmeticCatalog
         // Batch 3 (8.21.0): loose pieces filling thin collections, all in the weekly rotation.
         Accessory("bonnet_nuit", "🌙", "un bonnet de nuit", Rot, C);
         Accessory("sucette", "🍭", "une sucette", Rot, C);
-        Accessory("chapeau_champignon", "🍄", "un chapeau-champignon", Rot, U);
+        // Crafted since 8.22.0: la Lisière's second Ouvrage.
+        Accessory("chapeau_champignon", "🍄", "un chapeau-champignon", Cr, craftPrice: 100,
+            recipe: new[] { Any("champignons", 5) });
         Accessory("doudou", "🧸", "un petit doudou", Rot, U);
         Accessory("lunettes_coeur", "💕", "des lunettes en cœur", Rot, U);
         Aura("coeurs", "💗", "Petits cœurs", Rot, U);

@@ -159,18 +159,24 @@ public static class CraftingChecks
     // A recipe retuned across a line moves its price with it.
     private static long TrophyPrice(double forages) => forages < 90 ? 200 : forages <= 115 ? 300 : 400;
 
-    // Two tiers: 14 Ouvrages (each from one place, every place served, la Lisière's from any common
-    // mushrooms) and 14 trophies. The Aura slot has no Ouvrage: its three effects were fixed by
-    // design, and its one recipe is a trophy (Pétales).
+    // Two tiers: 19 Ouvrages (each from one place, every place served, la Lisière's from any common
+    // mushrooms) and 17 trophies. The Aura's one Ouvrage is Mouches (8.22.0).
     private static readonly Dictionary<CosmeticSlot, int> OuvragesPerSlot = new()
     {
-        [CosmeticSlot.Theme] = 2, [CosmeticSlot.Title] = 5, [CosmeticSlot.Accessory] = 3, [CosmeticSlot.Grave] = 4, [CosmeticSlot.Aura] = 0,
+        [CosmeticSlot.Theme] = 2, [CosmeticSlot.Title] = 5, [CosmeticSlot.Accessory] = 4, [CosmeticSlot.Grave] = 7, [CosmeticSlot.Aura] = 1,
     };
 
     private static void Catalog()
     {
         var ouvrages = Crafted.Where(c => !c.Trophy).ToList();
-        Expect(Crafted.Count() == 28 && ouvrages.Count == 14, $"{Crafted.Count()} recipes, {ouvrages.Count} Ouvrages; want 28 and 14");
+        Expect(Crafted.Count() == 36 && ouvrages.Count == 19, $"{Crafted.Count()} recipes, {ouvrages.Count} Ouvrages; want 36 and 19");
+        // No ingredient may also count toward an « any commons » ingredient of the same recipe: the
+        // ready test counts each one whole, so the overlap would read ready and craft short.
+        foreach (var c in Crafted)
+        {
+            var anySets = c.Recipe.Where(r => Recipes.IsAnyCommon(r.ItemKey, out _)).SelectMany(r => Recipes.Items(r.ItemKey)).Select(i => i.Key).ToHashSet();
+            Expect(!c.Recipe.Any(r => anySets.Contains(r.ItemKey)), $"{c.Key}: a named ingredient also counts as « any commons »");
+        }
         foreach (var slot in Enum.GetValues<CosmeticSlot>())
             Expect(ouvrages.Count(c => c.Slot == slot) == OuvragesPerSlot[slot],
                 $"{slot}: {ouvrages.Count(c => c.Slot == slot)} Ouvrages, want {OuvragesPerSlot[slot]}");

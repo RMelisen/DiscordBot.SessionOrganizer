@@ -219,10 +219,10 @@ public static class AuraChecks
         Entry("cos.aura.lucioles", CosmeticSource.Seasonal, ItemRarity.Rare, 2400, false, "Lucioles d'été");
         Entry("cos.aura.feuilles", CosmeticSource.Seasonal, ItemRarity.Rare, 2400, false, "Feuilles mortes");
         Entry("cos.aura.flocons", CosmeticSource.Seasonal, ItemRarity.Rare, 2400, false, "Flocons");
-        Entry("cos.aura.mouches", CosmeticSource.Rotating, ItemRarity.Common, 600, false, "Mouches");
+        Entry("cos.aura.mouches", CosmeticSource.Crafted, ItemRarity.Uncommon, 100, false, "Mouches");
         Entry("cos.aura.confettis", CosmeticSource.Rotating, ItemRarity.Uncommon, 1200, false, "Confettis");
         Entry("cos.aura.eclairs", CosmeticSource.Rotating, ItemRarity.Epic, 3600, false, "Éclairs");
-        Entry("cos.aura.etoiles_filantes", CosmeticSource.Rotating, ItemRarity.Legendary, 5000, false, "Étoiles filantes");
+        Entry("cos.aura.etoiles_filantes", CosmeticSource.Crafted, ItemRarity.Mythic, CosmeticCatalog.ByKey("cos.aura.etoiles_filantes")?.Price ?? 0, true, "Étoiles filantes");
         Entry("cos.aura.koi", CosmeticSource.Rotating, ItemRarity.Epic, 3600, false, "Carpes koï");
         Entry("cos.aura.coeurs", CosmeticSource.Rotating, ItemRarity.Uncommon, 1200, false, "Petits cœurs");
         Entry("cos.aura.averse", CosmeticSource.Rotating, ItemRarity.Uncommon, 1200, false, "Gouttes de pluie");
