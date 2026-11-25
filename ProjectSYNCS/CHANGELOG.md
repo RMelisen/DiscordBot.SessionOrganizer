@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.21.1 — 2026-11-25
+
+- Pixel icons for the cosmetics that still showed an emoji: the Rivière and Sous-bois themes, seven accessories and eleven grave frames, and for every tier of the Mécène badge.
+
 ## 8.21.0 — 2026-11-25
 
 - New in the weekly rotation: a bonnet de nuit and a lollipop (commun); a mushroom hat, a little teddy bear, heart-shaped glasses and two auras, Petits cœurs and Gouttes de pluie (peu commun); a pirate eye patch (rare); a floating halo (légendaire).

@@ -3532,6 +3532,21 @@ MEMBER_BADGE_SUBJECTS = {
         ".yyyAa.yAaa.",
         ".yyA....Aaa.",
         "yA........a."),
+    # Mécène: a pebble dropping into the jar, already half full of them.
+    "mecene": (
+        "........ws",
+        "........sG",
+        "..........",
+        "..wssssg..",
+        "..whhhhD..",
+        ".whhhhhhD.",
+        "wwhhhhhhhD",
+        "whhhhhhhhD",
+        "whhwshhhhD",
+        "whsGg#wshD",
+        "wsGgg#sGgD",
+        "wGgg#wsGgD",
+        ".DDDDDDDD."),
 }
 
 # Collection sets: the set's own icon on each tier's shield (badge.<set>_<tier>, the key
@@ -3550,7 +3565,8 @@ MEMBER_PALIERS = (("voice", "Pilier du vocal", "🎙️"), ("companion", "Compag
                   ("attended", "Toujours là", "🎮"), ("organised", "Chef d'orchestre", "📅"),
                   ("giveaways", "Main chanceuse", "🎁"), ("goodbot", "Chouchou", "💖"),
                   ("breeder", "Famille Plynling", "🐾"), ("arcade", "Pilier d'arcade", "🕹️"),
-                  ("nanny", "Nounou", "🤲"), ("daily", "Assiduité", "🔥"), ("seniority", "Ancienneté", "🎂"))
+                  ("nanny", "Nounou", "🤲"), ("daily", "Assiduité", "🔥"), ("seniority", "Ancienneté", "🎂"),
+                  ("mecene", "Mécène", "🪙"))
 
 for badge_key, name, emoji in MEMBER_PALIERS:
     for tier, label, _ in BADGE_TIERS:
@@ -3848,3 +3864,308 @@ icon("auras", "cos.aura.averse", "Gouttes de pluie", "🌧️", *centred(
      ".h...h...h..",
      "...B...B....",
      "...h...h...."))
+
+
+# ---- Batch 4 -------------------------------------------------------------------------------------
+# The cosmetics that had no icon yet (thèmes, accessoires, cadres), drawn as fills like Soleil-Levant
+# (centred()); layered() keeps overlapping pieces apart.
+
+def layered(w, h, *parts):
+    """Fills pasted in order on a w×h fill, each part (x, y, rows) with "." for nothing: where a later
+    part meets an earlier one it gets a 1-cell "#" rim, so overlapping things stay apart."""
+    grid = [["."] * w for _ in range(h)]
+    for x0, y0, rows in parts:
+        cells = {(x0 + i, y0 + j): c for j, r in enumerate(rows) for i, c in enumerate(r) if c != "."}
+        for x, y in cells:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if (nx, ny) not in cells and 0 <= nx < w and 0 <= ny < h and grid[ny][nx] != ".":
+                    grid[ny][nx] = "#"
+        for (x, y), c in cells.items():
+            grid[y][x] = c
+    return ["".join(r) for r in grid]
+
+
+icon("themes", "cos.theme.riviere", "Rivière", "🏞️", *centred(
+     ".llLLhBBLLL.",
+     "llLLLhBBDLLt",
+     "lLLLhBBBDLtt",
+     "LLLhBBBDLLtt",
+     "LLhBBwBDLttt",
+     "LhBBBBDLLsGt",
+     "hBBBBBDLsGGg",
+     "BBwBBDLLtggt",
+     "BBBBDDLtttTt",
+     "BBBDDLLttTTT",
+     ".DDDLLtttTT."))
+
+icon("themes", "cos.theme.sous_bois", "Sous-bois", "🌳", *centred(
+     ".lLLL..lLLL.",
+     "lLLLtLlLLLtt",
+     "LLttTtLLttTt",
+     "tjUTTTTTTjUT",
+     "TjUTTTTTTjUT",
+     "TjUTTEETTjUT",
+     "TjUTEwEcTjUT",
+     "TjUTEEccTjUT",
+     "TjUlTwsTTjUT",
+     "LjUlLwsTLjUL",
+     "lLULLwsLLLUl",
+     ".LLLLLLLLLL."))
+
+_FIREFLY = (
+     "ss.ss",
+     ".sks.",
+     ".yYy.",
+     "yYwYy",
+     ".yYy.")
+
+icon("cadres", "cos.grave.lucioles", "Lucioles", "💫", *centred(
+     *layered(12, 12, (0, 0, _FIREFLY), (7, 3, _FIREFLY), (2, 7, _FIREFLY))))
+
+_ACORN = (
+     "...u..",
+     ".JjjU.",
+     "JjUjUu",
+     "jUjUuu",
+     ".Aaao.",
+     ".aaoo.",
+     "..aoR.",
+     "...R..")
+
+icon("cadres", "cos.grave.glands", "Glands", "🌰", *centred(
+     *layered(12, 12, (6, 0, _ACORN), (0, 3, _ACORN))))
+
+_FEATHER = (                  # leaning left, lit on its left vane; the right one is its mirror
+     ".ww....",
+     "wwws...",
+     "wwGss..",
+     "wwGss..",
+     ".wwGs..",
+     ".ww.Gs.",
+     "..wwGs.",
+     "..wwGss",
+     "...wGs.",
+     "....G..",
+     "....G..",
+     "....G..")
+
+
+def _mirrored(rows, colours):
+    """A fill flipped left to right, its colours swapped so the light still comes from the left."""
+    return tuple("".join(colours.get(c, c) for c in reversed(r)) for r in rows)
+
+
+icon("cadres", "cos.grave.plumes", "Plumes", "🪶", *centred(
+     *layered(12, 12, (0, 0, _FEATHER), (5, 0, _mirrored(_FEATHER, {"w": "D", "s": "h", "G": "b"})))))
+
+icon("cadres", "cos.grave.nuages", "Nuages", "☁️", *centred(
+     *layered(12, 11,
+              (6, 0, ("..ww..",
+                      ".wwwss",
+                      "wwwsss",
+                      ".hhhh.")),
+              (0, 5, ("....www....",
+                      "..wwwwwws..",
+                      ".wwwwwwwwss",
+                      "wwwwwwwwwss",
+                      "wwwwwwwwsss",
+                      ".shhhhhhhs.")))))
+
+icon("cadres", "cos.grave.coquillages", "Coquillages", "🐚", *centred(
+     *layered(12, 12,
+              (5, 0, ("..AfA..",
+                      ".fAfAo.",
+                      "AfAfAfo",
+                      "AfAfAfo",
+                      ".fAfAo.",
+                      "..AfA..",
+                      ".AfAfo.")),
+              (0, 4, ("..IiIiC..",
+                      ".iIiIiIC.",
+                      "IiIiIiIiC",
+                      "IiIiIiIiC",
+                      ".iIiIiIC.",
+                      "..IiIiC..",
+                      "...iIC...",
+                      ".iIiIiCC.")))))
+
+icon("cadres", "cos.grave.bulles_savon", "Bulles de savon", "🫧", *centred(
+     *layered(12, 12,
+              (0, 4, ("..xxxx..",
+                      ".xhhhhB.",
+                      "xhwwhhhB",
+                      "xhwhhhhB",
+                      "xhhhhhhI",
+                      "xhhhhhIB",
+                      ".BhhhIB.",
+                      "..BBBB..")),
+              (7, 0, (".xxx.",
+                      "xwhhB",
+                      "xhhhB",
+                      "xhhIB",
+                      ".BBB.")),
+              (8, 7, (".xx.",
+                      "xwhB",
+                      "xhIB",
+                      ".BB.")))))
+
+icon("cadres", "cos.grave.coeurs", "Cœurs", "💕", *centred(
+     *layered(12, 11,
+              (7, 0, ("Ii.iC",
+                      "iiiiC",
+                      ".iiC.",
+                      "..C..")),
+              (0, 3, (".EE...EE.",
+                      "EwEE.EEEc",
+                      "EEEEEEEEc",
+                      "EEEEEEEcc",
+                      ".EEEEEcc.",
+                      "..EEEcc..",
+                      "...Ecc...",
+                      "....c....")))))
+
+icon("cadres", "cos.grave.notes_musique", "Notes de musique", "🎶", *centred(
+     "....yyyyyyy.",
+     "....aaaaaaa.",
+     "....y.....y.",
+     "....y.....y.",
+     "....y.....y.",
+     "....y.....y.",
+     "....y.....y.",
+     "....y...ywy.",
+     "....y..yyaa.",
+     "..ywy..yaa..",
+     ".yyaa.......",
+     ".yaa........"))
+
+icon("cadres", "cos.grave.bonhomme_neige", "Bonhomme de neige", "⛄", *centred(
+     "....kkkk....",
+     "....kkkk....",
+     "..gkkkkkkg..",
+     "...wwwwws...",
+     "...wkwwks...",
+     "...wwwwaaa..",
+     "....wwss....",
+     "..EEEEEEcc..",
+     ".wwwwwEcwss.",
+     "wwwwwwcwwsss",
+     "wwwwwkwwwsss",
+     ".wwwwwwwsss."))
+
+icon("cadres", "cos.grave.mousse", "Mousse", "🌿", *centred(
+     *layered(12, 11,
+              (7, 3, (".lLl.",
+                      "lLLtt",
+                      "GsGgg",
+                      "sGggk",
+                      "Gggkk",
+                      ".kkk.")),
+              (0, 0, ("..lLl.....",
+                      ".lLLLlL...",
+                      "lLLLLLLtt.",
+                      "LLtLLttLtt",
+                      "sGsGGtGGgt",
+                      "sGGGGGGggg",
+                      "GGGGGGgggk",
+                      "GGGGGgggkk",
+                      ".gggggkkk.")))))
+
+icon("cadres", "cos.grave.roseaux", "Roseaux", "🌾", *centred(
+     "..........u.",
+     ".u...u...Uu.",
+     "Uu..Uu...Uu.",
+     "Uu..Uu...Uu.",
+     "Uu..Uu..lUu.",
+     "uu..uu..L.L.",
+     ".L.l.L.lL.L.",
+     ".Ll..L.L..L.",
+     ".L...LL...L.",
+     ".L...L....L.",
+     "BBBBBBBBBBBB",
+     "DDDDDDDDDDDD"))
+
+icon("accessoires", "cos.accessory.medaillon", "un médaillon ancien", "📿", *centred(
+     "+..........+",
+     ".+........+.",
+     "..+......+..",
+     "...+....+...",
+     "....+ya+....",
+     "....yyao....",
+     "...ywyyao...",
+     "...yyEEao...",
+     "...yEwEco...",
+     "...yaEcoo...",
+     "....aooo....",
+     ".....oo....."))
+
+icon("accessoires", "cos.accessory.bocal", "un bocal à insectes", "🫙", *centred(
+     "..GsssssG...",
+     "..ggGkGgg...",
+     ".wsssssssg..",
+     ".whhhhhhhD..",
+     ".whhLhhhhD..",
+     ".whLLhEEhD..",
+     ".whhLEkEEhD.",
+     ".whhLEEkEhD.",
+     ".whhhhEEhhD.",
+     ".whhhhhhhhD.",
+     "..DDDDDDDD.."))
+
+icon("accessoires", "cos.accessory.canne_peche", "une petite canne à pêche", "🎣", *centred(
+     "............",
+     ".........j+.",
+     "........jU+.",
+     ".......jU.+.",
+     "......jU..+.",
+     ".....jU...+.",
+     "....jU...EE.",
+     "..GjU...Ewc.",
+     ".JGG....wws.",
+     "JJu......s..",
+     "Ju..........",
+     "u..........."))
+
+icon("accessoires", "cos.accessory.chapeau_paille", "un chapeau de paille", "👒", *centred(
+     "....yyAa....",
+     "...yyAAaa...",
+     "...yAAAaa...",
+     "...EEEEEcc..",
+     ".yyAAAAAaaa.",
+     "yyAAAAAAAaao",
+     ".aaaoooooooo"))
+
+icon("accessoires", "cos.accessory.bonnet", "un bonnet", "🧶", *centred(
+     ".....ww.....",
+     "....wwss....",
+     ".....ss.....",
+     "....EEEcc...",
+     "...EfEEEcc..",
+     "..EfEEEEEcr.",
+     "..EEEEEEEcr.",
+     ".EEEEEEEEccr",
+     ".wswswswswss",
+     ".wswswswswss"))
+
+icon("accessoires", "cos.accessory.lanterne", "une petite lanterne", "🪔", *centred(
+     "jjjjjjjjjjjU",
+     ".....+......",
+     "....kkkk....",
+     "...EAyyAE...",
+     "..EAyywyAo..",
+     "..EAyyyyAo..",
+     "..EAyyyyAo..",
+     "...EAyyAo...",
+     "....kkkk....",
+     ".....+......",
+     ".....E......"))
+
+icon("accessoires", "cos.accessory.couronne_fleurs", "une couronne de fleurs", "💐", *centred(
+     "......I.....",
+     "..w..IyC..y.",
+     ".wys..C..yaA",
+     "..sLlLlLlLa.",
+     ".lL......Lt.",
+     "lL........tt",
+     ".Lt......tt.",
+     "..LtLtLtLt.."))
