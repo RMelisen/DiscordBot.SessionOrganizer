@@ -332,9 +332,9 @@ they work in any server), and **the bot uploads them itself**.
 - **Shiitake is the one name a food and a collectible share** (collectible key still
   `col.lentin_chene`). Wherever they could meet — autocomplete, gifts, trades, sales — print
   `ItemCatalog.ClearName`, which suffixes « (nourriture) » / « (collection) » to shared names only.
-- **A custom emoji costs ~35 characters where Unicode costs 2.** That's why `/inventory view` is two
-  pages (`InventoryPage`, `inv:page:{page}`) — on one page, a full inventory reached ≈ 7 100 of the
-  6 000 cap. **Measure anything new that lists many items with every icon uploaded.**
+- **A custom emoji costs ~35 characters where Unicode costs 2.** That's why `/inventory view` is three
+  pages (`InventoryPage`, `inv:page:{page}`: items, then the garde-robe in two) — on one page, a full
+  inventory reached ≈ 7 100 of the 6 000 cap. **Measure anything new that lists many items with every icon uploaded.**
 
 ## `/inventory collection` — a book
 
@@ -350,7 +350,7 @@ leaves the rarity out of each line so twelve lines fit in 1024.
 
 ## Cosmetics
 
-**Cosmetics are items; what a Plynling wears is six keys on it.** `CosmeticCatalog` holds the 117
+**Cosmetics are items; what a Plynling wears is six keys on it.** `CosmeticCatalog` holds the 129
 (`cos.<slot>.<name>`, stored, **append-only** — four retired, see below) with slot data (a thème's accent and banner, a titre's
 two genders, an accessoire's article, a cadre's two sides). Each is also an `ItemInfo` of
 `ItemKind.Cosmetic`, so give, trade, autocomplete and inventory handle them unchanged; they belong to
@@ -395,7 +395,7 @@ thème or cadre), so a newcomer has a choice; checks section 61 pins the two.
   default. Option keys are stored: append-only, never renamed, never containing « _ »; a new option
   needs its drawing first (checks section 62 compares the two).
 - **Auras** (8.6.0, `cos.aura.*`): an animated effect drawn around the Plynling, worn **with** the
-  accessory — `Outfit.With`/`Without` on one never touch the other. Ten: Scintillements
+  accessory — `Outfit.With`/`Without` on one never touch the other. Eleven: Scintillements
   (the look the rarer species lost in 8.5.1, now for anyone) and Bulles in the weekly rotation — one a
   week (`RotatingCount`) — and **one per
   season**: Pétales, a *Chef-d'œuvre* from primevères and cerises, **spring-only** (a recipe mixing seasons
@@ -403,7 +403,8 @@ thème or cadre), so a newcomer has a choice; checks section 61 pins the two.
   a crafted name unique), Feuilles mortes
   (autumn, key `cos.aura.feuilles`: `cos.grave.feuilles` is the cadre) and Flocons (winter), seasonal shop
   items (8.17.0). Mouches (commun), Confettis (peu commun), Éclairs (épique) and Étoiles filantes
-  (légendaire) joined the rotation with the Gentleman batch. Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
+  (légendaire) joined the rotation with the Gentleman batch, Carpes koï (épique, `cos.aura.koi`) with
+  Soleil-Levant. Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
   « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line, « d' » before a vowel
   (« Entouré d'éclairs », `AccessoryNotices.StartsWithVowelSound`). Not drawn on
   the sick and frozen faces: the try-on then says « Son aura ne se voit pas tant qu'il est malade ou gelé. »
@@ -423,10 +424,14 @@ thème or cadre), so a newcomer has a choice; checks section 61 pins the two.
   then. Their keys stay retired — never reuse them, and add them to `AccessoryArtChecks.Retired`.
 
 **Collections** (`CosmeticCollections`): a code-only label, each cosmetic in at most one, shown
-only as one « Collections » line on `/inventory view`'s garde-robe page. That page splits a slot past
-1024 into « (suite) » fields and drops names past 6000 (checks section 23). **It is close**: with
-all 117 owned and every icon uploaded the page is already icons-only and 5 818 of 6 000 characters —
-about five more cosmetics and it overflows (section 23 fails first): page the wardrobe before adding more.
+only as one « Collections » line on `/inventory view`'s second garde-robe page. **The garde-robe is
+two pages** (`InventoryPage.Wardrobe`: thèmes, titres, auras; `Wardrobe2`: accessoires, cadres and
+the Collections line), because one page with everything owned had already gone icons-only. Each
+page splits a slot past 1024 into « (suite) » fields and drops its names past 6000 on its own.
+With all 129 owned and every icon uploaded they measure 3 933 and 3 579 characters, names kept;
+checks section 23 fails if either loses a slot's names. Growing past that: split a page again, by
+slot (`WardrobeSlots` / `Wardrobe2Slots`). The newest collection, Soleil-Levant (Japan and East
+Asia, 12 pieces, all rotating), has the sugegasa drawn by code from each cap (`accessories.sugegasa`).
 
 **Six tiers** (`ItemRarity`, never stored): commun … rare, **épique**, légendaire, **mythique** — the
 new two cosmetics only. `TierPrice` (600 / 1 200 / 2 400 / 3 600 / 5 000) prices rotating **and

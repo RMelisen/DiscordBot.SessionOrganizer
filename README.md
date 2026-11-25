@@ -601,13 +601,13 @@ looks after her.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
-- **Cosmetics:** 117 things a Plynling can wear — a **thème** that recolours its card and adds a
+- **Cosmetics:** 129 things a Plynling can wear — a **thème** that recolours its card and adds a
   banner, a **titre** under its name (in its gender), up to three **accessoires** (« porte 🧣 une
   écharpe, … et … », from different categories, a clash replaces the other; two held items at most,
   one per hand), drawn on the Plynling's
   picture — some in a colour, a place or a side you pick for free in the wardrobe, and remembered
   for next time — an **aura** worn with it, animated around the Plynling (twinkling
-  stars, soap bubbles, buzzing flies, confetti, lightning, shooting stars, and one per season: falling
+  stars, soap bubbles, buzzing flies, confetti, lightning, shooting stars, koï carp, and one per season: falling
   petals, fireflies, autumn leaves, snowflakes), and a **cadre** for its grave. `/inventory cosmetics` is one screen
   with three tabs: the **wardrobe**, the **shop** (two basics per slot always on sale, auras aside, two items per slot
   that change every Monday, and seasonal ones, 300 to 5 000 cailloux) and **crafting**: fourteen
@@ -619,7 +619,8 @@ looks after her.
   « Fabriquer et porter » put it on at once. `/plynling wardrobe` opens the same screen on the
   wardrobe. Cosmetics belong to you, not the Plynling: they
   stay yours when it dies (its grave keeps what it wore) and dress the next one; they can be
-  given and traded, but not sold.
+  given and traded, but not sold. Many belong to a themed collection (Gentleman, Soleil-Levant…);
+  `/inventory view` lists what you own on two wardrobe pages, with your progress in each collection.
 - **Cailloux** come from `/work` (every 4 hours; once a day she lets a shift through up to
   5 minutes early, with a pout), from `/daily` (once a day: 10 on the first
   day, more each day in a row up to 100, with a growing chance of an item; missing a day starts

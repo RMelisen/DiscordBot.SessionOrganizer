@@ -481,6 +481,20 @@ public static class CosmeticCatalog
         Aura("eclairs", "⚡", "Éclairs", Rot, E);
         Aura("etoiles_filantes", "🌠", "Étoiles filantes", Rot, L);
 
+        // Soleil-Levant (CosmeticCollections): Japan and East Asia, all in the weekly rotation.
+        Accessory("onigiri", "🍙", "un onigiri", Rot, C);
+        Accessory("sugegasa", "👒", "un sugegasa", Rot, C);
+        Title("zen", "Le Zen", "La Zen", Rot, C);
+        Accessory("kanzashi", "🌸", "une épingle kanzashi", Rot, U);
+        Accessory("eventail", "🪭", "un éventail", Rot, U);
+        Theme("jardin_bambou", "Jardin de bambou", "🎋", 0x5E9E4A, Rot, U);
+        Grave("bambous", "🎋", "Bambous", Rot, U);
+        Accessory("chapeau_chinois", "🎎", "un chapeau chinois", Rot, R);
+        Title("sensei", "Le Sensei", "La Sensei", Rot, R);
+        Theme("torii", "Torii", "⛩️", 0xD23C2A, Rot, R);
+        Accessory("katana", "🗡️", "un katana", Rot, E);
+        Aura("koi", "🎏", "Carpes koï", Rot, E);
+
         return list;
     }
 }

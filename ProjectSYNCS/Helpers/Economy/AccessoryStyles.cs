@@ -40,9 +40,12 @@ public static class AccessoryStyles
         "cos.accessory.moufles" => new[] { Colour(("rouges", "Rouges"), ("bleues", "Bleues"), ("vertes", "Vertes")) },
         "cos.accessory.bonnet" => new[] { Colour(("rouge", "Rouge"), ("bleu", "Bleu"), ("vert", "Vert")) },
         "cos.accessory.collier_coquillages" or "cos.accessory.medaillon" => new[] { Place },
+        "cos.accessory.kanzashi" => new[] { Sides("Côté", false) },
+        "cos.accessory.eventail" => new[] { Colour(("rouge", "Rouge"), ("indigo", "Indigo"), ("sakura", "Sakura")), Hand },
         "cos.accessory.tulipe" or "cos.accessory.glace" or "cos.accessory.plume_doree"
             or "cos.accessory.bocal" or "cos.accessory.canne_peche" or "cos.accessory.lanterne" or "cos.accessory.cafe"
-            or "cos.accessory.canne" or "cos.accessory.montre_gousset" => new[] { Hand },
+            or "cos.accessory.canne" or "cos.accessory.montre_gousset"
+            or "cos.accessory.onigiri" or "cos.accessory.katana" => new[] { Hand },
         _ => Array.Empty<Choice>(),
     };
 

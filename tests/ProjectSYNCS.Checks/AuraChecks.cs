@@ -71,6 +71,8 @@ public static class AuraChecks
         var starry = Living(aura: "cos.aura.etoiles_filantes");
         starry.Gender = PlynlingGender.Female;
         Expect(PlynlingCardUi.Heading(starry, now).Contains("Entourée d'étoiles filantes"), "female heading, vowel: " + PlynlingCardUi.Heading(starry, now));
+        var koi = Living(aura: "cos.aura.koi");
+        Expect(PlynlingCardUi.Heading(koi, now).Contains("Entouré de carpes koï"), "koï heading: " + PlynlingCardUi.Heading(koi, now));
 
         string Screen(Plynling p, string? picked = null) => string.Join("\n", Flat(CosmeticCards.Build(
             new CosmeticView(picked is null ? CosmeticTab.Wardrobe : CosmeticTab.Craft, CosmeticSlot.Aura, picked),
@@ -219,7 +221,8 @@ public static class AuraChecks
         Entry("cos.aura.confettis", CosmeticSource.Rotating, ItemRarity.Uncommon, 1200, false, "Confettis");
         Entry("cos.aura.eclairs", CosmeticSource.Rotating, ItemRarity.Epic, 3600, false, "Éclairs");
         Entry("cos.aura.etoiles_filantes", CosmeticSource.Rotating, ItemRarity.Legendary, 5000, false, "Étoiles filantes");
-        Expect(CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count() == 10, $"{CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count()} auras, want 10");
+        Entry("cos.aura.koi", CosmeticSource.Rotating, ItemRarity.Epic, 3600, false, "Carpes koï");
+        Expect(CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count() == 11, $"{CosmeticCatalog.InSlot(CosmeticSlot.Aura).Count()} auras, want 11");
         // One aura per season: Pétales crafted from spring flowers, the three others sold in their season only.
         foreach (var (key, season) in new[] { ("cos.aura.lucioles", Season.Summer), ("cos.aura.feuilles", Season.Autumn), ("cos.aura.flocons", Season.Winter) })
         {

@@ -46,6 +46,7 @@ QUILL = (244, 234, 204)
 GREEN_L, GREEN_DD = (168, 222, 136), (40, 92, 48)
 STRAW_L, STRAW, STRAW_D = (252, 230, 160), (232, 194, 108), (182, 136, 66)
 COFFEE = (96, 60, 40)
+NORI = (34, 58, 44)
 
 # One character per colour in the drawings below; "." is empty.
 INKS = {
@@ -59,7 +60,7 @@ INKS = {
     "u": TULIP_L, "U": TULIP, "V": TULIP_D, "f": LEAF, "F": LEAF_D,
     "m": CREAM_L, "M": CREAM, "N": CREAM_D, "K": CONE, "Q": CONE_D, "Z": QUILL,
     "1": MITT, "2": MITT_D, "3": CUFF, "6": GREEN_L, "7": GREEN_DD,
-    "4": STRAW_L, "5": STRAW, "8": STRAW_D, "9": COFFEE,
+    "4": STRAW_L, "5": STRAW, "8": STRAW_D, "9": COFFEE, "0": NORI,
 }
 
 
@@ -269,6 +270,118 @@ NOEUD_PAPILLON = art(  # a navy bow tie, worn under the mouth
     "JJJvvJJJ",
     "vJ....Jv",
 )
+
+# ---- Soleil-Levant ----
+CHAPEAU_CHINOIS = art(  # taller and narrower, red lacquer, a gold knob and a gold rim
+    ".....l.....",
+    ".....g.....",
+    "....erR....",
+    "...errrR...",
+    "..errrrrR..",
+    ".errrrrrrR.",
+    "lggggggggdd",
+)
+KANZASHI = art(        # a sakura on a gold pin, two bead drops hanging under it
+    "....d.",
+    "..pd..",
+    ".pPp..",
+    "pPyPp.",
+    ".pPp..",
+    ".t.t..",
+    ".t..t.",
+    ".r..j.",
+)
+KANZASHI_AT = (2, 3)   # the flower's heart
+ONIGIRI = art(         # a rice triangle wrapped in a band of nori
+    "...w...",
+    "..wws..",
+    ".wwwws.",
+    ".w000s.",
+    "ww000ss",
+    ".s000s.",
+)
+ONIGIRI_GRIP = (6, 4)
+
+
+def _katana():
+    """A sheathed katana on the diagonal, two pixels thick, the end cap up-left and the hilt in the
+    hand: a gold kojiri, a red-lacquer saya with its sheen, a gold tsuba across the blade, a
+    black-and-white wrapped hilt. Red rather than black: black lacquer vanished on Discord's dark grey."""
+    n = 10
+    rows = [["."] * (n + 1) for _ in range(n + 1)]
+    for i in range(n):
+        top, under = ("l", "g") if i == 0 else ("r", "R") if i < 6 else \
+                     ("d", "D") if i == 6 else ("w", "x") if i % 2 else ("x", "w")
+        rows[i][i], rows[i + 1][i] = top, under
+    rows[5][7] = rows[8][5] = "g"                 # the tsuba, across the blade at (6, 6..7)
+    rows[4][8], rows[9][4] = "l", "d"
+    return ["".join(r) for r in rows]
+
+
+KATANA = _katana()
+KATANA_GRIP = (8, 8)
+
+
+def _eventail():
+    """A folding fan half open, its pivot in the hand: it opens outward, from a little below the
+    hand to well above it, so it stays clear of the cap and the body. Dark ribs at the pivot, the
+    paper on the outer band in folds alternating light and mid, its edge dark. Drawn red; the
+    other colours swap its three tones."""
+    import math
+    R, lo, hi = 6.6, -12, 125                      # radius; the spread, 0 straight out, 90 straight up
+    pts = {}
+    for dy in range(-8, 9):
+        for dx in range(-8, 9):
+            r = math.hypot(dx, dy)
+            angle = math.degrees(math.atan2(dy, dx))
+            if r > R or not lo <= angle <= hi:
+                continue
+            if r >= 2.6:
+                pts[dx, dy] = "R" if r > R - 1 else "e" if int((angle - lo) // 23) % 2 else "r"
+            elif r < 1 or int(angle - lo) % 46 < 12:
+                pts[dx, dy] = "O"
+    # dx grows outward (to the left of the hand), dy upward: flip both into rows
+    xmax, ymax = max(dx for dx, _ in pts), max(dy for _, dy in pts)
+    xmin, ymin = min(dx for dx, _ in pts), min(dy for _, dy in pts)
+    rows = [["."] * (xmax - xmin + 1) for _ in range(ymax - ymin + 1)]
+    for (dx, dy), ch in pts.items():
+        rows[ymax - dy][xmax - dx] = ch
+    return ["".join(r) for r in rows], (xmax, ymax)
+
+
+EVENTAIL, EVENTAIL_GRIP = _eventail()
+EVENTAIL_COLOURS = {"rouge": {}, "indigo": {"e": "j", "r": "B", "R": "v"},
+                    "sakura": {"e": "p", "r": "P", "R": "q"}}
+
+
+def sugegasa(pen, b):
+    """A wide, flat straw cone sized from the cap (two pixels past it on each side), sunk over the
+    cap's dome so the dome hides under it, with its chin cord down both sides of what shows of the
+    cap below the brim. Lit from the left like the caps; a weave line every third pixel."""
+    r = b.rest
+    left, right = r.cap_span()
+    width = min(right - left + 5, 36 if b.stage == "adult" else 30)
+    half = width // 2
+    h = max(3, (width + 2) // 6)
+    top_limit = -HAT_AT[1] if b.stage == "adult" else HOP          # the picture's top row
+    brim = max(r.cap_top + h // 2, top_limit + h - 1)
+    for j in range(h):                                              # j = 0 the brim's row
+        y = brim - j
+        reach = half if j == 0 else max(1, round(half * (h - j) / h))
+        for x in range(16 - reach, 16 + reach):
+            side = (x - 16 + reach) / max(1, 2 * reach - 1)           # 0 left .. 1 right
+            c = STRAW_D if j == 0 and side > 0.15 else STRAW_L if side < 0.3 else \
+                STRAW_D if side > 0.8 else STRAW
+            if j and (x - 16) % 3 == 0 and 0.3 <= side <= 0.8:
+                c = STRAW_D
+            pen.put(x, y, c)
+    pen.put(15, brim - h, STRAW_L)                                  # the cone's tip
+    pen.put(16, brim - h, STRAW)
+    for pick in (min, max):                                         # the cord
+        for y in range(brim + 1, r.cap_bottom + 1):
+            xs = [x for x in range(N) if r.r[y][x] == "cap"]
+            if xs:
+                pen.put(pick(xs), y, ROD_D)
 
 
 # ---- the body, measured -----------------------------------------------------------------
@@ -523,7 +636,7 @@ BONNET_COLOURS = {"rouge": {}, "bleu": {"1": "B", "2": "J"}, "vert": {"1": "f", 
 # The side a nœud, a fleur or a held thing sits on: the last part of its style name, the default
 # first (« rose_gauche », « blanche_droite », « droite »). Bare held items are just the side.
 SIDES = ("gauche", "droite")
-DEFAULT_SIDE = {"noeud": "gauche", "fleur": "droite", "ballon": "gauche"}
+DEFAULT_SIDE = {"noeud": "gauche", "fleur": "droite", "ballon": "gauche", "kanzashi": "droite", "eventail": "gauche"}
 
 
 def sided(make, colours, acc):
@@ -582,6 +695,14 @@ ACCESSORIES = {
     "monocle": dict(family="eyes", styles={"": monocle}),
     "canne": dict(family="held", styles=held_sides(CANNE_POMMEAU, CANNE_POMMEAU_GRIP)),
     "montre_gousset": dict(family="held", styles=held_sides(MONTRE, MONTRE_GRIP)),
+    "onigiri": dict(family="held", styles=held_sides(ONIGIRI, ONIGIRI_GRIP)),
+    "sugegasa": dict(family="hat", styles={"": sugegasa}),
+    "chapeau_chinois": dict(family="hat", styles={"": hat(CHAPEAU_CHINOIS)}),
+    "kanzashi": dict(family="cap", styles={          # at the fleur's spot, the right by default
+        side: on_cap(KANZASHI, 0.74, KANZASHI_AT, side != "droite") for side in ("droite", "gauche")}),
+    "eventail": dict(family="held", styles=sided(
+        lambda swap, side: held(recolour(EVENTAIL, swap), EVENTAIL_GRIP, side), EVENTAIL_COLOURS, "eventail")),
+    "katana": dict(family="held", styles=held_sides(KATANA, KATANA_GRIP)),
 }
 
 
@@ -677,6 +798,19 @@ if __name__ == "__main__":
     sheet(rows, switched, lambda r, l: dressed(r[1], r[0][0], stage=r[0][1], acc=l[0], style=l[1]),
           [f"{r[0][0]} {'bébé' if r[0][1] == 'baby' else ''}\n{r[1]}" for r in rows],
           [f"{acc}\n{st}" for acc, st in switched], c, K=4)
+    # Soleil-Levant: every new look on all 14 shapes, then three of them across the faces
+    soleil = [(acc, st) for acc, st in every
+              if acc in ("onigiri", "sugegasa", "chapeau_chinois", "kanzashi", "eventail", "katana")]
+    d = os.path.join(out, "soleil.png")
+    sheet(shapes, soleil, lambda s, l: dressed("content", s[0], stage=s[1], acc=l[0], style=l[1]),
+          [f"{sp} {'bébé' if st == 'baby' else ''}" for sp, st in shapes],
+          [f"{acc[:9]}\n{st}" for acc, st in soleil], d, K=4)
+    three = ["katana", "eventail", "sugegasa"]
+    e = os.path.join(out, "soleil_faces.png")
+    sheet(three, faces, lambda acc, fc: dressed(fc[0], "amanite", dirty=fc[1], acc=acc),
+          three, [fc[0] + (" sale" if fc[1] else "") for fc in faces], e, K=4)
     print(c)
     print(a)
     print(b)
+    print(d)
+    print(e)

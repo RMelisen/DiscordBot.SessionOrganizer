@@ -31,15 +31,17 @@ public static class AccessoryFit
     public static AccessoryCategory? Category(string? key) => key switch
     {
         "cos.accessory.casquette" or "cos.accessory.haut_de_forme" or "cos.accessory.couronne"
-            or "cos.accessory.chapeau_paille" or "cos.accessory.bonnet" or "cos.accessory.couronne_fleurs" => AccessoryCategory.Hat,
-        "cos.accessory.noeud" or "cos.accessory.fleur" => AccessoryCategory.Head,
+            or "cos.accessory.chapeau_paille" or "cos.accessory.bonnet" or "cos.accessory.couronne_fleurs"
+            or "cos.accessory.sugegasa" or "cos.accessory.chapeau_chinois" => AccessoryCategory.Hat,
+        "cos.accessory.noeud" or "cos.accessory.fleur" or "cos.accessory.kanzashi" => AccessoryCategory.Head,
         "cos.accessory.lunettes" or "cos.accessory.lunettes_rondes" or "cos.accessory.monocle" => AccessoryCategory.Eyes,
         "cos.accessory.echarpe" or "cos.accessory.collier_coquillages" or "cos.accessory.medaillon"
             or "cos.accessory.noeud_papillon" => AccessoryCategory.Neck,
         "cos.accessory.moufles" => AccessoryCategory.Hands,
         "cos.accessory.ballon" or "cos.accessory.tulipe" or "cos.accessory.glace"
             or "cos.accessory.plume_doree" or "cos.accessory.bocal" or "cos.accessory.canne_peche"
-            or "cos.accessory.lanterne" or "cos.accessory.cafe" or "cos.accessory.canne" or "cos.accessory.montre_gousset" => AccessoryCategory.Held,
+            or "cos.accessory.lanterne" or "cos.accessory.cafe" or "cos.accessory.canne" or "cos.accessory.montre_gousset"
+            or "cos.accessory.onigiri" or "cos.accessory.eventail" or "cos.accessory.katana" => AccessoryCategory.Held,
         _ => null,
     };
 

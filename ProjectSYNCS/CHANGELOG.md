@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.20.0 — 2026-11-25
+
+- New cosmetic collection, Soleil-Levant, all in the weekly rotation: an onigiri, a sugegasa and Le Zen (commun); a kanzashi pin, a folding fan in red, indigo or sakura, the Jardin de bambou thème and the Bambous cadre (peu commun); a chapeau chinois, Le Sensei and the Torii thème (rare); a katana and the Carpes koï aura (épique).
+- `/inventory view`'s wardrobe is now two pages (thèmes, titres and auras; accessoires and cadres with the collections), so a full wardrobe keeps its names.
+
 ## 8.19.0 — 2026-11-25
 
 - Cosmetics have six rarities: commun, peu commun, rare, the new épique (3 600 cailloux), légendaire and the new mythique, which is never sold.

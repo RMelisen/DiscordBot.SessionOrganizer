@@ -10,10 +10,12 @@ namespace ProjectSYNCS.Commands;
 // What a collection page lists: everything, what was found (held or not), or what never was.
 public enum CollectionFilter { All, Found, Missing }
 
-// /inventory view's two pages. One page no longer fits once every item has its icon: a custom
+// /inventory view's pages. One page no longer fits once every item has its icon: a custom
 // emoji is ~35 characters where Unicode is 2, and someone holding everything passed Discord's 6000
 // for a message's embeds (measured ≈ 7 100).
-public enum InventoryPage { Items, Wardrobe }
+// The wardrobe is itself two pages (thèmes, titres, auras / accessoires, cadres): with everything
+// owned one page had to drop the names. Code-only, it travels in inv:page:{page}.
+public enum InventoryPage { Items, Wardrobe, Wardrobe2 }
 
 // /inventory — what a person holds: the pantry, the collectibles and the book, and the ways
 // items change hands. Its own group rather than part of /plynling because items belong to the
@@ -358,7 +360,12 @@ public class InventoryModule : SyncsModuleBase
         int Count(string key) => byKey.TryGetValue(key, out var row) ? row.Quantity : 0;
 
         var embed = new EmbedBuilder()
-            .WithTitle(page == InventoryPage.Items ? "Ton inventaire" : "Ton inventaire — garde-robe")
+            .WithTitle(page switch
+            {
+                InventoryPage.Items => "Ton inventaire",
+                InventoryPage.Wardrobe => "Ton inventaire — garde-robe (1/2)",
+                _ => "Ton inventaire — garde-robe (2/2)",
+            })
             .WithColor(Color.Purple)
             .WithFooter($"🪨 {PebbleEconomy.Cailloux(balance)}");
 
@@ -392,15 +399,19 @@ public class InventoryModule : SyncsModuleBase
         }
         else
         {
+            var pageSlots = page == InventoryPage.Wardrobe ? WardrobeSlots : Wardrobe2Slots;
             var owned = CosmeticCatalog.SlotOrder
+                .Where(pageSlots.Contains)
                 .Select(slot => (Slot: slot, Items: CosmeticCatalog.InSlot(slot).Where(c => Count(c.Key) > 0).ToList()))
                 .Where(s => s.Items.Count > 0)
                 .ToList();
             var description = owned.Count > 0
                 ? "Pour les essayer et habiller ton Plynling : `/inventory cosmetics`."
-                : "Aucun cosmétique pour l'instant. La boutique : `/inventory cosmetics`.";
-            // One line for the collections, not a tag per item.
-            var collections = CosmeticCollections.Progress(key => Count(key) > 0);
+                : CosmeticCatalog.All.Any(c => Count(c.Key) > 0)
+                    ? "Rien de ce côté-ci de la garde-robe. La boutique : `/inventory cosmetics`."
+                    : "Aucun cosmétique pour l'instant. La boutique : `/inventory cosmetics`.";
+            // One line for the collections, not a tag per item, on the second page only.
+            var collections = page == InventoryPage.Wardrobe2 ? CosmeticCollections.Progress(key => Count(key) > 0) : null;
 
             // What is held, one field per slot, cut into « (suite) » fields past 1024. A wardrobe too big
             // for one embed even so (every icon uploaded, ~100 cosmetics) keeps the icons, drops the names.
@@ -421,11 +432,17 @@ public class InventoryModule : SyncsModuleBase
         var components = new ComponentBuilder()
             .WithButton("🎒 Objets", $"inv:page:{InventoryPage.Items}", page == InventoryPage.Items ? ButtonStyle.Primary : ButtonStyle.Secondary,
                 disabled: page == InventoryPage.Items)
-            .WithButton("👗 Garde-robe", $"inv:page:{InventoryPage.Wardrobe}", page == InventoryPage.Wardrobe ? ButtonStyle.Primary : ButtonStyle.Secondary,
+            .WithButton("👗 Thèmes, titres, auras", $"inv:page:{InventoryPage.Wardrobe}", page == InventoryPage.Wardrobe ? ButtonStyle.Primary : ButtonStyle.Secondary,
                 disabled: page == InventoryPage.Wardrobe)
+            .WithButton("🎀 Accessoires, cadres", $"inv:page:{InventoryPage.Wardrobe2}", page == InventoryPage.Wardrobe2 ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: page == InventoryPage.Wardrobe2)
             .Build();
         return (embed.Build(), components);
     }
+
+    // Which slots each garde-robe page lists; together, every slot of CosmeticCatalog.SlotOrder.
+    private static readonly CosmeticSlot[] WardrobeSlots = { CosmeticSlot.Theme, CosmeticSlot.Title, CosmeticSlot.Aura };
+    private static readonly CosmeticSlot[] Wardrobe2Slots = { CosmeticSlot.Accessory, CosmeticSlot.Grave };
 
     // The garde-robe page's room for its fields and description: Discord's 6000 less the title and
     // the footer (« Ton inventaire — garde-robe », the balance), with margin.

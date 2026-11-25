@@ -240,6 +240,13 @@ public static class AccessoryFitChecks
             "a monocle tried on replaces the lunettes rondes");
         Is(TryOn(W("ballon", "rouge_gauche"), null, W("cafe", "droite")), "ballon:rouge_gauche", "cafe:droite", null, null,
             "a café in the other hand stays beside the ballon");
+        // Soleil-Levant: the two conical hats are both hats; the éventail and the katana share the hands.
+        Is(Pick(W("sugegasa"), null, 1, W("chapeau_chinois")), "chapeau_chinois", null, "sugegasa", null,
+            "a chapeau chinois added beside the sugegasa replaces it");
+        Is(Pick(W("katana", "gauche"), null, 1, W("eventail", "rouge_gauche")), "katana:droite", "eventail:rouge_gauche", null, "katana",
+            "an éventail in the left hand moves the katana to the right");
+        Is(Pick(W("noeud", "rose_gauche"), null, 1, W("kanzashi")), "noeud:rose_gauche", "kanzashi:droite", null, null,
+            "a kanzashi sits on the right, beside a nœud on the left");
     }
 
     private static void Restyles()

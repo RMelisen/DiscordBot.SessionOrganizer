@@ -124,7 +124,7 @@ Chaque objet de collection a une rareté, qui fixe aussi son prix de revente :
 
 ### `/inventory view`
 
-Ton inventaire, **visible par toi uniquement** : ton garde-manger, tes objets trouvés, ta garde-robe et tes cailloux, sur deux pages.
+Ton inventaire, **visible par toi uniquement** : ton garde-manger, tes objets trouvés, ta garde-robe et tes cailloux, sur trois pages. La garde-robe en prend deux : **thèmes, titres et auras**, puis **accessoires et cadres**, avec où tu en es de chaque collection de cosmétiques (Gentleman, Soleil-Levant…).
 
 ### `/inventory shop`
 

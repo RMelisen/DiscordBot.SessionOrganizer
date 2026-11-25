@@ -50,6 +50,12 @@ public static class CosmeticCollections
             "cos.accessory.haut_de_forme", "cos.accessory.noeud_papillon", "cos.accessory.monocle", "cos.accessory.canne",
             "cos.accessory.montre_gousset", "cos.grave.roses",
         }),
+        new CosmeticCollection("Soleil-Levant", new[]
+        {
+            "cos.theme.jardin_bambou", "cos.theme.torii", "cos.title.zen", "cos.title.sensei",
+            "cos.accessory.onigiri", "cos.accessory.sugegasa", "cos.accessory.kanzashi", "cos.accessory.eventail",
+            "cos.accessory.chapeau_chinois", "cos.accessory.katana", "cos.aura.koi", "cos.grave.bambous",
+        }),
         new CosmeticCollection("Jour de fête", new[]
         {
             "cos.theme.arc_en_ciel", "cos.title.farceur", "cos.title.bavard", "cos.accessory.ballon",

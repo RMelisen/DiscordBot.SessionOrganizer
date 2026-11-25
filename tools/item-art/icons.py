@@ -3590,3 +3590,156 @@ icon("ui", "ui.check", "Coche", "✅", *outlined(
      "..............",
      "..............",
      ".............."))
+
+
+# ---- Soleil-Levant --------------------------------------------------------------------------------
+# The Japanese / East Asian collection (CosmeticCollections). Drawn as fills: centred() pads one to
+# 14×14 and outlined() wraps it, so the outline never reaches the frame's edge.
+
+def centred(*rows):
+    """A fill of at most 12×12, outlined, then centred on the 16×16 frame: the outline adds a cell
+    all round, so it stays at least a cell clear of the edge."""
+    w = max(len(r) for r in rows)
+    assert w <= 12 and len(rows) <= 12, "a Soleil-Levant fill is at most 12×12"
+    block = outlined(*(r.ljust(w, ".") for r in rows))            # (h + 2) × (w + 2)
+    top, left = (16 - len(block)) // 2, (16 - len(block[0])) // 2
+    out = [["."] * 16 for _ in range(16)]
+    for j, row in enumerate(block):
+        for i, c in enumerate(row):
+            out[top + j][left + i] = c
+    return ["".join(r) for r in out]
+
+
+def _fan_fill():
+    import math
+    rows = [["."] * 12 for _ in range(8)]
+    px, py = 5.5, 7.4                                   # the pivot, bottom centre
+    for y in range(8):
+        for x in range(12):
+            dx, dy = x - px, py - y
+            r = math.hypot(dx, dy)
+            a = math.degrees(math.atan2(dy, dx))       # 0 right .. 180 left
+            if r > 6.3 or not 8 <= a <= 172:
+                continue
+            if r >= 3:
+                rows[y][x] = "c" if r > 5.8 else "E" if int((a - 8) // 20.5) % 2 else "f"
+            elif r < 1.2:
+                rows[y][x] = "a"
+            elif int(a - 8) % 41 < 10:
+                rows[y][x] = "U"
+    return ["".join(r) for r in rows]
+
+
+def _katana_fill():
+    rows = [["."] * 12 for _ in range(12)]
+    for i in range(11):                                 # end cap up-right, hilt down-left
+        x, y = 11 - i, i
+        a, b = ("y", "a") if i == 0 else ("c", "Z") if i < 7 else ("a", "a") if i == 7 else ("w", "T") if i % 2 else ("T", "w")
+        rows[y][x] = a
+        if y + 1 < 12:
+            rows[y + 1][x] = b
+    rows[6][3] = rows[9][6] = "y"                     # the tsuba, across the blade at (4, 7)
+    return ["".join(r) for r in rows]
+
+
+icon("accessoires", "cos.accessory.onigiri", "un onigiri", "🍙", *centred(
+     ".....ww.....",
+     "....wwww....",
+     "...wwwwws...",
+     "..wwwwwwss..",
+     "..wwwwwwws..",
+     ".wwwwwwwwss.",
+     ".wwTTTTTTss.",
+     "wwwTttttTwss",
+     "wwwTTTTTTwss",
+     ".wwTTTTTTss.",
+     "..ssTTTTss.."))
+
+icon("accessoires", "cos.accessory.sugegasa", "un sugegasa", "👒", *centred(
+     ".....yy.....",
+     "....yAAa....",
+     "...yAJAaJ...",
+     "..yAAJAaaJ..",
+     ".yAJAAJaaJa.",
+     "yAAJAAJaaJaa",
+     "jjjjjjjjjjjj",
+     "..+......+..",
+     "...+....+...",
+     "....++++...."))
+
+icon("accessoires", "cos.accessory.chapeau_chinois", "un chapeau chinois", "🎎", *centred(
+     ".....y.....",
+     ".....a.....",
+     "....fEc....",
+     "...fEEcc...",
+     "..fEEEEcc..",
+     ".fEEEEEEcc.",
+     "fEEEEEEEEcc",
+     "ayyyyyyyyaa"))
+
+icon("accessoires", "cos.accessory.kanzashi", "une épingle kanzashi", "🌸", *centred(
+     "..........y.",
+     ".........a..",
+     "...I....a...",
+     "..IiI..a....",
+     ".IIyII......",
+     "..IiI.......",
+     ".II.II......",
+     "..+..+......",
+     "..+...+.....",
+     "..E...B....."))
+
+icon("accessoires", "cos.accessory.eventail", "un éventail", "🪭", *centred(*_fan_fill()))
+
+icon("accessoires", "cos.accessory.katana", "un katana", "🗡️", *centred(*_katana_fill()))
+
+icon("themes", "cos.theme.jardin_bambou", "Jardin de bambou", "🎋", *centred(
+     ".lL....lL...",
+     ".lL..l.lL.l.",
+     ".tt.ll.lL.ll",
+     ".lL....tt.lL",
+     "llL....lL.lL",
+     ".lL..lllL.tt",
+     ".tt....lL.lL",
+     ".lL....lL.lL",
+     ".lL....tt.lL",
+     ".lL....lL.lL",
+     "LLLLLLLLLLLL"))
+
+icon("themes", "cos.theme.torii", "Torii", "⛩️", *centred(
+     "k..........k",
+     "kkkkkkkkkkkk",
+     ".kkkkkkkkkk.",
+     "..EEEEEEEE..",
+     "..Ec.Ec.Ec..",
+     "EEEEEEEEEEEE",
+     "..Ec....Ec..",
+     "..Ec....Ec..",
+     "..Ec....Ec..",
+     "..Ec....Ec..",
+     ".kkk....kkk."))
+
+icon("cadres", "cos.grave.bambous", "Bambous", "🎋", *centred(
+     "tlLlLtlLlLlt",
+     "lt........tL",
+     "lL........lL",
+     "lL........lL",
+     "tt........tt",
+     "lL........lL",
+     "lL........lL",
+     "lL........lL",
+     "tt........tt",
+     "lL........lL",
+     "Lt........tL",
+     "tlLlLtlLlLlt"))
+
+icon("auras", "cos.aura.koi", "Carpes koï", "🎏", *centred(
+     "h..........h",
+     "....wwEE....",
+     "..wwEEEEw.ff",
+     ".wEEwwwEEwf.",
+     "wkwwwEEwwwff",
+     ".wwwwwwEEwf.",
+     "..wwwwwww.ff",
+     "....w..w....",
+     "h..........h"))

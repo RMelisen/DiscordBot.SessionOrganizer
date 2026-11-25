@@ -309,31 +309,73 @@ def eclairs(spray, box, f):
 SHOOT_CORE, SHOOT, SHOOT_TRAIL = (255, 255, 240), (255, 232, 140), (180, 200, 255)
 
 
-def etoiles_filantes(spray, box, f):
-    x0, y0, x1, y1 = box
-    # two stars half a loop apart, one down each side where the body leaves room (a star crossing
-    # the cap would vanish behind it): 7 frames streaking steeply down and outwards, then a twinkle
-    for sx, phase, dx in ((x1 + 2, 0, 1), (x0 - 2, 8, -1)):
-        t = (f + phase) % FRAMES
-        x, y = spray.clamp(sx, y0 + 1, margin=3)
-        if t < 7:
-            hx, hy = x + dx * (t // 3), y + 2 * t
-            for k, a in ((3, 70), (2, 120), (1, 180)):            # the trail, faintest last
-                spray.put(hx - dx * (k // 3), hy - 2 * k, SHOOT_TRAIL, a)
-                spray.put(hx - dx * (k // 3), hy - 2 * k + 1, SHOOT_TRAIL, a // 2)
-            spray.put(hx, hy, SHOOT_CORE)
-            for ddx, ddy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                spray.put(hx + ddx, hy + ddy, SHOOT, 170)
-        elif t == 7:                                              # it burns out in a twinkle
-            hx, hy = x + dx * 2, y + 14
-            for ddx, ddy in ((1, 1), (-1, -1), (1, -1), (-1, 1)):
-                spray.put(hx + ddx, hy + ddy, SHOOT, 150)
-
-
+def etoiles_filantes(spray, box, f):
+    x0, y0, x1, y1 = box
+    # two stars half a loop apart, one down each side where the body leaves room (a star crossing
+    # the cap would vanish behind it): 7 frames streaking steeply down and outwards, then a twinkle
+    for sx, phase, dx in ((x1 + 2, 0, 1), (x0 - 2, 8, -1)):
+        t = (f + phase) % FRAMES
+        x, y = spray.clamp(sx, y0 + 1, margin=3)
+        if t < 7:
+            hx, hy = x + dx * (t // 3), y + 2 * t
+            for k, a in ((3, 70), (2, 120), (1, 180)):            # the trail, faintest last
+                spray.put(hx - dx * (k // 3), hy - 2 * k, SHOOT_TRAIL, a)
+                spray.put(hx - dx * (k // 3), hy - 2 * k + 1, SHOOT_TRAIL, a // 2)
+            spray.put(hx, hy, SHOOT_CORE)
+            for ddx, ddy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                spray.put(hx + ddx, hy + ddy, SHOOT, 170)
+        elif t == 7:                                              # it burns out in a twinkle
+            hx, hy = x + dx * 2, y + 14
+            for ddx, ddy in ((1, 1), (-1, -1), (1, -1), (-1, 1)):
+                spray.put(hx + ddx, hy + ddy, SHOOT, 150)
+
+
+# ---- Carpes koï: three small koï circling slowly beside the body, a ripple trailing ---------
+
+KOI_WHITE, KOI_RED, KOI_ORANGE, KOI_ORANGE_L, KOI_ORANGE_D = \
+    (250, 248, 240), (226, 58, 52), (246, 140, 44), (255, 190, 96), (196, 96, 30)
+RIPPLE = (176, 214, 240)
+# A koï seen from the side, facing right (mirrored when it swims left): "h" head, "b" body,
+# "p" its patch, "t" the tail fork.
+KOI_SHAPE = ["t.pp.", ".bbbh", "t.bb."]
+KOI_COATS = [{"h": KOI_RED, "b": KOI_WHITE, "p": KOI_RED, "t": KOI_WHITE},              # kohaku: red and white
+             {"h": KOI_ORANGE_L, "b": KOI_ORANGE, "p": KOI_ORANGE_L, "t": KOI_ORANGE_D},  # all orange
+             {"h": KOI_WHITE, "b": KOI_ORANGE, "p": KOI_WHITE, "t": KOI_ORANGE}]          # orange and white
+
+
+def koi(spray, box, f):
+    x0, y0, x1, y1 = box
+    mid = (x0 + x1) // 2
+    # each fish drifts round its own flat oval beside the stem (11 columns out: clear of every
+    # stem, under every cap), one turn a loop so frame 15 flows into 0: along the top one way,
+    # back along the bottom. Two on the left, the mood marks living on the right.
+    for ((sx, sy), phase), coat in zip((((mid - 11, y1 - 4), 0), ((mid - 12, y1 - 10), 7), ((mid + 11, y1 - 6), 11)),
+                                       KOI_COATS):
+        cx, cy = spray.clamp(sx, sy, margin=5)
+
+        def at(t):
+            a = 2 * math.pi * ((f + phase - t) % FRAMES) / FRAMES
+            return cx + 3 * math.cos(a), cy + 1.5 * math.sin(a)
+
+        hx, hy = at(0)
+        right = hx >= at(1)[0]                     # it faces the way it swims
+        # the ripple: a faint ring where it passed three frames ago
+        rx, ry = (round(v) for v in at(3))
+        for ddx, ddy in ((2, 0), (-2, 0), (1, -1), (-1, -1), (1, 1), (-1, 1)):
+            spray.put(rx + ddx, ry + ddy, RIPPLE, 60)
+        x, y = round(hx), round(hy)
+        for j, row in enumerate(KOI_SHAPE):
+            for i, ch in enumerate(row):
+                if ch != ".":
+                    dx = i - 4 if right else 4 - i     # the head on the fish's point
+                    spray.put(x + dx, y + j - 1, coat[ch], 210 if ch == "t" else 255)
+
+
 # key (the cosmetic key without « cos.aura. ») -> drawing, in catalogue order
 AURAS = {"scintillements": scintillements, "bulles": bulles, "petales": petales,
          "flocons": flocons, "feuilles": feuilles, "lucioles": lucioles,
-         "mouches": mouches, "confettis": confettis, "eclairs": eclairs, "etoiles_filantes": etoiles_filantes}
+         "mouches": mouches, "confettis": confettis, "eclairs": eclairs, "etoiles_filantes": etoiles_filantes,
+         "koi": koi}
 
 def surround(im, body, state, aura, frame, tall=False):
     """A copy of the built (and maybe dressed) frame `im` with aura `aura` drawn for `frame`; `tall`

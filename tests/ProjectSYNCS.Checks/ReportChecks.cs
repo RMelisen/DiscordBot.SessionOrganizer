@@ -244,6 +244,28 @@ public static class ReportChecks
                 }
                 catch (ArgumentException ex) { Fail($"/inventory view {invPage} with everything held throws: {ex.Message}"); }
             }
+            // The wardrobe is two pages so each keeps its names with everything owned (one page went
+            // icons-only past ~120 cosmetics): every slot's last item still shows by name, and the
+            // Collections line sits on the second page only.
+            foreach (var (wPage, wSlots) in new[]
+            {
+                (ProjectSYNCS.Commands.InventoryPage.Wardrobe, new[] { CosmeticSlot.Theme, CosmeticSlot.Title, CosmeticSlot.Aura }),
+                (ProjectSYNCS.Commands.InventoryPage.Wardrobe2, new[] { CosmeticSlot.Accessory, CosmeticSlot.Grave }),
+            })
+            {
+                try
+                {
+                    var (w, _) = ProjectSYNCS.Commands.InventoryModule.BuildInventoryPage(heldEverything, 0, 9_999_999, wPage);
+                    var text = string.Concat(w.Fields.Select(f => f.Value));
+                    foreach (var slot in wSlots)
+                        if (!text.Contains(CosmeticCatalog.ShortName(CosmeticCatalog.InSlot(slot).Last())))
+                            Fail($"/inventory view {wPage}: {slot} lost its names with everything owned");
+                    var hasCollections = w.Fields.Any(f => f.Name == "Collections");
+                    if (hasCollections != (wPage == ProjectSYNCS.Commands.InventoryPage.Wardrobe2))
+                        Fail($"/inventory view {wPage}: the Collections line is on the wrong page");
+                }
+                catch (ArgumentException ex) { Fail($"/inventory view {wPage} throws: {ex.Message}"); }
+            }
             // Every title and nothing else: too long for one field, short enough to keep the names.
             try
             {

@@ -126,6 +126,16 @@ public static class CraftingChecks
                      "cos.accessory.noeud_papillon", "cos.accessory.monocle", "cos.accessory.canne", "cos.accessory.montre_gousset" })
             Expect(gentleman.Contains(key), $"collection Gentleman: {key} missing");
         Expect(!gentleman.Contains("cos.grave.colombes") && all.All(c => c.Name != "Grand Illusionniste"), "collection Gentleman: the magician is still there");
+        // Soleil-Levant: exactly its twelve pieces, all in the weekly rotation.
+        var soleil = all.FirstOrDefault(c => c.Name == "Soleil-Levant")?.Keys ?? Array.Empty<string>();
+        var soleilKeys = new[]
+        {
+            "cos.accessory.onigiri", "cos.accessory.sugegasa", "cos.accessory.kanzashi", "cos.accessory.eventail",
+            "cos.accessory.chapeau_chinois", "cos.accessory.katana", "cos.title.zen", "cos.title.sensei",
+            "cos.theme.jardin_bambou", "cos.theme.torii", "cos.grave.bambous", "cos.aura.koi",
+        };
+        Expect(soleil.Count == soleilKeys.Length && soleilKeys.All(soleil.Contains), $"collection Soleil-Levant: [{string.Join(", ", soleil)}]");
+        Expect(soleilKeys.All(k => CosmeticCatalog.ByKey(k)?.Source == CosmeticSource.Rotating), "collection Soleil-Levant: a piece is not rotating");
 
         var froid = all.First(c => c.Name == "Grand-Froid");
         Expect(CosmeticCollections.Progress(_ => false) is null, "progress shown with nothing owned");
