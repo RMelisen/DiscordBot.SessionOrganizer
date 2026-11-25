@@ -367,44 +367,31 @@ every Ready and on `JoinedGuild`.
 - `PlynlingArt.Key` is exhaustive and **throws** on an unkeyed species (never default to one).
 - **One species redrawn = new bare names for it only**: `PlynlingArt.Redrawn` (must match `REDRAWN` in
   `export.py`) gives its bare and visit files their own version (Coprin 6), instead of a `Version` bump
-  renaming ~30 800 files. How to export one: `tools/plynling-art/README.md`.
+  renaming every species' files. How to export one: `tools/plynling-art/README.md`.
 - **Dressed pictures are drawn at runtime** (8.9.0, several accessories make pre-rendering every
   combination impossible): `PlynlingPainter` composes the bare picture with `PlynlingLook` (accessories with their
   styles and sides, aura, marks) from layers in `ProjectSYNCS/Assets/Plynlings/` (`base`, `acc`, `aura`,
   `marks`; ImageSharp 3.1.12) and keeps a **bounded cache**. A draw that fails falls back to the bare
   link. **`Helpers/Core/CardSend.cs` is the single send path for a picture-carrying card**: any new send
   site of a card built through `SpriteOf` must use it. **After any art change re-export the layers**:
-  `python tools/plynling-art/export.py layers`. Checks sections 62 and 64 now check the layers, 70
-  (`PaintChecks`) the painter and 71 (`AccessoryFitChecks`) the wearing rules; `-- art` runs the full
-  pixel-exact sweep (~9 min, must report 0 differences). `MarksFaces` in `AccessoryArtChecks` is
-  hardcoded to the faces that carry mood marks — update it with `export.py`. The pre-rendered
-  `_with_`/`_aura_` files under `assets/plynlings/` **stay**: posted messages still link them. The two
-  items below describe those files and their naming.
-- **The worn accessory is drawn on the picture** (8.5.0): `SpriteOf` adds
-  `_with_<accessory>[_<style>]` after the face and its `_dirty`, from the Plynling's `Outfit` — or the
-  try-on's, which `CardHead` passes. Every card face but angry (a visit face: angry stays plain), every
-  shape, every accessory in every style is pre-rendered (`tools/plynling-art/accessories.py`, ~8 800
-  files, new names so no version bump). An accessory key the catalogue doesn't know falls back to the
-  plain picture, a style that isn't one of its to the default (`AccessoryStyles.Resolve`). An adult in a
-  hat is a taller picture (40 px canvas, the Plynling at 80 %). **Checks section 62 reads
-  `assets/plynlings/`**: every URL the bot can build must exist and the bot's styles must equal the
-  drawn ones — a new accessory or style needs its drawing and a re-export before it ships. **Bumping
-  `Version` now renames ~9 100 files (~54 MB more in the public repo's history)**: to redraw one
-  accessory, prefer giving it new filenames over bumping the shared version. Visits and
-  event cards keep the plain picture (owner's call: piece B of the cosmetics rework was dropped).
-- **The worn aura is drawn too** (8.6.0): `_aura_<aura>` comes **last**, after any accessory segment,
-  on the faces in `PlynlingArt.AuraMoods` only — happy, content, sad, hungry, starving, sleeping, clean
-  or dirty. Frozen (the ice), sick (the old sparkles went out when sick) and angry stay without it, as
-  does an unknown key. Every such face × every look (none + each accessory style) × each aura is
-  pre-rendered (`tools/plynling-art/auras.py`, 21 672 files; `python export.py auras` writes only
-  those, `python export.py accessories <name>…` only a new accessory's looks, plain and in each aura).
-  **The cost multiplies**: a new accessory look now costs 4 files per face and shape (plain +
-  three auras), a new aura ~6 200 files (~65 MB: moving particles compress worse than a still
-  accessory), and a `Version` bump re-exports ~30 800 files (~250 MB).
-  Checks section 64 reads the folder like section 62. **Auras added since 8.17.0 (Lucioles, Feuilles
-  mortes, Flocons) have no pre-rendered files**: only `auras.PRERENDERED_AURAS` (the first three) are
-  exported as `_aura_` files, and section 70 compares the painter against those three only; the others
-  live in the layers alone.
+  `python tools/plynling-art/export.py layers`. Checks sections 62 and 64 check the layers, 70
+  (`PaintChecks`) the painter and 71 (`AccessoryFitChecks`) the wearing rules. `MarksFaces` in
+  `AccessoryArtChecks` is hardcoded to the faces that carry mood marks — update it with `export.py`.
+  A new accessory, style or aura costs only its layers. The pre-rendered `_with_`/`_aura_` files were
+  retired on 2026-11-25: posted messages from 8.5.0–8.8.x may show a broken image.
+- **What the dressed picture shows**: the Plynling's `Outfit` — or the try-on's, which `CardHead`
+  passes. Angry (a visit face) is never dressed. The aura shows only on the faces in
+  `PlynlingArt.AuraMoods` — happy, content, sad, hungry, starving, sleeping, clean or dirty; frozen (the
+  ice), sick (the sparkles go out when sick) and angry stay without it. An accessory key the catalogue
+  doesn't know is dropped, the later ones moving up (`Outfit.Of`), a style that isn't one of its to the default
+  (`AccessoryStyles.Resolve`), an unknown aura key to none. An adult in a hat is a taller picture (40 px
+  canvas, the Plynling at 80 %). A new accessory or style needs its drawing and `export.py layers`
+  before it ships (section 62 compares the bot's styles with the drawn ones). Since 8.16.1 visit
+  endings and event cards show the dressed picture too (`DressedSprite`, `VisitSpriteOf`, on the
+  visit canvas; clean, never `_dirty`). A `Version` bump means a full `python export.py`: it deletes the
+  folder and writes the 319 bare, visit, memorial and food files at the new version (a redrawn
+  species' own-version files go too); to redraw one species prefer `REDRAWN` (above), so the others
+  keep their cached URLs.
 
 ## Families — dormant
 

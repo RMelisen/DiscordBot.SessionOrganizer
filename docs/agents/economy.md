@@ -402,10 +402,10 @@ slot row is then 5 buttons, a row's maximum — a sixth slot needs a select ther
   items (8.17.0). Aura has no *Ouvrage*; section 61 exempts the slot. `Label` is
   « Aura X » like « Thème X »; the card says « 🫧 Entouré de bulles » under the accessory line. Not drawn on
   the sick and frozen faces: the try-on then says « Son aura ne se voit pas tant qu'il est malade ou gelé. »
-  Art and file cost: `plynling.md` *Art*. **A new aura costs ~126 layer files and no pre-rendered ones**
-  (the seasonal three were the first): draw it in `auras.py`, add its key to `AURAS` (never to
-  `PRERENDERED_AURAS`), `python export.py layers`, a 16×16 icon in `tools/item-art/icons.py`, a catalogue
-  line, and its `Entry` in section 64.
+  Art and file cost: `plynling.md` *Art*. **A new aura costs ~126 layer files**: draw it in
+  `auras.py`, add its key to `AURAS`, `python export.py layers`, a 16×16 icon in `tools/item-art/icons.py`, a catalogue
+  line, and its `Entry` in section 64. A new accessory or style likewise costs only its layers: draw it
+  in `accessories.py`, `python export.py layers`.
 - **Retired cosmetics**: the sac à dos and the casque audio left the catalogue in 8.5.0; the data
   migration `RetireBackpackAndHeadphones` refunded 1 200 cailloux a copy and took them off. The
   Citrouilles cadre (`cos.grave.citrouilles`, autumn) left in 8.8.0, the owner's call;

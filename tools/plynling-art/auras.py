@@ -232,10 +232,6 @@ def lucioles(spray, box, f):
 # key (the cosmetic key without « cos.aura. ») -> drawing, in catalogue order
 AURAS = {"scintillements": scintillements, "bulles": bulles, "petales": petales,
          "flocons": flocons, "feuilles": feuilles, "lucioles": lucioles}
-# The auras the pre-rendered « _aura_ » files exist for (export.py's full and `auras` exports, checks
-# section 70). Later ones are drawn by the bot from the layers alone: never add to this list.
-PRERENDERED_AURAS = ["scintillements", "bulles", "petales"]
-
 
 def surround(im, body, state, aura, frame, tall=False):
     """A copy of the built (and maybe dressed) frame `im` with aura `aura` drawn for `frame`; `tall`

@@ -9,8 +9,8 @@ namespace ProjectSYNCS.Helpers;
 
 /// <summary>
 /// Draws a dressed Plynling (accessories, aura) from the layers tools/plynling-art exports into
-/// Assets/Plynlings (`python export.py layers`), as the 8× animated lossless WebP the pre-rendered
-/// pictures are — pixel-identical to them for one accessory. A singleton by being static: one
+/// Assets/Plynlings (`python export.py layers`), as the 8× animated lossless WebP the bare
+/// pictures are. A singleton by being static: one
 /// bounded, lock-guarded cache of encoded pictures keyed by the look, reset on restart.
 /// </summary>
 /// <remarks>

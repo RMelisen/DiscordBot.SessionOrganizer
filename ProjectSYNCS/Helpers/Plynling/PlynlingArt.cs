@@ -50,8 +50,7 @@ public static class PlynlingArt
     // The bare picture, as a link. The adult filename deliberately carries no stage segment: it is the
     // file every species already had, so adding the baby invalidated nothing Discord had cached. The
     // dirty version adds « _dirty » after the face. A dressed Plynling is drawn by the bot instead
-    // (LookOf, PlynlingPainter); the old « _with_… » and « _aura_… » files stay in assets/plynlings/
-    // because messages already posted link them.
+    // (LookOf, PlynlingPainter).
     public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false) =>
         $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}" +
         $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}_v{VersionOf(Key(species))}.webp";

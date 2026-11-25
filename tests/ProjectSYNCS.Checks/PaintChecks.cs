@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Discord;
 using ProjectSYNCS.Helpers;
@@ -9,15 +8,9 @@ using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
 
-// 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): look names round-trip, every
-// single-accessory picture (and with an aura) drawn from ProjectSYNCS/Assets/Plynlings is pixel-exact,
-// tick for tick, against today's pre-rendered file in assets/plynlings/, the marks repaint changes
-// nothing on its own, missing art is null, the cache hits, the visit canvas lines up with today's
-// _visit files, and FilesFor finds a card's pictures.
-//
-//     dotnet run --project tests/ProjectSYNCS.Checks -- art
-//
-// compares every face, look and aura on all 14 shapes; the default run a sample of them (InSample).
+// 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): look names round-trip, the
+// marks repaint changes nothing on its own, missing art is null, the cache hits, the visit canvas lines
+// up with today's bare _visit files in assets/plynlings/, and FilesFor finds a card's pictures.
 public static class PaintChecks
 {
     private static Action<string> _fail = _ => { };
@@ -30,25 +23,17 @@ public static class PaintChecks
     private const int Tick = 125;
     private const string AccessoryPrefix = "cos.accessory.", AuraPrefix = "cos.aura.";
 
-    // Must match AURA_STATES (auras.py) and DIRTY_STATES (export.py); PlynlingArt keeps its own private copies.
-    private static readonly string[] AuraFaces = { "happy", "content", "sad", "hungry", "starving", "sleeping" };
-    private static readonly string[] DirtyFaces = { "happy", "content", "sad", "hungry", "starving", "sleeping", "sick" };
-
     private static readonly string[] Faces = Enum.GetValues<PlynlingMood>().Where(m => m != PlynlingMood.Angry)
         .Select(m => m.ToString().ToLowerInvariant()).ToArray();
 
-    private static string[] AllShapes() => PlynlingArt.StagedSpecies.Select(PlynlingArt.Key).OrderBy(k => k)
-        .SelectMany(k => new[] { k, k + "_baby" }).ToArray();
-
-    public static void Run(Action<string> fail, string[] args)
+    public static void Run(Action<string> fail)
     {
         _fail = fail;
         var root = StoryChecks.RepoRoot();
         PlynlingPainter.AssetsRoot = Path.Combine(root, "ProjectSYNCS", "Assets", "Plynlings");
         var old = Path.Combine(root, "assets", "plynlings");
+        Expect(Auras().Length == 6, $"{Auras().Length} auras in the catalogue, expected 6");
         LookNamesRoundTrip();
-        var art = args.Length > 0 && args[0] == "art";
-        SinglesMatchToday(old, art ? AllShapes() : Sample, art);
         MarksRepaintIsInvisible();
         MarksBlendShows();
         MissingArtIsNull();
@@ -58,7 +43,7 @@ public static class PaintChecks
     }
 
     // The visit canvas (PlynlingLook.Visit): names round-trip, a bare visit look is pixel-exact against the
-    // pre-rendered _visit file (so a dressed one sits where its partner does), and a hat fits whole.
+    // bare _visit file in assets/plynlings/ (so a dressed one sits where its partner does), and a hat fits whole.
     private static void VisitPictures(string old)
     {
         var dressed = new PlynlingLook("coprin_baby", "happy", false, new("cos.accessory.couronne", null), new("cos.accessory.baguette", "droite"),
@@ -85,8 +70,7 @@ public static class PaintChecks
             $"a hat on the visit canvas loses pixels ({cw}x{ch} card)");
     }
 
-    // Every (accessory key, style before sides existed) pair: the colour and place choices only, as the old
-    // pre-rendered files name them; no-style accessories as a single null.
+    // Every (accessory key, colour/place style) pair, sides left out; no-style accessories as a single null.
     private static IEnumerable<(string Key, string? Style)> TodaysLooks()
     {
         foreach (var acc in CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Accessory))
@@ -102,12 +86,9 @@ public static class PaintChecks
     }
 
 
-    // The auras today's pre-rendered « _aura_ » files exist for (PRERENDERED_AURAS in auras.py). Later
-    // ones are drawn from the layers alone, with nothing to compare against: section 64 checks their layers.
-    private static readonly string[] PrerenderedAuras = { "scintillements", "bulles", "petales" };
-
+    // Every aura in the catalogue, by its short name.
     private static string[] Auras() => CosmeticCatalog.All.Where(c => c.Slot == CosmeticSlot.Aura)
-        .Select(c => c.Key[AuraPrefix.Length..]).Where(PrerenderedAuras.Contains).ToArray();
+        .Select(c => c.Key[AuraPrefix.Length..]).ToArray();
 
     private static readonly Regex Safe = new("^[A-Za-z0-9_.-]+$");
 
@@ -195,61 +176,6 @@ public static class PaintChecks
         return off == 0 ? null : $"{off} px off";
     }
 
-    private static readonly string[] Sample = { "amanite", "coprin_baby" };
-
-    // The default run's share of the sweep, on the sample shapes: every look on content (clean and
-    // dirty), and every aura on every aura face with no accessory, a hat (the 320 px canvas and its
-    // `_tall` aura) or a held item. `-- art` compares everything on all 14 shapes.
-    private static bool InSample(string face, string? key, string? aura) =>
-        aura is null ? face == "content" : key is null or "cos.accessory.couronne" or "cos.accessory.baguette";
-
-    private static void SinglesMatchToday(string old, string[] shapes, bool everything)
-    {
-        var jobs = new List<(PlynlingLook Look, string Old)>();
-        var missingOld = new List<string>();
-        foreach (var shape in shapes)
-        foreach (var face in Faces)
-        foreach (var dirty in DirtyFaces.Contains(face) ? new[] { false, true } : new[] { false })
-        {
-            var head = $"plynling_{shape}_{face}{(dirty ? "_dirty" : "")}";
-            var looks = TodaysLooks().Select(l => ((string Key, string? Style)?)l).Prepend(null);
-            foreach (var l in looks)
-            {
-                var worn = l is { } x ? new WornAccessory(x.Key, AccessoryStyles.Resolve(x.Key, x.Style)) : null;
-                var with = l is { } y ? $"_with_{y.Key[AccessoryPrefix.Length..]}{(y.Style is null ? "" : "_" + y.Style)}" : "";
-                foreach (var aura in AuraFaces.Contains(face) ? Auras().Select(a => (string?)a).Prepend(null) : new string?[] { null })
-                {
-                    if (!everything && !InSample(face, l?.Key, aura)) continue;
-                    // The plain picture is the bare file, which a redrawn species names with its own version.
-                    var version = l is null && aura is null ? PlynlingArt.VersionOf(shape.Replace("_baby", "")) : PlynlingArt.Version;
-                    var file = Path.Combine(old, $"{head}{with}{(aura is null ? "" : "_aura_" + aura)}_v{version}.webp");
-                    if (!File.Exists(file)) { missingOld.Add(Path.GetFileName(file)); continue; }
-                    jobs.Add((new PlynlingLook(shape, face, dirty, worn, null, aura), file));
-                }
-            }
-        }
-        Expect(missingOld.Count == 0, $"{missingOld.Count} pre-rendered file(s) missing, e.g. {string.Join(", ", missingOld.Take(3))}");
-        Expect(jobs.Count > 0, "no picture compared");
-
-        var failures = new ConcurrentQueue<string>();
-        var sw = Stopwatch.StartNew();
-        Parallel.ForEach(jobs, job =>
-        {
-            try
-            {
-                var drawn = PlynlingPainter.Draw(job.Look);
-                var why = drawn is null ? "not drawn" : Differs(drawn, job.Old);
-                if (why is not null) failures.Enqueue($"{job.Look.FileName} vs {Path.GetFileName(job.Old)}: {why}");
-            }
-            catch (Exception ex) { failures.Enqueue($"{job.Look.FileName}: {ex.GetType().Name} {ex.Message}"); }
-        });
-        Expect(failures.IsEmpty, $"{failures.Count}/{jobs.Count} drawn picture(s) differ from today's, e.g. " +
-                                 string.Join("; ", failures.OrderBy(f => f).Take(5)));
-        if (everything)
-            Console.WriteLine($"art: {jobs.Count} pictures over {shapes.Length} shapes compared, {failures.Count} differ, " +
-                              $"{sw.Elapsed.TotalSeconds:0}s");
-    }
-
     // Base + marks repaint with no accessory = the base, for every shape and face with a marks file;
     // and a right-hand item on a marked face still draws.
     private static void MarksRepaintIsInvisible()
@@ -281,6 +207,8 @@ public static class PaintChecks
 
     // A layer's tick (a still: its one frame).
     private static Rgba32[] At(List<Rgba32[]> ticks, int t) => ticks[ticks.Count == 1 ? 0 : t];
+
+    private static readonly string[] Sample = { "amanite", "coprin_baby" };
 
     // The repaint itself shows: base + a right-hand item with the marks pass differs from the same
     // without it somewhere, for each sample shape, and only where the marks layer and the item are

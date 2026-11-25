@@ -122,7 +122,7 @@ public static class AccessoryArtChecks
     }
 
     // The looks drawn for the content Amanite, read back from the filenames, against the bot's.
-    // (the layers, not the old pre-rendered pictures: those have no sides).
+    // (the layers, which carry every side).
     private static void StylesMatchTheArt()
     {
         var layers = Path.Combine(StoryChecks.RepoRoot(), "ProjectSYNCS", "Assets", "Plynlings", "acc");

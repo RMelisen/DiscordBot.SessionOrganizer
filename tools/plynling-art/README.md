@@ -64,7 +64,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   itself on every frame (the cap's real top, the first stem row under it, the arms), so one drawing
   fits every species and stage and follows the breath and the hop. Some come in **styles** the player
   picks: colours (nœud, fleur, écharpe, casquette, ballon, moufles, bonnet) and a place at the neck (haut,
-  bas); the first of each is the default, and the names must match `AccessoryStyles` in the bot. **Sides:** nœud, fleur and every held item also carry a side as the last style part (`rose_gauche`, `blanche_droite`, `rouge_gauche` for the ballon, a bare `gauche`/`droite` for the other held items); the default side comes first (nœud and held items gauche, fleur droite) and draws exactly as before. The other side mirrors the drawing (`on_cap` flips `at` and the centre; `held` stamps mirrored with its grip just outside `hand_r`). `file_style` keeps the old file names: the default side drops out of a name (`_with_noeud_rose`), only the other side shows (`_with_noeud_rose_droite`). `python accessories.py <outdir>` also writes `accessories_sides.png` (every switched side on all 14 shapes, content and happy). An
+  bas); the first of each is the default, and the names must match `AccessoryStyles` in the bot. **Sides:** nœud, fleur and every held item also carry a side as the last style part (`rose_gauche`, `blanche_droite`, `rouge_gauche` for the ballon, a bare `gauche`/`droite` for the other held items); the default side comes first (nœud and held items gauche, fleur droite) and draws exactly as before. The other side mirrors the drawing (`on_cap` flips `at` and the centre; `held` stamps mirrored with its grip just outside `hand_r`). `file_style` names a style without its default side (`noeud rose`), only the other side shows (`noeud rose_droite`). `python accessories.py <outdir>` also writes `accessories_sides.png` (every switched side on all 14 shapes, content and happy). An
   adult's cap reaches the top of its picture, so an adult in a hat is drawn on a 40 px canvas
   (`HAT_CANVAS`, the Plynling at 80 %); `HAT_SETTLE` sinks the hat a row into some caps. The accessory
   stays clean on a muddy Plynling and takes the ice tint on a frozen one. Every placement and colour
@@ -75,8 +75,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   popping, two of three on the left, away from the mood marks), Pétales (petals falling along the
   sides), and the seasonal three: Lucioles (fireflies wandering in little figures of eight, glowing
   and going out), Feuilles mortes (orange, red and gold leaves swinging wide as they fall, flipping
-  edge-on) and Flocons (snowflakes falling at the sides, the big ones turning). Only
-  `PRERENDERED_AURAS` (the first three) get pre-rendered `_aura_` files; the others exist only as
+  edge-on) and Flocons (snowflakes falling at the sides, the big ones turning). They exist only as
   layers. Drawn last, over the plain or dressed frame, **only on empty pixels** (or the faint ground
   shadow), so a particle never covers the body, the face or an accessory; placed from the body's box at
   rest, so it fits every shape and doesn't breathe with it; around the body on the hat canvas too. Only on
@@ -88,19 +87,12 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
 - `export.py` — renders all 319 files into `assets/plynlings/` (256×256, and 320×320 for the 56 `_visit` ones): the 224 living sprites as
   looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
-  one longer frame, so a file holds fewer than 16 frames while still lasting 2 s. Then every card
-  face (not angry) of every shape in every accessory look,
-  `plynling_<species>[_baby]_<face>[_dirty]_with_<accessory>[_<style>]_v5.webp` (8 820 files; the
-  ones in a hat 320×320 on an adult). Each loop is measured once and dressed in every look. Then every
-  aura face, plain and in every accessory look, in each aura,
-  `plynling_<species>[_baby]_<face>[_dirty][_with_<accessory>[_<style>]]_aura_<aura>_v5.webp` (21 672
-  files: 14 shapes × 12 faces × 43 looks × 3 auras). **Each new accessory look now costs 4 files per face
-  and shape, each new aura ~6 200.**
+  one longer frame, so a file holds fewer than 16 frames while still lasting 2 s. Dressed pictures
+  are not exported: the bot draws them from the layers (below). The pre-rendered
+  `_with_`/`_aura_` files were retired on 2026-11-25.
 
 Requires Python 3 and Pillow. Run from this folder: `python export.py` (everything, after deleting the
-old files), `python export.py auras` (only the aura files, nothing deleted), or
-`python export.py accessories <name>…` (only those accessories' looks, plain and in every aura: how a
-new accessory ships without re-rendering the rest).
+old files) or `python export.py layers` (the layers only).
 
 **Changing the art:** bump `ART_VERSION` in `export.py` **and** `PlynlingArt.Version` in the
 bot, re-export, commit, push. The bot links to GitHub raw URLs on `main`, and Discord caches
@@ -113,9 +105,7 @@ drawing function must take `frame` and route through `finish` with its pose, or 
 **Redrawing one species** without renaming everything: add it to `REDRAWN` in `export.py` **and**
 `PlynlingArt.Redrawn` in the bot with the next version (the Coprin is at 6: its idle drop turned black),
 then `python export.py redraw <species>` and `python export.py layers`. Its bare and visit pictures get
-new names (the bot links those); its old bare files stay for posted messages; its pre-rendered
-`_with_`/`_aura_` files keep v5 and are redrawn in place, since only posted messages link them and the
-painter checks compare against them. A full `python export.py` deletes the superseded bare files.
+new names (the bot links those); its old bare files stay for posted messages. A full `python export.py` deletes the superseded bare files.
 
 ## Layers for runtime drawing
 

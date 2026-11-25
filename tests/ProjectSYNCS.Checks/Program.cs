@@ -147,9 +147,8 @@ ScoreCalibrationChecks.Run(Fail, args);
 // 69. The online user guide names every member and staff command: GuideChecks.cs.
 GuideChecks.Run(Fail);
 
-// 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): PaintChecks.cs
-// (`-- art` compares all 14 shapes with today's pre-rendered files, not just the sample).
-PaintChecks.Run(Fail, args);
+// 70. Dressed pictures drawn from layers (PlynlingLook, PlynlingPainter): PaintChecks.cs.
+PaintChecks.Run(Fail);
 
 // 71. Wearing two accessories (categories, sides, picks, try-ons, restyles): AccessoryFitChecks.cs.
 AccessoryFitChecks.Run(Fail);

@@ -423,7 +423,7 @@ public static class CosmeticCatalog
         Aura("petales", "🌸", "Pétales", Cr, craftPrice: 300, trophy: true,
             recipe: new[] { ("col.primevere", 8), ("col.cerise", 2) });
         // One for each other season, beside Pétales for spring; sold in their season only. Drawn by the
-        // bot from the layers alone: no pre-rendered « _aura_ » files exist for them (auras.PRERENDERED_AURAS).
+        // bot from the layers alone, like every aura.
         // « Lucioles d'été »: a crafted cadre is already called « Lucioles », and a crafted name is unique.
         Aura("lucioles", "🌟", "Lucioles d'été", S, season: Season.Summer);
         Aura("feuilles", "🍁", "Feuilles mortes", S, season: Season.Autumn);
