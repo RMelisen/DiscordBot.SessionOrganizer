@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.24.1 — 2026-11-26
+
+- Ping-Qilin's gentleman outfit holds the cane on the left.
+
 ## 8.24.0 — 2026-11-26
 
 - Ping-Qilin dresses up: every morning she puts on one of her outfits (thème, titre, accessories and aura from the best cosmetics), a different one each day, with a seasonal look in each season.

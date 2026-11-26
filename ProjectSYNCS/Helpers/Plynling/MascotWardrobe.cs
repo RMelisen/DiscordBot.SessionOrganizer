@@ -38,7 +38,7 @@ public static class MascotWardrobe
         Dress("Grasse matinée", Season.None, "nuit_etoilee", "dormeur", "scintillements", Acc("doudou", "gauche")),
         Dress("Soleil-Levant", Season.None, "torii", "sensei", "koi", Acc("kanzashi", "indigo_droite"), Acc("eventail", "indigo_gauche")),
         Dress("Gentlewoman", Season.None, "velours", "distingue", "scintillements",
-            Acc("haut_de_forme", "rouge"), Acc("monocle"), Acc("canne", "droite")),
+            Acc("haut_de_forme", "rouge"), Acc("monocle"), Acc("canne", "gauche")),
         Dress("Coquette", Season.None, "aurore", "legendaire", "coeurs",
             Acc("lunettes_coeur", "roses"), Acc("noeud", "blanc_gauche"), Acc("ballon", "jaune_gauche")),
         // She cannot die: the title is a fact.
