@@ -24,4 +24,8 @@ section 68 pins them); a new tier pays 10/20/30/40/50 by rank. `PlynlingBadge` r
 - **Every badge moves the score** (its reward, `PlynlingScore.ForMoment`): a badge added or a reward changed
   means re-running the calibration (`-- score-sim`) and retuning `MemorialScores` from it (*Score*).
 - More tiers per Plynling make the `breeder` member palier (« Famille Plynling ») climb faster — accepted.
-- Paliers have no art yet: the icon is the tier's medal before the palier's emoji (`BadgeInfo.Icon`).
+- **Every tier and moment has a rosette icon** (8.26.1, drawn in `tools/item-art`, `rosette()`):
+  `BadgeInfo.IconKey` is `plbadge.<palier>_<tier>` or `plbadge.<moment>` — by palier, not by the stored
+  key — uploaded as `pb_…`. `BadgeInfo.Icon` falls back to the tier's medal before the palier's emoji (a
+  moment's emoji) until the emoji is uploaded. **A new badge needs its icon drawn**: checks section 75 fails
+  on any key without its PNG, and measures the journal with every icon in.

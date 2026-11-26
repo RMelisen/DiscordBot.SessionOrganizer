@@ -30,7 +30,7 @@ SCALES = {16: 8, 22: 4}
 
 
 def size_of(key):
-    return 22 if key.startswith(("badge.", "trait.")) else 16
+    return 22 if key.startswith(("badge.", "plbadge.", "trait.")) else 16
 
 
 def rgb(hex_colour):

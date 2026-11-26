@@ -89,8 +89,19 @@ public sealed class BadgeInfo
     /// <summary>The bare emoji: a moment's own, a tier's palier's.</summary>
     public string Emoji { get; }
 
-    /// <summary>What shows beside the name: a tier's medal before its palier's emoji, a moment's emoji.</summary>
-    public string Icon => Palier is null ? Emoji : CollectionTiers.Medal(Tier) + Emoji;
+    /// <summary>
+    /// Its rosette's icon key (Assets/Icons/&lt;key&gt;.png, tools/item-art): plbadge.&lt;palier&gt;_&lt;tier&gt; for a
+    /// tier, plbadge.&lt;key&gt; for a moment — by palier, not by the stored key (`week` is longevity_bronze).
+    /// </summary>
+    public string IconKey => Palier is { } palier
+        ? $"plbadge.{palier.Key}_{Tier.ToString().ToLowerInvariant()}"
+        : $"plbadge.{Key}";
+
+    /// <summary>
+    /// What shows beside the name: its rosette once uploaded, else a tier's medal before its palier's
+    /// emoji, a moment's emoji.
+    /// </summary>
+    public string Icon => ItemEmojis.For(IconKey) ?? (Palier is null ? Emoji : CollectionTiers.Medal(Tier) + Emoji);
 
     public string Name(PlynlingGender gender) => Palier is { } palier
         ? $"{palier.Name(gender)} ({CollectionTiers.Label(Tier)})"
@@ -155,6 +166,12 @@ public static class PlynlingBadges
     private static readonly Dictionary<string, BadgeInfo> ByKeyMap = All.ToDictionary(b => b.Key);
 
     public static BadgeInfo? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
+
+    // Declared after All, in this file: a static initializer reading another file's field may see null.
+    private static readonly HashSet<string> IconKeys = All.Select(b => b.IconKey).ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>Whether an Assets/Icons file name is a Plynling badge's rosette (ItemEmojis uploads those).</summary>
+    public static bool IsIconKey(string key) => IconKeys.Contains(key);
 
     public static bool WearsThreeAccessories(Plynling p) =>
         !string.IsNullOrEmpty(p.AccessoryKey) && !string.IsNullOrEmpty(p.Accessory2Key) && !string.IsNullOrEmpty(p.Accessory3Key);

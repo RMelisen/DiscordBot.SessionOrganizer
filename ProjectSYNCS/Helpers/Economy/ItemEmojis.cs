@@ -35,12 +35,13 @@ public static class ItemEmojis
     // eat 14 of them. The longest today is ac_collier_coquillages (22).
     // Redrawing a whole family changes its prefix: an uploaded emoji is never replaced, so new names
     // are what make the bot upload the new pictures. tr2_ is the 22×22 traits; the old tr_ emojis
-    // are stale (StaleNames, add the old prefix to RetiredPrefixes) and deleted on start.
+    // are stale (StaleNames, add the old prefix to RetiredPrefixes) and deleted on start. pb_ is the
+    // Plynling badges' rosettes (plbadge.<palier>_<tier>, BadgeInfo.IconKey), apart from the members' b_.
     private static readonly (string Key, string Emoji)[] Prefixes =
     {
         ("col.", "c_"), ("set.", "s_"), ("cos.theme.", "th_"), ("cos.title.", "ti_"),
         ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("cos.aura.", "au_"), ("trait.", "tr2_"), ("badge.", "b_"),
-        ("ui.", "ui_"),
+        ("plbadge.", "pb_"), ("ui.", "ui_"),
     };
 
     // Redrawing one picture gives it a revision instead: « _v2 » after its name, so the new picture
@@ -135,6 +136,7 @@ public static class ItemEmojis
         || key.StartsWith("trait.", StringComparison.Ordinal) && PlynlingTraits.ByKey(key["trait.".Length..]) is not null
         || CollectionTiers.IsBadgeKey(key)
         || MemberBadges.IsIconKey(key)
+        || PlynlingBadges.IsIconKey(key)
         || UiIcons.IsIconKey(key);
 
     private static string[] PngsIn(string dir) => Directory.Exists(dir) ? Directory.GetFiles(dir, "*.png") : Array.Empty<string>();

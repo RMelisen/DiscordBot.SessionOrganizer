@@ -162,5 +162,8 @@ MascotWardrobeChecks.Run(Fail);
 // 74. /plynling stats: counters, their hooks, the sheet, ranks, duel lines, cards: StatsChecks.cs.
 await StatsChecks.Run(Fail);
 
+// 75. Plynling badge art: icon keys, emoji names, fallbacks, shipped files, journal length: PlynlingBadgeArtChecks.cs.
+PlynlingBadgeArtChecks.Run(Fail);
+
 Console.WriteLine(Failures == 0 ? "ALL CHECKS PASSED" : $"{Failures} FAILURE(S)");
 return Failures == 0 ? 0 : 1;

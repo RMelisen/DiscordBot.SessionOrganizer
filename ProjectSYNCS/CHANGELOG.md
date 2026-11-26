@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.26.1 — 2026-11-26
+
+- Plynling badges get their own pictures: a prize rosette per tier, with a subject per palier and moment.
+
 ## 8.26.0 — 2026-11-26
 
 - New `/plynling stats [user]`: a Plynling's whole life in numbers on five tabs (Vie, Soins, Jeux, Social, Collection), with its rank on the server for the headline numbers.

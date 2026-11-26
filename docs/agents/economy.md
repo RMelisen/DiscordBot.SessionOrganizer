@@ -299,12 +299,13 @@ they work in any server), and **the bot uploads them itself**.
   `set.<set key>`).
 - **Plynling traits and badges are the exception: 22×22, exported ×4 (88 px)** — traits as CK3
   tiles (`trait.<trait key>`), badges as a tier shield around a subject (`shield()`; a set's badge
-  is its set icon on the shield). 22 is Discord's inline emoji size, so they show one art pixel per
+  is its set icon on the shield), and Plynling badges as a prize rosette in the same tier colours
+  (`rosette()`, `plbadge.<palier>_<tier>` / `plbadge.<moment>`, see `plynling/badges.md`). 22 is Discord's inline emoji size, so they show one art pixel per
   screen pixel. Keep items at 16: the mushroom pack is fixed at that size.
 - **`ApplicationEmojiService`**, on the first Ready, lists the application's emojis, uploads any
   missing sprite (from both folders via `ItemEmojis.Sources`), and records the markup in the static
   `ItemEmojis` map. Names: mushrooms `shroom_<slug>`, the rest `ItemEmojis.EmojiName`'s short
-  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr2_`, `b_`, and `ui_` for interface marks,
+  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr2_`, `b_`, `pb_` for Plynling badges, and `ui_` for interface marks,
   `Helpers/Core/UiIcons`) — Discord caps names at 32 chars. Each
   application (dev, prod) gets its own copy with no manual step.
 - **An existing emoji is reused by name, never replaced** — to change a picture, delete the emoji in
@@ -316,7 +317,7 @@ they work in any server), and **the bot uploads them itself**.
   application emoji named with one of the bot's prefixes (today's, `shroom_`, or retired) that no
   shipped sprite claims — earlier revisions, old family prefixes, retired items. A name outside
   those prefixes is never touched, so **don't upload a hand-made application emoji whose name
-  starts with one** (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr_`, `tr2_`, `b_`, `ui_`, `shroom_`).
+  starts with one** (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `au_`, `tr_`, `tr2_`, `b_`, `pb_`, `ui_`, `shroom_`).
   Nothing is deleted when a sprite folder is missing or yields no sprite, so a broken publish can't
   wipe the list. Messages already posted with a deleted emoji show its `:name:` instead.
 - **Emoji properties are computed**: `ItemInfo.Emoji`, `CollectionSet.Emoji`, `CosmeticInfo.Emoji`,

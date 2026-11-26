@@ -3587,6 +3587,252 @@ for kind, group, badges in (("moment", "badges_moments", MEMBER_MOMENTS), ("secr
     for badge_key, name, emoji in badges:
         icon(group, f"badge.{badge_key}", name, emoji, *shield(kind, *outlined(*MEMBER_BADGE_SUBJECTS[badge_key])))
 
+# ---- Plynling badges -----------------------------------------------------------------------------
+# A Plynling's badges are its own, not its owner's, so they get a frame of their own: a prize rosette
+# with two ribbon tails, like a village fair ribbon, in the same SHIELD_TIERS colours as the member
+# shields (Bronze reads as Bronze everywhere). plbadge.<palier>_<tier> and plbadge.<moment>, the keys
+# BadgeInfo.IconKey looks up. The subject is at most 8×8 so a ring of the medallion shows round it.
+
+# "L" lit pleat, "S" shaded pleat, "M" inner line, "f" field (shaded past the diagonal).
+ROSETTE = (
+    "......................",
+    "..........##..........",
+    "......####LL####......",
+    ".....#LLMMLLMMLL#.....",
+    "....##MLMMMMMMLM##....",
+    "...#LMMMffffffMSSM#...",
+    "...#LLMffffffffMMM#...",
+    "...#MMffffffffffMS#...",
+    "...#MMffffffffffMS#...",
+    "..#LLMffffffffffMMM#..",
+    "..#LLMffffffffffMMM#..",
+    "...#MMffffffffffMS#...",
+    "...#MMffffffffffMS#...",
+    "...#LLMffffffffMMM#...",
+    "...#LMSMffffffMSSM#...",
+    "....##SMMMMMMMMS##....",
+    "....##MMSSMMSSMM##....",
+    "....#M####MM####S#....",
+    "...#MMMM#.##.#SSSS#...",
+    "...#M##M#....#S##S#...",
+    "....#..#......#..#....",
+    "......................",
+)
+
+# Where the glints go on the pleats, in the order the tiers gain them.
+ROSETTE_GLINTS = ((7, 3), (4, 6), (11, 2), (3, 10))
+
+
+def rosette(tier, *subject):
+    """A 22×22 Plynling badge: the ROSETTE in the tier's colours (SHIELD_TIERS) and the subject (an
+    outlined fill of at most 8×8, "." where the rosette shows) on its medallion."""
+    lit, shade, inner, field, field_shade, glint, count = SHIELD_TIERS[tier]
+    rows = [r for r in subject if r.strip(".")]
+    left = min(len(r) - len(r.lstrip(".")) for r in rows)
+    width = max(len(r.rstrip(".")) for r in rows) - left
+    rows = [r[left:left + width].ljust(width, ".") for r in rows]
+    assert width <= 10 and len(rows) <= 10, "a rosette's subject is at most 8×8 before its outline"
+    ox, oy = (22 - width) // 2, (20 - len(rows)) // 2
+    grid = [[{"L": lit, "S": shade, "M": inner, "f": field if x + y <= 20 else field_shade}.get(c, c)
+             for x, c in enumerate(r)] for y, r in enumerate(ROSETTE)]
+    for x, y in ROSETTE_GLINTS[:count]:
+        grid[y][x] = glint
+    for sy, r in enumerate(rows):
+        for sx, c in enumerate(r):
+            if c == ".":
+                continue
+            x, y = ox + sx, oy + sy
+            assert ROSETTE[y][x] in "fM", f"the subject leaves the medallion at ({x},{y})"
+            grid[y][x] = c
+    return ["".join(r) for r in grid]
+
+
+# Plynling badges' subjects (PlynlingBadges in the bot), by palier or moment key: a fill, outlined at use.
+PL_BADGE_SUBJECTS = {
+    # Longévité: a small tree.
+    "longevity": (
+        "..lLLl..",
+        ".llLLLL.",
+        "lYllLLLt",
+        "llllLLtt",
+        ".LLLLtt.",
+        "...Uu...",
+        "...Uu...",
+        "..jUuu.."),
+    # Joueur: a die showing five.
+    "player": (
+        "wwwwwwws",
+        "w#www#ss",
+        "wwwwwwss",
+        "www#wwss",
+        "wwwwwwss",
+        "w#www#ss",
+        "wwwwwsss",
+        "sssssssG"),
+    # Champion: a trophy cup on its foot.
+    "champion": (
+        ".wyyyyA.",
+        "y.wyyA.a",
+        "y.yyyA.a",
+        ".yyyyAa.",
+        "...yA...",
+        "...yA...",
+        "..JJjj..",
+        ".JJJjjju"),
+    # Voyageur: a suitcase with its straps (a signpost read as two planks).
+    "traveller": (
+        "..kkkk..",
+        "..k..k..",
+        "JJJJJJJj",
+        "JJuJJuJj",
+        "JJuJEuJj",
+        "JJuJJuJj",
+        "jjujjujj"),
+    # Hôte: a cottage door with a heart on it.
+    "host": (
+        "..uuuu..",
+        ".ujJJju.",
+        "ujJEjEju",
+        "ujJEEEju",
+        "ujJjEjju",
+        "ujJjjjyu",
+        "ujJjjjju",
+        "uuuuuuuu"),
+    # Gourmand: a mushroom.
+    "gourmet": (
+        "..eEEE..",
+        ".eEEEwE.",
+        "eEwwEEEc",
+        "EEwwEEcc",
+        "cccccccr",
+        "..wwss..",
+        "..wwss..",
+        "..wsss.."),
+    # Pot de colle: a glue pot, its brush standing in it, a drip down the side.
+    "cuddly": (
+        ".....J..",
+        ".....J..",
+        "..GGGjG.",
+        ".wwwwwws",
+        ".BwBBBBb",
+        ".BBBBBBb",
+        ".BBBBBBb",
+        "..bbbbb."),
+    # Chouchou du village: a gift box with its bow.
+    "beloved": (
+        ".yy..yy.",
+        "..yAyA..",
+        "EEEyAEEc",
+        "cccyAccr",
+        ".EEyAEc.",
+        ".EEyAEc.",
+        ".EEyAEc.",
+        ".ccyAcr."),
+    # Entraînement: a dumbbell.
+    "training": (
+        "ws....ws",
+        "sG....sG",
+        "sGGGGGsG",
+        "sGggggsG",
+        "sG....sG",
+        "Gg....Gg"),
+    # Niveau: a star.
+    "level": (
+        "...wy...",
+        "...yA...",
+        "wyyyyAAa",
+        ".yyyyAa.",
+        "..yyAa..",
+        ".yyAaAa.",
+        ".yA..aa."),
+    # Athlète: a running shoe (a flexed arm read as a blob at 8×8).
+    "athlete": (
+        "EEc.....",
+        "EIEc....",
+        "EEEwEwc.",
+        "EEEEEEEc",
+        "wwwwwwws"),
+    # Sauvé de justesse: a life ring.
+    "saved": (
+        "..EwwE..",
+        ".EEwwEE.",
+        "EEEwwEEc",
+        "www..wws",
+        "www..wss",
+        "EEEwsccr",
+        ".cEwscc.",
+        "..cssc.."),
+    # Revenu d'entre les morts: a halo, a sparkle under it.
+    "resurrected": (
+        ".wyyyyA.",
+        "yA....Aa",
+        ".AAAAaa.",
+        "........",
+        "....w...",
+        "...wxw..",
+        "....w..."),
+    # Premier ami: two rings side by side (a handshake didn't read at 8×8).
+    "first_friend": (
+        ".BBByyy.",
+        "B..yB..y",
+        "B..yB..y",
+        "B..yB..y",
+        ".BBByyy."),
+    # Meilleur ami: a yellow heart.
+    "best_friend": (
+        ".yy..yy.",
+        "ywyyyyyA",
+        "ywyyyyAA",
+        "yyyyyyAa",
+        ".yyyyAa.",
+        "..yyAa..",
+        "...Aa..."),
+    # En couple: two hearts, pink and red, one over the other.
+    "couple": (
+        "Iw.II...",
+        "IIIII...",
+        ".I#EE.EE",
+        "..#EEEEc",
+        "....EEc.",
+        ".....c.."),
+    # Guéri: a capsule, red and white.
+    "recovered": (
+        ".....ws.",
+        "....wwss",
+        "...wwwss",
+        "..EGwss.",
+        ".EEEGs..",
+        "EIEcc...",
+        "Eccc....",
+        ".cc....."),
+    # Coquet: a top hat with its band.
+    "dapper": (
+        "..Gkkg..",
+        "..Gkkg..",
+        "..Gkkg..",
+        "..EEEc..",
+        "Gkkkkkkg",
+        ".gggggg."),
+}
+
+# Every palier on each tier's rosette, in PlynlingBadges' catalog order.
+PL_BADGE_PALIERS = (("longevity", "Longévité", "🌳"), ("player", "Joueur", "🎲"), ("champion", "Champion", "🏆"),
+                    ("traveller", "Voyageur", "🌍"), ("host", "Hôte", "🏠"), ("gourmet", "Gourmand", "🍄"),
+                    ("cuddly", "Pot de colle", "🤲"), ("beloved", "Chouchou du village", "🎁"),
+                    ("training", "Entraînement", "🏋️"), ("level", "Niveau", "⭐"), ("athlete", "Athlète", "💪"))
+PL_BADGE_MOMENTS = (("saved", "Sauvé de justesse", "😮‍💨"), ("resurrected", "Revenu d'entre les morts", "✨"),
+                    ("first_friend", "Premier ami", "🤝"), ("best_friend", "Meilleur ami", "💛"),
+                    ("couple", "En couple", "💞"), ("recovered", "Guéri", "💊"), ("dapper", "Coquet", "🎩"))
+
+for badge_key, name, emoji in PL_BADGE_PALIERS:
+    for tier, label, _ in BADGE_TIERS:
+        icon("plynling_badges_paliers", f"plbadge.{badge_key}_{tier}", f"{name} · {label}", emoji,
+             *rosette(tier, *outlined(*PL_BADGE_SUBJECTS[badge_key])))
+
+for badge_key, name, emoji in PL_BADGE_MOMENTS:
+    icon("plynling_badges_moments", f"plbadge.{badge_key}", name, emoji,
+         *rosette("moment", *outlined(*PL_BADGE_SUBJECTS[badge_key])))
+
 # ---- Interface ---------------------------------------------------------------------------------
 # Marks the screens print inline (ui.<key>, Helpers/Core/UiIcons), not items. The check is drawn
 # small inside its frame on purpose: ✅ fills the whole 22 px and shouts beside a price.

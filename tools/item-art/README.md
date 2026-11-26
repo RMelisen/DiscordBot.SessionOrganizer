@@ -20,6 +20,11 @@ the pack's colours) to match it.
   plus moment and secret), and only the subject is drawn — up to 16×16, so a set's own icon fits
   as is. A member badge's subject is in `MEMBER_BADGE_SUBJECTS` under its `MemberBadges` key;
   paliers get all five tiers, moments and secrets one shield each.
+  Plynling badges (`plbadge.<palier>_<tier>`, `plbadge.<moment>`) are the creature's, not the
+  member's, so they get a frame of their own: `rosette(tier, …)`, a prize rosette with two ribbon
+  tails (`ROSETTE`), in the same `SHIELD_TIERS` colours. Their subject is at most 8×8 before its
+  outline, so a ring of the medallion shows round it; they are in `PL_BADGE_SUBJECTS`, sheets
+  `plynling_badges_paliers` and `plynling_badges_moments`.
 - `export.py [group…]` — writes the PNGs and `out/sheet_<group>.html`, which shows each icon at
   8 px per art pixel, at 22 px (Discord's inline emoji size) beside the Unicode it replaces and a
   mushroom. 16×16 icons are exported ×8 (128 px), traits and badges ×4 (88 px, an exact multiple of
