@@ -61,8 +61,10 @@ public static class VisitSimulation
         Expect(Math.Abs(b.Median10 - BaselineMedian10) <= 6, $"baseline median couple time at +10: {b.Median10}, plynling.md says 51");
         for (var i = 0; i < 6; i++)
             Expect(Math.Abs(r.Spread[i] - b.Spread[i]) <= 0.03, $"random play {Band(i)} {r.Spread[i]:P0} vs baseline {b.Spread[i]:P0}");
-        Expect(Math.Abs(r.Couples60 - b.Couples60) <= 0.05, $"random play couples within 60 {r.Couples60:P0} vs baseline {b.Couples60:P0}");
-        Expect(best.Median10 >= 0.8 * b.Median10, $"best play median couple time at +10 {best.Median10} is under 0.8 × baseline's {b.Median10}");
+        // « 💌 » on 35 % of the days (the owner's choice, 8.24.0) makes couples a little faster than the
+        // old automatic confession; these bounds stop anything faster still from slipping in unnoticed.
+        Expect(Math.Abs(r.Couples60 - b.Couples60) <= 0.08, $"random play couples within 60 {r.Couples60:P0} vs baseline {b.Couples60:P0}");
+        Expect(best.Median10 >= 0.7 * b.Median10, $"best play median couple time at +10 {best.Median10} is under 0.7 × baseline's {b.Median10}");
 
         if (args.Contains("visit-sim")) Console.WriteLine(Table(results, scenes.Source, VisitOdds.LeanSoftness));
     }

@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.24.0 — 2026-11-26
+
+- Plynling visits offer « 💌 Lui avouer ses sentiments » more often: on 35 % of an eligible pair's days instead of 25 %.
+
 ## 8.23.0 — 2026-11-26
 
 - New owner tool `/debug affinity add`: moves two living Plynlings' affinity up or down to test bonds without waiting for visits; a bond it changes is journalled but earns no score or badge. The affinity view is now `/debug affinity show`.

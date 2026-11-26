@@ -38,9 +38,9 @@ public static class PlynlingBonds
     /// <summary>
     /// The share of a pair's eligible days on which a visit offers « 💌 » (the owner's choice, by
     /// simulation): offered on every one, an owner confessing at the first chance made couples twice as
-    /// fast as before. The old automatic confession came about as rarely.
+    /// fast as before. A quarter matched the old automatic confession; 35 % (8.24.0) is a little faster.
     /// </summary>
-    public const double ConfessionOfferChance = 0.25;
+    public const double ConfessionOfferChance = 0.35;
 
     /// <summary>
     /// Whether this pair's visits offer the confession on this Paris day. Hashed from the pair and the

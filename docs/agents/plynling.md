@@ -280,14 +280,16 @@ the simulation, never by feel.**
 `dotnet run --project tests/ProjectSYNCS.Checks -- visit-sim`, and `-- visit-sweep` for other softness
 values). The simulation first replays the old rules (11 / 18 / 21 / 19 / 14 / 17 %, 29 %, median 53 at +10
 and 24 at +20: the figures above, within noise), then the new ones.
-Random choices, pressing « 💌 » whenever it shows: 11 / 17 / 21 / 19 / 14 / 18 %, a boy and a girl a
-couple within 60 visits 31 % of the time, median 51 at +10 (23 at +20). The best choices every time: 10 / 16 / 20 /
-20 / 15 / 20 %, 34 %, median 45 at +10 and 22 at +20 (the target: no less than 0.8 × the old 53). The knobs:
-`LeanSoftness` 1000, `MaxShiftPerChoice` 0.075, and **`PlynlingBonds.ConfessionOfferChance` 0.25, the
-owner's choice** — « 💌 » shows on a quarter of an eligible pair's days (hashed by pair and day, so a
-restarted visit cannot reroll it). Offered every eligible day, an owner confessing at the first chance
-made couples twice as fast (median 24 at +10) whatever the softness, and a longer `RefusalCooldown`
-barely helped (30 days still gave 28).
+Random choices, pressing « 💌 » whenever it shows: 11 / 17 / 20 / 19 / 13 / 19 %, a boy and a girl a
+couple within 60 visits 34 % of the time, median 45 at +10 (21 at +20). The best choices every time: 10 / 16 / 20 /
+19 / 15 / 20 %, 37 %, median 39 at +10 and 20 at +20 (the floor: 0.7 × the old 53; random play's couples
+within 8 points of the old rate). The knobs: `LeanSoftness` 1000, `MaxShiftPerChoice` 0.075, and
+**`PlynlingBonds.ConfessionOfferChance` 0.35, the owner's choice** — « 💌 » shows on 35 % of an
+eligible pair's days (hashed by pair and day, so a restarted visit cannot reroll it). 25 % kept the old
+pace (median 45 best, 51 random); the owner raised it in 8.24.0 for more chances, accepting couples a
+little faster. Offered every eligible day, an owner confessing at the first chance made couples twice as
+fast (median 24 at +10) whatever the softness, and a longer `RefusalCooldown` barely helped (30 days
+still gave 28).
 
 The bond follows affinity (`BondFor`), except a couple: only a confession makes one, only a slide
 below +40 undoes it. **Confessions are a boy and a girl only — the owner's explicit choice, keep

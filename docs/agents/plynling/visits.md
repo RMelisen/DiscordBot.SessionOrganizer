@@ -64,9 +64,10 @@ to 5–95 %. Buttons say nothing of it. The leans sit in a public repo — the o
 either direction, a refused visit or a refused village declaration alike — that event goes by the same
 rule — stored as `PlynlingRelation.LastRefusalAt` so a restart does not lift it), **and** today is one of the
 pair's offer days: `PlynlingBonds.ConfessionOffered` hashes the pair and the Paris day, true on
-`ConfessionOfferChance` (25 %) of them, so restarting the visit cannot reroll it. **The 25 % is the
+`ConfessionOfferChance` (35 %) of them, so restarting the visit cannot reroll it. **The 35 % is the
 owner's choice and departs from the design**, which offered it on every eligible visit: an owner
-confessing at the first chance then made couples twice as fast (see the simulation below). The save
+confessing at the first chance then made couples twice as fast (see the simulation below). It was 25 %
+until 8.24.0, raised for more chances at a slightly faster pace. The save
 re-checks eligibility and the cooldown, not the offer day (a knock answered past midnight keeps its
 confession); if the pair may no longer confess, the visit **does not happen**: nothing saved, the claim
 released, the message closed with `VisitTooLate`, and the pair may still meet that day. A confession

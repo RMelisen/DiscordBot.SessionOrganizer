@@ -319,7 +319,7 @@ public static class VisitChecks
         Expect(PlynlingBonds.MayConfess(PlynlingBond.BestFriends, 85, boyM, girlF, false, now - TimeSpan.FromHours(73), now), "may again: refused 73 h ago");
         Expect(!PlynlingBonds.MayConfess(PlynlingBond.Friends, 85, boyM, girlF, false, null, now), "may not: only friends");
 
-        // « 💌 » on a quarter of a pair's days: hashed, symmetric, and spread over days and pairs.
+        // « 💌 » on ConfessionOfferChance of a pair's days: hashed, symmetric, and spread over days and pairs.
         var offered = 0;
         var cells = 0;
         var day0 = AppTime.DayKey(now);

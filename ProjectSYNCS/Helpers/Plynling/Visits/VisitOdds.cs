@@ -13,9 +13,9 @@ public static class VisitOdds
     /// <summary>
     /// How much match it takes to approach the cap: a lean of ±2 on a ±200 trait axis is a match of
     /// 400, so at 1000 it gives tanh(0.4) ≈ 0.38 of the cap, and only a strong match on two axes nears
-    /// it. Set by the simulation, with the confession offered on a quarter of the days
-    /// (<see cref="PlynlingBonds.ConfessionOfferChance"/>): best play then stays above 0.8 × the old
-    /// couple time.
+    /// it. Set by the simulation, with the confession offered on a quarter of the days (since raised
+    /// to 35 %, <see cref="PlynlingBonds.ConfessionOfferChance"/>): best play then stays above 0.7 × the
+    /// old couple time.
     /// </summary>
     public const double LeanSoftness = 1000;
 
