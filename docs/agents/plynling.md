@@ -420,8 +420,8 @@ and **picks the tombstone**. It is separate from the RPG's `RpgXp`, which buys l
   counts toward **your** total, never the helper's. **The mascot never scores** (`AddAsync` skips her)
   and is never ranked.
 - **The journal hook**: `AddMomentAsync` scores `PlynlingScore.ForMoment` (badge, growing up, trait,
-  recovery), dated by the moment. Bond kinds return 0 there. `scored: false` for the staff cure and `/debug
-  heal`.
+  recovery), dated by the moment. Bond kinds return 0 there. `scored: false` for the staff cure, `/debug
+  heal` and `/debug affinity add` (which also skips the bond's score, badge and `ScoredBonds` bit).
 - **Bonds score once per pair and bond**: `ApplyBondChangeAsync` (visits and events alike) checks
   `PlynlingRelation.ScoredBonds`, one bit per `PlynlingBond` (append-only, so the bits are stable). Drifting
   across a band edge, or a couple making up, adds nothing the second time. A breakup scores nothing.

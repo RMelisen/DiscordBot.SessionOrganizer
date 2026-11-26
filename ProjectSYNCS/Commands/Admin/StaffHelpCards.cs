@@ -87,7 +87,8 @@ public static class StaffHelpCards
                 "**`plynling`** · **`stress`** · **`modifier`** · **`event`** — Règlent ton propre Plynling pour tester " +
                 "(hygiène, maladie, stress, modificateurs, événements).\n" +
                 "**`heal`** — Remet un Plynling vivant en pleine forme : besoins au max, guéri, sans stress.\n" +
-                "**`affinity`** — Les points d'affinité d'un Plynling avec chacun, et sa compatibilité cachée.\n" +
+                "**`affinity show`** — Les points d'affinité d'un Plynling avec chacun, et sa compatibilité cachée.\n" +
+                "**`affinity add`** — Ajoute ou retire des points d'affinité entre deux Plynlings vivants (sans score ni badge).\n" +
                 "**`sweep`** — Lance tout de suite le passage horaire des Plynlings.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();

@@ -6,6 +6,11 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
 
+public enum DebugAffinityOutcome { Shifted, SameOwner, NoFirst, NoSecond }
+
+// What /debug affinity add did: the pair, its affinity before and after, and its bond before and after.
+public sealed record DebugAffinityResult(Plynling A, Plynling B, int Before, int After, PlynlingBond BondBefore, PlynlingBond BondAfter);
+
 public partial class PlynlingService
 {
     // Reaches the shown Plynling — living, or else the latest grave — because a grave
@@ -176,12 +181,15 @@ public partial class PlynlingService
     //
     // A bond reached (not a breakup) scores both sides, once per pair and bond (relation.ScoredBonds): a pair
     // drifting across a band edge, or a couple making up, adds nothing the second time.
+    // `scored: false` (the owner's /debug affinity add) journals the change but scores and badges
+    // nothing, and leaves the bond's bit unset so reaching it for real later still scores.
     private async Task<BadgeEvent> ApplyBondChangeAsync(Plynling a, Plynling b, PlynlingRelation relation,
-        PlynlingBond before, PlynlingBond after, DateTimeOffset now)
+        PlynlingBond before, PlynlingBond after, DateTimeOffset now, bool scored = true)
     {
         if (after == before || BondMoment(before, after) is not { } kind) return BadgeEvent.None;
-        await AddMomentAsync(a, kind, b.Name, now);
-        await AddMomentAsync(b, kind, a.Name, now);
+        await AddMomentAsync(a, kind, b.Name, now, scored);
+        await AddMomentAsync(b, kind, a.Name, now, scored);
+        if (!scored) return BadgeEvent.None;
         var bit = PlynlingScore.BondBit(after);
         if (kind != JournalKind.BrokeUp && (relation.ScoredBonds & bit) == 0)
         {
@@ -202,7 +210,8 @@ public partial class PlynlingService
     // An event moving two Plynlings' affinity, one-sided: the same relation row, clamp and bands as a
     // visit, but no scene roll and no confession — a couple comes only from an accepted declaration
     // (MakeCoupleAsync). Never saves.
-    public async Task<(PlynlingBond Before, PlynlingBond After)> ShiftAffinityAsync(Plynling a, Plynling b, int delta, DateTimeOffset now)
+    public async Task<(PlynlingBond Before, PlynlingBond After)> ShiftAffinityAsync(Plynling a, Plynling b, int delta, DateTimeOffset now,
+        bool scored = true)
     {
         var relation = await RelationForAsync(a.Id, b.Id, now);
         var before = relation.Bond;
@@ -213,10 +222,36 @@ public partial class PlynlingService
             relation.Bond = after;
             relation.Since = now;
         }
-        var evt = await ApplyBondChangeAsync(a, b, relation, before, after, now);
-        await AwardAsync(a, now, evt);
-        await AwardAsync(b, now, evt);
+        var evt = await ApplyBondChangeAsync(a, b, relation, before, after, now, scored);
+        if (scored)
+        {
+            await AwardAsync(a, now, evt);
+            await AwardAsync(b, now, evt);
+        }
         return (before, after);
+    }
+
+    // /debug affinity add: moves two living Plynlings' affinity by `delta`, through the same row, clamp
+    // and bands as an event (a couple still only breaks up below BreakUpBelow, never forms). A bond it
+    // changes is journalled on both sides but scores nothing, like /debug heal's recovery.
+    public Task<(DebugAffinityOutcome Outcome, DebugAffinityResult? Result)> DebugShiftAffinityAsync(
+        ulong guildId, ulong ownerA, ulong ownerB, int delta, DateTimeOffset now) =>
+        UnitAsync(() => DebugShiftAffinityOnceAsync(guildId, ownerA, ownerB, delta, now));
+
+    private async Task<(DebugAffinityOutcome Outcome, DebugAffinityResult? Result)> DebugShiftAffinityOnceAsync(
+        ulong guildId, ulong ownerA, ulong ownerB, int delta, DateTimeOffset now)
+    {
+        if (ownerA == ownerB) return (DebugAffinityOutcome.SameOwner, null);
+        var a = await GetCurrentAsync(guildId, ownerA, now);
+        if (a is null || a.DiedAt is not null) return (DebugAffinityOutcome.NoFirst, null);
+        var b = await GetCurrentAsync(guildId, ownerB, now);
+        if (b is null || b.DiedAt is not null) return (DebugAffinityOutcome.NoSecond, null);
+
+        var before = (await FindRelationAsync(a.Id, b.Id))?.Affinity ?? 0;
+        var (bondBefore, bondAfter) = await ShiftAffinityAsync(a, b, delta, now, scored: false);
+        var after = Math.Clamp(before + delta, -100, 100);      // ShiftAffinityAsync's clamp; a new row isn't queryable before the save
+        await _db_context.SaveChangesAsync();
+        return (DebugAffinityOutcome.Shifted, new DebugAffinityResult(a, b, before, after, bondBefore, bondAfter));
     }
 
     // Lifts the pair's affinity to at least `value` (never lowers it), reading the current value from

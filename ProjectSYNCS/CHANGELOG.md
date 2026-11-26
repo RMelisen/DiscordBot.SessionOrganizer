@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.23.0 — 2026-11-26
+
+- New owner tool `/debug affinity add`: moves two living Plynlings' affinity up or down to test bonds without waiting for visits; a bond it changes is journalled but earns no score or badge. The affinity view is now `/debug affinity show`.
+
 ## 8.22.1 — 2026-11-25
 
 - New colours, picked for free in the wardrobe: the tulipe (jaune, violette, blanche), the glace (chocolat, vanille, pistache), the sucette (bleue, verte, arc-en-ciel), the lanterne (rouge, bleue), the bonnet de nuit (rouge, vert), the lunettes en cœur (rouges, violettes), the nœud papillon (noir, rouge, bordeaux), the haut-de-forme's ribbon (noir, bleu, violet) and the kanzashi (rouge, indigo, glycine).
