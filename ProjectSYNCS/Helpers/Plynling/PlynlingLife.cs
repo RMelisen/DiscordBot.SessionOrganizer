@@ -342,8 +342,8 @@ public static class PlynlingLife
     // matter and never falls ill, whoever does or does not press a button. Each need is topped up
     // the moment it falls below TendFloor — to less than full, so a meal from someone else is
     // still worth giving — and the mornings are marked played without rolling, so it has no
-    // sickness to journal and nothing to replay if the mascot were ever unbound. A freeze is
-    // staff's and is left alone.
+    // sickness to journal and nothing to replay if the mascot were ever unbound. She is dressed in
+    // the morning's outfit (MascotWardrobe). A freeze is staff's and is left alone.
     public const double TendFloor = 0.5;
     private const double TendMeal = 0.9;
     private const double TendCheer = 0.8;
@@ -357,6 +357,7 @@ public static class PlynlingLife
             p.LastMorningDay = morning;
             changed = true;
         }
+        if (MascotWardrobe.Wear(p, MascotWardrobe.For(morning))) changed = true;   // the day's outfit, frozen or not
         if (IsSick(p))
         {
             Cure(p);

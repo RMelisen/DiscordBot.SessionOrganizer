@@ -5,7 +5,9 @@ the git history; versions that were skipped or only existed on a side branch are
 
 ## 8.24.0 — 2026-11-26
 
+- Ping-Qilin dresses up: every morning she puts on one of her outfits (thème, titre, accessories and aura from the best cosmetics), a different one each day, with a seasonal look in each season.
 - Plynling visits offer « 💌 Lui avouer ses sentiments » more often: on 35 % of an eligible pair's days instead of 25 %.
+- The lunettes en cœur now sit over the eyes on every species, adults and babies, instead of a row too high with the eyes peeking out below.
 
 ## 8.23.0 — 2026-11-26
 

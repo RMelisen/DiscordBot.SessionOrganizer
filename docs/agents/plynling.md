@@ -339,6 +339,15 @@ every Ready and on `JoinedGuild`.
   up to 90% (happiness 80%, hygiene 100%) when it falls under 50% — not to full, so others' meals
   still matter — cures illness silently, and marks mornings played without rolling. A staff freeze is
   left alone. Grief or a refused confession fades on her next read.
+- **She wears a daily outfit** (`Helpers/Plynling/MascotWardrobe`, 8.24.0): whole looks picked by
+  the owner (thème, titre, accessories with styles, aura), never a per-slot mix. `Tend` dresses her in
+  `For(morning)` on every read, writing only slots that differ. A function of the day: each
+  Monday-to-Sunday week deals its Monday's season's pool as a deck seeded by the week, so each look
+  shows once a week; a deck opening on Sunday's look swaps its first two, and a seasonal look on a day
+  of the next season gives way to that season's. Every pool must hold at least 7 looks and each
+  season exactly one (checks section 73, which also walks ten years of days and draws every look).
+  The bot owns none of it (nothing checks ownership of a worn key); the cadre is left alone. A look
+  changed or added: re-run section 73; an accessory needs its style written resolved.
 - **Her badges pay nothing** (a reward would open a wallet for the bot and put cailloux from nowhere
   into `/admin dashboard`); her visits find no items, for the same reason.
 - **She speaks for her own Plynling**: `MascotPetLines` / `MascotFeedLines` replace the usual pools

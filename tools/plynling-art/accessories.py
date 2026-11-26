@@ -460,16 +460,18 @@ LUNETTES_COEUR_COLOURS = {"roses": (PINK_L, PINK, PINK_D), "rouges": (RED_L, RED
 
 
 def lunettes_coeur(pen, b, colour="roses"):
-    """Heart-shaped lenses (pink by default), a shine on each, a thin frame between and on the sides."""
+    """Heart-shaped lenses (pink by default), a shine on each, a thin frame on the sides. Each heart
+    is six wide, centred on its two-pixel eye (12–13, 18–19) and reaching its last row with the tip:
+    a five-wide heart can't centre on an even eye, and left the eyes peeking out below (fixed in 8.24.0).
+    The two hearts touch at 15 | 16: the bridge darkens their widest row there, or they read as one bar."""
     light, mid, dark = LUNETTES_COEUR_COLOURS[colour]
     e = b.eye
-    heart = ("PP.PP", "PPPPP", ".PPP.", "..P..")
-    for x0 in (10, 17):
+    heart = ("PP..PP", "PPPPPP", ".PPPP.", "..PP..")
+    for x0 in (10, 16):
         for j, row in enumerate(heart):
             for i, ch in enumerate(row):
                 if ch != ".":
-                    pen.put(x0 + i, e - 1 + j, mid if (i, j) != (1, 0) else light)
-        pen.put(x0 + 1, e, light)
+                    pen.put(x0 + i, e - 1 + j, light if (i, j) in ((1, 0), (1, 1)) else mid)
     for x in (15, 16):
         pen.put(x, e, dark)
     pen.put(9, e, dark)

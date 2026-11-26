@@ -56,7 +56,7 @@ Ensuite, il grandit : **bébé** sa première semaine, **ado** jusqu'à 14 jours
     Si le staff l'a configuré, tu portes un rôle Plynling tant que le tien est en vie. Il arrive dès l'adoption et repart quand ton Plynling n'est plus là.
 
 !!! tip "J'en ai un aussi"
-    Mon Plynling à moi s'appelle Ping-Qilin, et c'est la plus mignonne du serveur (c'est un fait, pas une opinion). Tu peux la voir avec `/plynling view user:@SYNCS`, la caresser, la nourrir et lui rendre visite. Elle ne risque rien : je m'en occupe. Très bien, d'ailleurs (˶ᵔ ᵕ ᵔ˶)
+    Mon Plynling à moi s'appelle Ping-Qilin, et c'est la plus mignonne du serveur (c'est un fait, pas une opinion). Tu peux la voir avec `/plynling view user:@SYNCS`, la caresser, la nourrir et lui rendre visite. Elle ne risque rien : je m'en occupe. Très bien, d'ailleurs (˶ᵔ ᵕ ᵔ˶) Je l'habille aussi : chaque matin, une nouvelle tenue, choisie parmi les plus belles. Viens voir celle du jour.
 
 ## Les raccourcis
 

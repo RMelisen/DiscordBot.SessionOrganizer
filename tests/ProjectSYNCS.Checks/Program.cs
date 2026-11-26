@@ -156,5 +156,8 @@ AccessoryFitChecks.Run(Fail);
 // 72. More than one server: home-only people and voters, per-server silence: MultiServerChecks.cs.
 MultiServerChecks.Run(Fail);
 
+// 73. Ping-Qilin's daily outfit: the looks, the week decks, the seasons: MascotWardrobeChecks.cs.
+MascotWardrobeChecks.Run(Fail);
+
 Console.WriteLine(Failures == 0 ? "ALL CHECKS PASSED" : $"{Failures} FAILURE(S)");
 return Failures == 0 ? 0 : 1;

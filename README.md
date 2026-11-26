@@ -459,7 +459,7 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
 The bot has one of her own: **Ping-Qilin**, a girl Amanite whose passion is naps. Anyone can see
 her with `/plynling view user:@SYNCS`, pet and feed her from her card, and take their own Plynling
 to visit with `/plynling visit user:@SYNCS` — she answers the door herself, and picks her Plynling's reaction. She never dies: SYNCS
-looks after her.
+looks after her, and dresses her each morning in one of her outfits, a different one every day.
 
 - **Hunger** empties in 3 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
   Both are looked after from its card (`/plynling view [user]`): **Nourrir** (Champignon,
