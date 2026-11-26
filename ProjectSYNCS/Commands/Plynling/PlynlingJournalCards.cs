@@ -19,7 +19,7 @@ public static class PlynlingJournalCards
     /// </summary>
     public static string JournalText(Plynling p, IReadOnlyList<PlynlingBadge> badges,
         IReadOnlyList<PlynlingJournalEntry> moments, int page, DateTimeOffset now,
-        IReadOnlyList<(PlynlingRelation Relation, Plynling Other)>? relations = null)
+        IReadOnlyList<(PlynlingRelation Relation, Plynling Other)>? relations = null, BadgeFacts? facts = null)
     {
         var info = PlynlingCatalog.Info(p.Species);
         var name = PlynlingCardUi.SafeName(p.Name);
@@ -33,12 +33,7 @@ public static class PlynlingJournalCards
                      $"🎲 {Plural(p.Plays, "partie", "parties")} ({Plural(p.PlaysWon, "gagnée", "gagnées")}) · " +
                      $"🏡 {Plural(p.Visits, "visite", "visites")}" + RelationsLine(relations);
 
-        // In catalog order, whatever order they were earned in.
-        var earned = badges.Select(b => b.Key).ToHashSet();
-        var owned = PlynlingBadges.All.Where(b => earned.Contains(b.Key)).ToList();
-        var badgeText = $"**Badges** · {owned.Count}/{PlynlingBadges.All.Count}\n" + (owned.Count == 0
-            ? "*Aucun badge pour l'instant.*"
-            : string.Join(" · ", owned.Select(b => $"{b.Emoji} {b.Name(g)}")));
+        var badgeText = BadgeText(p, badges, facts);
 
         var pages = Pages(moments.Count);
         page = Math.Clamp(page, 0, pages - 1);
@@ -51,9 +46,33 @@ public static class PlynlingJournalCards
         return header + "\n\n" + badgeText + "\n\n" + momentText;
     }
 
+    /// <summary>
+    /// Its badges, in catalog order whatever order they were earned in: each palier it has reached once,
+    /// at its highest tier, with its progress toward the next when the facts are known (« 34/50 »), then its
+    /// moments. The count is of every stored badge, tiers one by one.
+    /// </summary>
+    public static string BadgeText(Plynling p, IReadOnlyList<PlynlingBadge> badges, BadgeFacts? facts)
+    {
+        var g = p.Gender;
+        var earned = badges.Select(b => b.Key).ToHashSet();
+        var count = PlynlingBadges.All.Count(b => earned.Contains(b.Key));
+        var paliers = PlynlingBadges.Paliers
+            .Select(x => (Palier: x, Reached: x.Reached(earned), Next: x.Next(earned)))
+            .Where(x => x.Reached is not null)
+            .Select(x => $"{x.Reached!.Icon} {x.Palier.Name(g)}"
+                         + (facts is not null && x.Next is { } next ? $" {x.Palier.Value(p, facts)}/{next.Threshold}" : ""))
+            .ToList();
+        var moments = PlynlingBadges.Moments.Where(b => earned.Contains(b.Key)).Select(b => $"{b.Icon} {b.Name(g)}").ToList();
+        var lines = new List<string> { $"**Badges** · {count}/{PlynlingBadges.All.Count}" };
+        if (paliers.Count == 0 && moments.Count == 0) lines.Add("*Aucun badge pour l'instant.*");
+        if (paliers.Count > 0) lines.Add(string.Join(" · ", paliers));
+        if (moments.Count > 0) lines.Add(string.Join(" · ", moments));
+        return string.Join("\n", lines);
+    }
+
     public static MessageComponent BuildJournal(Plynling p, IReadOnlyList<PlynlingBadge> badges,
         IReadOnlyList<PlynlingJournalEntry> moments, int page, DateTimeOffset now,
-        IReadOnlyList<(PlynlingRelation Relation, Plynling Other)>? relations = null)
+        IReadOnlyList<(PlynlingRelation Relation, Plynling Other)>? relations = null, BadgeFacts? facts = null)
     {
         var info = PlynlingCatalog.Info(p.Species);
         var pages = Pages(moments.Count);
@@ -67,7 +86,7 @@ public static class PlynlingJournalCards
                 .WithAccentColor(new Color(info.Accent))
                 .AddComponent(new SectionBuilder()
                     .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(picture)).WithDescription(info.Name))
-                    .AddComponent(new TextDisplayBuilder(JournalText(p, badges, moments, page, now, relations)))))
+                    .AddComponent(new TextDisplayBuilder(JournalText(p, badges, moments, page, now, relations, facts)))))
             // One verb per button: with one, a disabled ◀ on page 0 and a ⏮ could share an id. ⏮ and ⏭
             // jump to the newest and the oldest page — a full journal runs to dozens of pages.
             .AddComponent(new ActionRowBuilder()

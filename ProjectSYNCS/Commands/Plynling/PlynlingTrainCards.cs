@@ -47,6 +47,7 @@ public static class PlynlingTrainCards
                               + $"\n{PlynlingStats.Emoji(drill)} {PlynlingStats.Name(drill)} +1 pour de bon.");
                 if (d.LevelAfter > d.LevelBefore)
                     lines.Add($"🎉 **Niveau {d.LevelAfter} !**");
+                if (r.Badges is { Count: > 0 } badges) lines.Add(PlynlingBadges.NewBadgeLines(badges, g));
                 return (string.Join("\n", lines) + waiting, buttons);
             }
             case TrainOutcome.NoEnergy when p is not null && r.EnoughAt is { } enough:
@@ -85,13 +86,14 @@ public static class PlynlingTrainCards
             ? PointButtons(p.Id)
             : null;
 
-    /// <summary>The answer to a point placed: her line, the stat's new total, and what is left.</summary>
+    /// <summary>The answer to a point placed: her line, the stat's new total, any badge it earned, and what is left.</summary>
     public static (string Text, MessageComponent? Buttons) PointReply(Plynling p, IReadOnlyList<TraitInfo> traits, PlynlingStat stat,
-        Func<string[], string> pick)
+        Func<string[], string> pick, IReadOnlyList<BadgeInfo>? badges = null)
     {
         var total = PlynlingStats.Compute(p, traits).Single(l => l.Stat == stat).Total;
         var text = string.Format(pick(BotResponses.PlynlingPointLines.For(p.Gender)), PlynlingCardUi.SafeName(p.Name))
-                   + $"\n{PlynlingStats.Emoji(stat)} {PlynlingStats.Name(stat)} **{total}**";
+                   + $"\n{PlynlingStats.Emoji(stat)} {PlynlingStats.Name(stat)} **{total}**"
+                   + (badges is { Count: > 0 } ? "\n" + PlynlingBadges.NewBadgeLines(badges, p.Gender) : "");
         var left = PlynlingRpg.UnspentPoints(p);
         return left > 0 ? (text + $"\n**{PlynlingRpg.PointsToPlace(left)}** : choisis où.", PointButtons(p.Id)) : (text, null);
     }

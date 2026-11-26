@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.25.0 — 2026-11-26
+
+- Plynling badges become tiered ladders, Bronze to Diamant, like the member badges: Longévité, Joueur, Champion, Voyageur, Hôte, Gourmand, Pot de colle, Chouchou du village, Entraînement, Niveau and Athlète. Badges already earned keep their place as tiers; the tiers a Plynling already qualifies for are awarded within the hour.
+- Two new one-time badges: « Guéri » (first recovery) and « Coquet » (three accessories worn at once).
+- A Plynling now counts the visits it receives, for the « Hôte » ladder (from this version on).
+- `/plynling journal` shows each ladder at its highest tier with the progress toward the next one.
+- Training and placing a level point can now earn badges, shown under the answer.
+- The tombstone score thresholds are retuned for the new badges (180 / 890 / 2 620 / 5 050).
+
 ## 8.24.1 — 2026-11-26
 
 - Ping-Qilin's gentleman outfit holds the cane on the left.

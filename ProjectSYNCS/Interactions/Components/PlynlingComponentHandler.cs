@@ -171,8 +171,9 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
         var relations = await _plynlings.GetRelationsAsync(plynling.Id);
         var page = int.TryParse(pageStr, out var p) ? p : 0;
+        var facts = plynling.DiedAt is null ? await _plynlings.BadgeFactsAsync(plynling, now) : null;
         await ((SocketMessageComponent)Context.Interaction).UpdateCardAsync(
-            PlynlingJournalCards.BuildJournal(plynling, badges, moments, page, now, relations));
+            PlynlingJournalCards.BuildJournal(plynling, badges, moments, page, now, relations, facts));
     }
 
     // ---- /plynling relations' two tabs (living / dead), re-read on every click.

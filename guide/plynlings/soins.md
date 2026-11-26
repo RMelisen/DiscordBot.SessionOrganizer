@@ -157,10 +157,42 @@ Chaque Plynling naît avec une **passion** parmi douze : la cuisine, la musique,
 **`/plynling journal`** (ajoute `user` pour celui de quelqu'un d'autre) ouvre son journal :
 
 - son nombre de repas, de caresses, de parties (et de victoires), de visites, son ou sa partenaire et ses meilleurs amis ;
-- ses **badges** : il en gagne en vivant, en jouant, en visitant… et chacun rapporte quelques cailloux à son propriétaire, une seule fois ;
+- ses **badges** (voir plus bas), chaque palier à son meilleur rang, avec où il en est pour le suivant (« 34/50 ») ;
 - ses **moments**, datés, du plus récent au plus ancien : son adoption, son premier repas, chaque fois qu'il a grandi, sa première victoire, ses nouveaux traits, ses amitiés et ses amours, ses maladies, ses badges…
 
 Les boutons ⏮ ◀ ▶ ⏭ tournent les pages. Le journal d'un Plynling disparu reste consultable.
+
+### Ses badges
+
+Ce sont **ses** badges à lui, pas les tiens : ils le suivent jusqu'au cimetière. La plupart sont des **paliers** à cinq rangs, comme tes [succès](../niveaux.md) : 🥉 Bronze, 🥈 Argent, 🥇 Or, 🏅 Platine, 💠 Diamant. **Chaque rang** rapporte des cailloux à son propriétaire, une seule fois : 10, 20, 30, 40, puis 50.
+
+| Palier | Ce qui compte | Bronze · Argent · Or · Platine · Diamant |
+|---|---|---|
+| 🌳 Longévité | son âge | 7 · 30 · 180 · 365 · 730 jours |
+| 🎲 Joueur | ses parties avec toi | 1 · 10 · 50 · 100 · 500 |
+| 🏆 Champion | ses victoires | 1 · 10 · 50 · 100 · 250 |
+| 🌍 Voyageur | ses visites, faites ou reçues | 1 · 10 · 30 · 100 · 250 |
+| 🏠 Hôte | les visites qu'il reçoit | 1 · 10 · 30 · 100 · 250 |
+| 🍄 Gourmand | ses repas | 10 · 50 · 100 · 500 · 1 000 |
+| 🤲 Pot de colle | ses caresses | 10 · 50 · 100 · 500 · 1 000 |
+| 🎁 Chouchou du village | les repas offerts par d'autres | 1 · 5 · 10 · 25 · 50 |
+| 🏋️ Entraînement | ses séances de `/plynling train` | 1 · 25 · 50 · 200 · 500 |
+| ⭐ Niveau | son niveau | 5 · 10 · 25 · 50 · 100 |
+| 💪 Athlète | sa meilleure stat du corps | 10 · 15 · 20 · 30 · 40 |
+
+Et quelques badges qui ne se gagnent **qu'une fois** :
+
+| Badge | Comment l'obtenir | Récompense |
+|---|---|---|
+| 😮‍💨 Sauvé de justesse | Le nourrir alors qu'il meurt de faim | 20 cailloux |
+| 🤝 Premier ami | Se faire un ami (ou mieux) | 10 cailloux |
+| 💛 Meilleur ami | Avoir un meilleur ami (ou mieux) | 20 cailloux |
+| 💞 En couple | Former un couple | 30 cailloux |
+| 💊 Guéri | Guérir d'une maladie | 10 cailloux |
+| 🎩 Coquet | Porter trois accessoires à la fois | 10 cailloux |
+| ✨ Revenu d'entre les morts | Être ressuscité par le staff | rien |
+
+Quelques rangs (la Longévité, le Joueur, le Gourmand…) gardent la récompense qu'ils avaient avant les paliers. Les visites reçues ne comptent que depuis la version 8.25.0.
 
 ## L'habiller
 

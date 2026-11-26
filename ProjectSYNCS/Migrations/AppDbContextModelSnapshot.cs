@@ -1447,6 +1447,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<double>("Happiness")
                         .HasColumnType("REAL");
 
+                    b.Property<long>("Hosted")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double>("Hunger")
                         .HasColumnType("REAL");
 

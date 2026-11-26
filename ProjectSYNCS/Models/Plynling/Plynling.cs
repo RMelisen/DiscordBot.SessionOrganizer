@@ -87,6 +87,9 @@ public class Plynling
     public long Plays { get; set; }
     public long PlaysWon { get; set; }
     public long Visits { get; set; }
+    // The visits it received, as the host (a part of Visits), for the « Hôte » badge. Recorded from 8.25.0:
+    // nothing kept before said which side a visit was on.
+    public long Hosted { get; set; }
 
     // Care received, for the badges: meals (whoever paid), pets (from anyone), and meals paid
     // by someone other than the owner. Recorded from the day they shipped, like the above.

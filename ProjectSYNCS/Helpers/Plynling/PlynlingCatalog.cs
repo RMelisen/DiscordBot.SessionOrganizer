@@ -95,7 +95,7 @@ public static class PlynlingCatalog
     // The score each tombstone takes, from the petite stèle up. Set so a well-cared Plynling reaches each one at
     // about the age the old rule used (7, 28, 90, 180 days): measured by the checks' calibration (section
     // « score »), never tuned by feel.
-    public static readonly IReadOnlyList<long> MemorialScores = new long[] { 180, 780, 2400, 4700 };
+    public static readonly IReadOnlyList<long> MemorialScores = new long[] { 180, 890, 2620, 5050 };
 
     public static int MemorialTierForScore(long score) => 1 + MemorialScores.Count(t => score >= t);
 

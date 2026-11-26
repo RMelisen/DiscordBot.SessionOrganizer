@@ -112,16 +112,15 @@ Certains [événements du village](village.md#a-deux) concernent aussi un autre 
 
 ### Les badges
 
-| Badge | Comment l'obtenir | Récompense |
-|---|---|---|
-| 🏡 Première visite | Une visite | 10 cailloux |
-| 💞 10 visites | 10 visites | 20 cailloux |
-| 🌍 30 visites | 30 visites | 40 cailloux |
-| 🤝 Premier ami | Se faire un ami (ou mieux) | 10 cailloux |
-| 💛 Meilleur ami | Avoir un meilleur ami (ou mieux) | 20 cailloux |
-| 💞 En couple | Former un couple | 30 cailloux |
+| Badge | Comment l'obtenir |
+|---|---|
+| 🌍 Voyageur | Un palier : 1, 10, 30, 100, puis 250 visites, faites ou reçues |
+| 🏠 Hôte | Un palier : 1, 10, 30, 100, puis 250 visites reçues |
+| 🤝 Premier ami | Se faire un ami (ou mieux) |
+| 💛 Meilleur ami | Avoir un meilleur ami (ou mieux) |
+| 💞 En couple | Former un couple |
 
-Les visites comptent pour **les deux** Plynlings, que le tien soit le visiteur ou l'invité. Chaque badge ne se gagne qu'une fois.
+Les visites comptent pour **les deux** Plynlings, que le tien soit le visiteur ou l'invité ; l'invité avance aussi son palier d'Hôte. Les récompenses et tous les autres badges sont dans [Soins](soins.md#ses-badges).
 
 ## Voir ses relations : `/plynling relations`
 

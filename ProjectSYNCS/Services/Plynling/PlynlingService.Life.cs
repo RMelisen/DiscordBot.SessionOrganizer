@@ -379,7 +379,7 @@ public partial class PlynlingService
         var earned = (await _db_context.PlynlingBadges.Where(b => b.PlynlingId == p.Id).Select(b => b.Key).ToListAsync())
             .Concat(_db_context.PlynlingBadges.Local.Where(b => b.PlynlingId == p.Id).Select(b => b.Key))
             .ToHashSet();
-        var fresh = PlynlingBadges.Newly(p, earned, now, evt);
+        var fresh = PlynlingBadges.Newly(p, earned, await BadgeFactsAsync(p, now, evt, earned));
         if (fresh.Count == 0) return NoBadges;
 
         foreach (var badge in fresh)
@@ -397,6 +397,25 @@ public partial class PlynlingService
             await EconomyLog.AddAsync(_db_context, p.GuildId, EconomyLog.EarnBadge, reward, now);
         }
         return fresh;
+    }
+
+    // What its badges read beyond the row. The two that cost a query (its traits for the best body stat,
+    // its journal for a recovery) are skipped once their badges are all earned — `earned` null reads both,
+    // for the journal's progress. Its journal counts moments added in this unit of work, not saved yet.
+    public async Task<BadgeFacts> BadgeFactsAsync(Plynling p, DateTimeOffset now, BadgeEvent evt = BadgeEvent.None,
+        IReadOnlySet<string>? earned = null)
+    {
+        var best = 0;
+        if (earned is null || PlynlingBadges.Paliers.Single(x => x.Key == "athlete").Next(earned) is not null)
+        {
+            var stats = PlynlingStats.Compute(p, await GetTraitsAsync(p));
+            best = stats.Where(s => PlynlingStats.IsBody(s.Stat)).Max(s => s.Total);
+        }
+        var recovered = false;
+        if (earned is null || !earned.Contains("recovered"))
+            recovered = _db_context.PlynlingJournalEntries.Local.Any(e => e.PlynlingId == p.Id && e.Kind == JournalKind.Recovered)
+                || await _db_context.PlynlingJournalEntries.AnyAsync(e => e.PlynlingId == p.Id && e.Kind == JournalKind.Recovered);
+        return new BadgeFacts(PlynlingLife.Age(p, now), evt, best, recovered);
     }
 
     // A read that finds it fell sick or recovered (a morning played on this read) creates that
@@ -417,13 +436,15 @@ public partial class PlynlingService
     // the on-actions after it.
     public async Task FlushMomentsAsync(Plynling p)
     {
+        DateTimeOffset? recoveredAt = null;
         foreach (var (kind, at) in p.PendingMoments)
         {
             await AddMomentAsync(p, kind, null, at);
             if (kind == JournalKind.FellSick) QueueOnAction(OnAction.FellSick, p);
-            if (kind == JournalKind.Recovered) QueueOnAction(OnAction.Recovered, p);
+            if (kind == JournalKind.Recovered) { QueueOnAction(OnAction.Recovered, p); recoveredAt = at; }
         }
         p.PendingMoments.Clear();
+        if (recoveredAt is { } healed) await AwardAsync(p, healed);   // « Guéri », the first time
         // The good mornings a Settle found, scored on their own morning's day.
         foreach (var (points, at) in p.PendingScore)
             await PlynlingScore.AddAsync(_db_context, p, points, at);

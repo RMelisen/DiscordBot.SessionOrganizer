@@ -240,7 +240,9 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         }
         var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
         var relations = await _plynlings.GetRelationsAsync(plynling.Id);
-        await Context.Interaction.RespondCardAsync(PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations));
+        // Progress toward the next tiers, for the living only: a grave's ladders are done.
+        var facts = plynling.DiedAt is null ? await _plynlings.BadgeFactsAsync(plynling, now) : null;
+        await Context.Interaction.RespondCardAsync(PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations, facts));
     }
 
     // Everyone it has met and what they are to it — the living one, or else the latest grave.

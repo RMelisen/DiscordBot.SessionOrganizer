@@ -31,11 +31,11 @@ public class PlynlingRpgHandler : InteractionModuleBase<SocketInteractionContext
         // Reads and saves before it can answer: defer first.
         await DeferAsync(ephemeral: true);
         var now = DateTimeOffset.UtcNow;
-        var (outcome, p) = await _plynlings.SpendPointAsync(id, Context.User.Id, stat, now);
+        var (outcome, p, badges) = await _plynlings.SpendPointAsync(id, Context.User.Id, stat, now);
         switch (outcome)
         {
             case PointOutcome.Done when p is not null:
-                var (text, buttons) = PlynlingTrainCards.PointReply(p, await _plynlings.GetTraitsAsync(p), stat, _picker.Pick);
+                var (text, buttons) = PlynlingTrainCards.PointReply(p, await _plynlings.GetTraitsAsync(p), stat, _picker.Pick, badges);
                 await FollowupAsync(text, components: buttons, ephemeral: true, allowedMentions: AllowedMentions.None);
                 break;
             case PointOutcome.NotOwner:

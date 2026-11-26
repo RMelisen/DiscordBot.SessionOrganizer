@@ -142,6 +142,7 @@ public partial class PlynlingService
         var happiness = PlynlingBonds.VisitHappiness(after);
         PlynlingLife.Visit(visitor, now, happiness);
         PlynlingLife.Visit(host, now, happiness);
+        host.Hosted++;
         var close = after is PlynlingBond.Friends or PlynlingBond.BestFriends or PlynlingBond.Lovers;
         await RelieveAsync(visitor, CareAct.Visit, now, close);
         await RelieveAsync(host, CareAct.Visit, now, close);

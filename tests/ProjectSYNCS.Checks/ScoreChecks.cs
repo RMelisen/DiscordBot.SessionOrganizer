@@ -40,6 +40,29 @@ public static class ScoreChecks
                && PlynlingScore.Meal(PlynlingFood.Morel) < PlynlingScore.Meal(PlynlingFood.Truffle), "finer foods are worth more");
         foreach (var badge in PlynlingBadges.All)
             Expect(PlynlingScore.ForMoment(JournalKind.Badge, badge.Key) == badge.Reward, $"badge {badge.Key} scores its reward");
+        // The badges stored before the paliers are tiers now: each key still resolves, with its old reward.
+        var shipped = new Dictionary<string, long>
+        {
+            ["week"] = 10, ["month"] = 20, ["six_months"] = 40, ["year"] = 50, ["first_game"] = 10, ["wins_10"] = 20,
+            ["wins_50"] = 40, ["games_100"] = 40, ["first_visit"] = 10, ["visits_10"] = 20, ["visits_30"] = 40,
+            ["meals_100"] = 20, ["pets_100"] = 20, ["fed_by_friend"] = 10, ["saved"] = 20, ["resurrected"] = 0,
+            ["first_friend"] = 10, ["best_friend"] = 20, ["couple"] = 30,
+        };
+        foreach (var (key, reward) in shipped)
+            Expect(PlynlingBadges.ByKey(key)?.Reward == reward, $"shipped badge {key} still resolves with its reward {reward}");
+        foreach (var palier in PlynlingBadges.Paliers)
+        {
+            Expect(palier.Tiers.Count == 5 && palier.Tiers.Select(t => t.Tier).SequenceEqual(
+                       new[] { CollectionTier.Bronze, CollectionTier.Silver, CollectionTier.Gold, CollectionTier.Platinum, CollectionTier.Diamond }),
+                $"palier {palier.Key}: five tiers, Bronze to Diamant");
+            Expect(palier.Tiers.Zip(palier.Tiers.Skip(1)).All(x => x.First.Threshold < x.Second.Threshold),
+                $"palier {palier.Key}: thresholds rise");
+        }
+        var probe = PlynlingLife.Create(1, 2, "Probe", PlynlingSpecies.Cepe, PlynlingGender.Female, Now);
+        probe.Plays = 60;
+        var won = PlynlingBadges.Newly(probe, new HashSet<string> { "first_game" }, new BadgeFacts(TimeSpan.Zero)).Select(b => b.Key).ToList();
+        Expect(won.SequenceEqual(new[] { "games_10", "games_50" }), $"60 games earn the tiers it reached and lacks: {string.Join(",", won)}");
+        Expect(PlynlingBadges.ByKey("games_50")!.Name(PlynlingGender.Female) == "Joueuse (Or)", "a tier's name agrees and says its tier");
         Expect(PlynlingScore.ForMoment(JournalKind.GrewUp, nameof(PlynlingStage.Teen)) == 10
                && PlynlingScore.ForMoment(JournalKind.GrewUp, nameof(PlynlingStage.Adult)) == 20
                && PlynlingScore.ForMoment(JournalKind.GrewUp, nameof(PlynlingStage.Elder)) == 40, "growing up: 10 / 20 / 40");
@@ -182,9 +205,13 @@ public static class ScoreChecks
             Expect((await Service(c).PetAsync(a, Now)).Outcome == CareOutcome.Done, "a pet");
         Expect(Read(a).Score == before + PlynlingScore.Pet, "a pet scores " + PlynlingScore.Pet);
         before = Read(a).Score;
+        var badgesBefore = Badges(a);
         using (var c = new AppDbContext(opts))
             Expect((await Service(c).TrainAsync(G, Owner, PlynlingStat.Force, Now)).Outcome == TrainOutcome.Done, "a drill");
-        Expect(Read(a).Score == before + PlynlingScore.Drill, $"a drill scores {PlynlingScore.Drill}: {Read(a).Score - before}");
+        // The first drill also earns « Entraînement (Bronze) », which scores its own reward.
+        Expect(Badges(a) > badgesBefore, "a first drill earns a badge");
+        Expect(Read(a).Score == before + PlynlingScore.Drill + (Badges(a) - badgesBefore),
+            $"a drill scores {PlynlingScore.Drill} plus its badges: {Read(a).Score - before}");
 
         // The mascot is cared for like anyone, and never scores.
         var m = Add(Bot, PlynlingMascot.Name, 40);

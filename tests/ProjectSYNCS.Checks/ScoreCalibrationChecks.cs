@@ -67,7 +67,9 @@ public static class ScoreCalibrationChecks
         }
         void Badges(DateTimeOffset at, BadgeEvent evt = BadgeEvent.None)
         {
-            foreach (var b in PlynlingBadges.Newly(p, earned, at, evt))
+            var best = PlynlingStats.Compute(p, Array.Empty<TraitInfo>()).Where(s => PlynlingStats.IsBody(s.Stat)).Max(s => s.Total);
+            var facts = new BadgeFacts(PlynlingLife.Age(p, at), evt, best, recoveries > 0);
+            foreach (var b in PlynlingBadges.Newly(p, earned, facts))
             {
                 earned.Add(b.Key);
                 score += b.Reward;                       // PlynlingScore.ForMoment(Badge, key)
@@ -128,6 +130,7 @@ public static class ScoreCalibrationChecks
                 var after = PlynlingBonds.BondFor(pair.Affinity, before);
                 pair.Bond = after;
                 p.Visits++;
+                if (p.Visits % 2 == 0) p.Hosted++;        // as often visited as visiting
                 score += PlynlingScore.Visit + (good ? PlynlingScore.VisitGoodScene : 0);
                 // The bond's moment, as PlynlingService.BondMoment writes it, scored once per pair and bond.
                 var closer = PlynlingBonds.Closeness(after) < PlynlingBonds.Closeness(before);

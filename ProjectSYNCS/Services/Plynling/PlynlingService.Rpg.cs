@@ -8,7 +8,7 @@ namespace ProjectSYNCS.Services;
 public enum TrainOutcome { Done, NoPlynling, Dead, Frozen, Mascot, TooYoung, Asleep, Sick, NoEnergy, NotABodyStat }
 
 public sealed record TrainResult(TrainOutcome Outcome, Plynling? Plynling, DrillResult? Drill = null, int MaxEnergy = 0,
-    DateTimeOffset? EnoughAt = null);
+    DateTimeOffset? EnoughAt = null, IReadOnlyList<BadgeInfo>? Badges = null);
 
 // A level point placed from a drill's buttons.
 public enum PointOutcome { Done, NoPlynling, NotOwner, NoPoint }
@@ -45,24 +45,26 @@ public partial class PlynlingService
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActTrain, 1, now);
         await PlynlingScore.AddAsync(_db_context, p,
             PlynlingScore.Drill + (result.LevelAfter - result.LevelBefore) * PlynlingScore.LevelUp, now);
+        var badges = await AwardAsync(p, now);          // « Entraînement », « Niveau », « Athlète »
         await _db_context.SaveChangesAsync();
-        return new TrainResult(TrainOutcome.Done, p, result, max);
+        return new TrainResult(TrainOutcome.Done, p, result, max, Badges: badges);
     }
 
     // One level point into a body stat, by its owner only, and only while one is left to place — so a
     // button clicked twice, or left open after the points went elsewhere, finds none.
-    public Task<(PointOutcome Outcome, Plynling? Plynling)> SpendPointAsync(int plynlingId, ulong userId, PlynlingStat stat, DateTimeOffset now) =>
+    public Task<(PointOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> SpendPointAsync(int plynlingId, ulong userId, PlynlingStat stat, DateTimeOffset now) =>
         UnitAsync(() => SpendPointOnceAsync(plynlingId, userId, stat, now));
 
-    private async Task<(PointOutcome, Plynling?)> SpendPointOnceAsync(int plynlingId, ulong userId, PlynlingStat stat, DateTimeOffset now)
+    private async Task<(PointOutcome, Plynling?, IReadOnlyList<BadgeInfo>)> SpendPointOnceAsync(int plynlingId, ulong userId, PlynlingStat stat, DateTimeOffset now)
     {
         var p = await SettledAsync(await _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == plynlingId), now);
-        if (p is null) return (PointOutcome.NoPlynling, null);
-        if (p.OwnerId != userId) return (PointOutcome.NotOwner, p);
-        if (p.DiedAt is not null || !PlynlingStats.IsBody(stat) || PlynlingRpg.UnspentPoints(p) == 0) return (PointOutcome.NoPoint, p);
+        if (p is null) return (PointOutcome.NoPlynling, null, NoBadges);
+        if (p.OwnerId != userId) return (PointOutcome.NotOwner, p, NoBadges);
+        if (p.DiedAt is not null || !PlynlingStats.IsBody(stat) || PlynlingRpg.UnspentPoints(p) == 0) return (PointOutcome.NoPoint, p, NoBadges);
 
         PlynlingStats.AddPoint(p, stat);
+        var badges = await AwardAsync(p, now);          // « Athlète »
         await _db_context.SaveChangesAsync();
-        return (PointOutcome.Done, p);
+        return (PointOutcome.Done, p, badges);
     }
 }

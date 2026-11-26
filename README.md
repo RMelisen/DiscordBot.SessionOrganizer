@@ -505,12 +505,15 @@ looks after her, and dresses her each morning in one of her outfits, a different
   (« la pêche », « les trains ») — once a day, cleared by leaving it empty, and cleared by
   staff with `/admin plynling passion-reset` if it is inappropriate. A typed passion that names
   one of the twelve becomes that passion.
-- **Badges and the journal:** each Plynling earns its own badges — 16 of them, for living a
-  week, a month, six months and a year, for games played and won, visits, meals and pets, for
-  being fed by a friend or saved from starving at the last moment, and for coming back from the
-  dead. Each pays its owner a few cailloux, once. `/plynling journal [user]` shows its stats,
-  its badges and its dated moments (adopted, grew up, first win, visits, badges…), for the
-  living and the dead alike.
+- **Badges and the journal:** each Plynling earns its own badges. Eleven are ladders of five
+  tiers (Bronze, Argent, Or, Platine, Diamant), like the member badges: how long it has lived,
+  games played and won, visits made and received, meals, pets, meals from friends, drills, its
+  RPG level and its best body stat. Seven are earned once: saved from starving at the last
+  moment, back from the dead, a first friend, a best friend, a couple, a first recovery, and
+  three accessories worn at once. Each tier pays its owner a few cailloux, once.
+  `/plynling journal [user]` shows its stats, each ladder at its highest tier with the progress
+  toward the next, and its dated moments (adopted, grew up, first win, badges…), for the living
+  and the dead alike.
 - **Relationships:** every accepted visit plays out well or badly — usually well,
   sometimes a squabble — and each pair has a hidden compatibility, so some click and some never
   will. They become *amis*, *meilleurs amis*, or *rivaux* and *ennemis*; a boy and a girl who

@@ -300,9 +300,10 @@ is deleted.
 
 ## Badges and journal
 
-`Helpers/Plynling/PlynlingBadges` is the catalog (16, each with a **stable key** — a rename orphans every
-earned copy). `PlynlingBadge` rows have a unique index on (Plynling, key), which is what really makes
-each reward paid once. **`AwardAsync` and `AddMomentAsync` never save**: an action, its moments, its
+`Helpers/Plynling/PlynlingBadges` is the catalog: tiered paliers and one-time moments, each with a
+**stable key** — a rename orphans every earned copy. **Read `plynling/badges.md` before changing a
+badge.** `PlynlingBadge` rows have a unique index on (Plynling, key), which is what really makes each
+reward paid once. **`AwardAsync` and `AddMomentAsync` never save**: an action, its moments, its
 badges and their cailloux land in the caller's one `SaveChanges`. Time-earned badges, the « est
 devenu… » moments (dated by `PlynlingLife.StageStart`) and the death moment are written by the sweep.
 A stage moment is written only within 2 days of the stage starting (`PlynlingTraits.JustGained`, the
@@ -448,9 +449,9 @@ and **picks the tombstone**. It is separate from the RPG's `RpgXp`, which buys l
 - **`UnitAsync` retries a unique-index race too** (`EconomySave.IsRace`): two units can both insert the
   day's first bucket.
 - **The tombstone** is `PlynlingCatalog.MemorialTier(p)` = `max(score tier, TombstoneFloor)`. The
-  thresholds (`MemorialScores`: 180 / 780 / 2 400 / 4 700) come from **checks section 68's calibration**:
-  a simulated well-cared life reaches them on days 7 / 28 / 91 / 180, the old age rule's 7 / 28 / 90 / 180,
-  and a neglected one on 30 / 156 / never. `-- score-sim` prints the days. **Retune by re-running it,
+  thresholds (`MemorialScores`: 180 / 890 / 2 620 / 5 050, retuned for the tiered badges in 8.25.0) come
+  from **checks section 68's calibration**: a simulated well-cared life reaches them on days 7 / 28 / 90 / 180,
+  the old age rule's, and a neglected one on 25 / 165 / never. `-- score-sim` prints the days. **Retune by re-running it,
   never by feel**, and re-run it whenever a point value changes.
 - **The rebuild** (`PlynlingScoreRebuild`, at startup before the bot connects, `architecture.md`) gave every
   row that predated the score its history once (`ScoreRebuilt`). `PlynlingScoreHistory.Rebuild` is pure.

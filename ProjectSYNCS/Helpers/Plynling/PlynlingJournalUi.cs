@@ -41,7 +41,7 @@ public static class PlynlingJournalUi
             ? $"Un premier repas offert par <@{friend}>."
             : "Un premier repas offert par un ami.",
         JournalKind.Badge => PlynlingBadges.ByKey(detail ?? "") is { } badge
-            ? $"Badge obtenu : {badge.Emoji} {badge.Name(g)}."
+            ? $"Badge obtenu : {badge.Icon} {badge.Name(g)}."
             : "Badge obtenu.",
         JournalKind.Resurrected => $"{g.Agree("Revenu", "Revenue")} d'entre les morts !",
         JournalKind.Died => detail == "illness"
