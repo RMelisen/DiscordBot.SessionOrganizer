@@ -109,6 +109,8 @@ public static class StatsChecks
         Expect(PlynlingCounters.Food(PlynlingFood.Morel) == "meal.food.morel", "food key: " + PlynlingCounters.Food(PlynlingFood.Morel));
         Expect(PlynlingCounters.GameWon(PlynlingGame.Memory) == "play.memory.won", "game key");
         Expect(all.Contains("find.event"), "find.event missing");
+        Expect(PlynlingCounters.Drill(PlynlingStat.Agility) == "drill.agility" && all.Contains("drill.speed"), "drill keys");
+        Expect(!all.Contains(PlynlingCounters.Drill(PlynlingStat.Courage)), "a mind stat is never drilled, so has no key");
 
         var before = PlynlingLife.Create(G, Owner, "Avant", PlynlingSpecies.Cepe, PlynlingGender.Male, new DateTimeOffset(2026, 11, 1, 12, 0, 0, TimeSpan.Zero));
         var after = PlynlingLife.Create(G, Owner, "Après", PlynlingSpecies.Cepe, PlynlingGender.Male, Now);
@@ -262,6 +264,15 @@ public static class StatsChecks
         using (var c = db.New())
             Expect((await db.Service(c).ForageAsync(G, Owner, Now, new Random(1))).Outcome == CareOutcome.Done, "a forage");
         Expect(db.Count(a, PlynlingCounters.Forage) == 1 && db.Count(a, PlynlingCounters.FindForage) == 1, "forage counted");
+
+        // A drill counts under its stat (old enough to train, full of Énergie, awake at 13:00 Paris).
+        var t = db.Add(5, "Sportif", Now.AddDays(-60), r => { r.Energy = 100; r.EnergyAsOf = Now; });
+        TrainResult trained;
+        using (var c = db.New())
+            trained = await db.Service(c).TrainAsync(G, 5, PlynlingStat.Agility, Now);
+        Expect(trained.Outcome == TrainOutcome.Done, "a drill: " + trained.Outcome);
+        Expect(db.Count(t, PlynlingCounters.Drill(PlynlingStat.Agility)) == 1 && db.Count(t, PlynlingCounters.Drill(PlynlingStat.Force)) == 0,
+            "the drill counted under Agilité");
     }
 
     // ---- Task 4: what Settle finds -----------------------------------------------------------------------------
@@ -324,7 +335,7 @@ public static class StatsChecks
 
     private static void Lines()
     {
-        Expect(PlynlingStatsUi.Rank(new StatRank(1, 9)) == "🥇", "gold");
+        Expect(PlynlingStatsUi.Rank(new StatRank(1, 9)) == "1er / 9", "first: " + PlynlingStatsUi.Rank(new StatRank(1, 9)));
         Expect(PlynlingStatsUi.Rank(new StatRank(4, 14)) == "4e / 14", "fourth: " + PlynlingStatsUi.Rank(new StatRank(4, 14)));
 
         var oldA = Now.AddDays(-30);
@@ -390,7 +401,13 @@ public static class StatsChecks
 
         // Labels that read well and never collide.
         var labels = Enum.GetValues<StatsTab>().SelectMany(t => PlynlingStatsUi.Lines(Fullest("x", false), t)).Select(l => l.Label).ToList();
-        Expect(labels.Contains("🛌 Matins de maladie") && labels.Contains("🥫 Repas du garde-manger"), "care and health labels");
+        Expect(labels.Contains("Matins de maladie") && labels.Contains("Repas du garde-manger"), "care and health labels");
+        var ids = Enum.GetValues<StatsTab>().SelectMany(t => PlynlingStatsUi.Lines(Fullest("x", false), t)).Select(l => l.Id).ToList();
+        Expect(ids.Distinct().Count() == ids.Count, "two lines share an id: " + string.Join(", ", ids.GroupBy(i => i).Where(g => g.Count() > 1).Select(g => g.Key)));
+
+        History();
+        Pairs();
+        NewLines();
         Expect(labels.Count(l => l.Contains("Souvenirs")) <= 1, "« Souvenirs » twice: " + string.Join(", ", labels.Where(l => l.Contains("Souvenirs"))));
 
         // Every /plynling command that answers through Context.Interaction (a card through CardSend, a modal) must be
@@ -406,8 +423,110 @@ public static class StatsChecks
 
         // A rank shows on the single view.
         var ranked = Sheet("Classé", oldA, p => p.Meals = 412, ranks: new() { [RankedStat.Meals] = new StatRank(1, 9) });
-        Expect(PlynlingStatsUi.Lines(ranked, StatsTab.Care).Select(l => PlynlingStatsUi.Render(l, ranked.Partial)).Any(t => t.Contains("Repas") && t.Contains("🥇")),
-            "the meals line carries its medal");
+        Expect(PlynlingStatsUi.Lines(ranked, StatsTab.Care).Select(l => PlynlingStatsUi.Render(l, ranked.Partial)).Any(t => t.Contains("Repas") && t.Contains("1er / 9")),
+            "the meals line carries its rank");
+    }
+
+    // The score's buckets read as a week, a best day, a running and a best streak, and a fortnight of bars.
+    private static void History()
+    {
+        var today = AppTime.DayKey(Now);                                   // 2026-11-27
+        var days = new Dictionary<int, long>
+        {
+            [20261127] = 10, [20261126] = 20, [20261125] = 5,               // a running streak of 3
+            [20261120] = 1,                                                 // 7 days back: outside the week
+            [20261101] = 300, [20261102] = 1, [20261103] = 1, [20261104] = 1, [20261105] = 0, // a best run of 4
+        };
+        Expect(today == 20261127, "today's key: " + today);
+        var h = StatScore.From(days, today);
+        Expect(h.Week == 35, "the week sums the last seven days: " + h.Week);
+        Expect(h.BestDay == 20261101 && h.BestDayPoints == 300, $"best day: {h.BestDay} {h.BestDayPoints}");
+        Expect(h.Streak == 3 && h.BestStreak == 4, $"streaks: {h.Streak} / {h.BestStreak}");
+        Expect(h.Last14.Count == 14 && h.Last14[13] == 10 && h.Last14[0] == 0, "the fortnight, oldest first");
+
+        // Nothing yet today: yesterday's run still holds until the day ends.
+        var quiet = StatScore.From(new Dictionary<int, long> { [20261126] = 4, [20261125] = 4 }, today);
+        Expect(quiet.Streak == 2, "an unfinished day breaks nothing: " + quiet.Streak);
+        var broken = StatScore.From(new Dictionary<int, long> { [20261125] = 4 }, today);
+        Expect(broken.Streak == 0 && broken.BestStreak == 1, "a missed day breaks the run");
+        // Across a month's end.
+        var month = StatScore.From(new Dictionary<int, long> { [20261130] = 1, [20261201] = 1 }, 20261201);
+        Expect(month.Streak == 2 && month.BestStreak == 2, "a streak across the 1st");
+
+        var empty = StatScore.From(new Dictionary<int, long>(), today);
+        Expect(empty.BestDay == 0 && empty.Streak == 0 && empty.Week == 0, "no buckets");
+
+        var bars = PlynlingStatsUi.Sparkline(new long[] { 0, 1, 50, 100 });
+        Expect(bars == "▁▂▅█", "bars: " + bars);
+        Expect(PlynlingStatsUi.Sparkline(new long[14]) == new string('▁', 14), "a flat fortnight");
+    }
+
+    private static void Pairs()
+    {
+        var since = new DateTimeOffset(2026, 10, 12, 12, 0, 0, TimeSpan.Zero);
+        Expect(PlynlingStatsUi.PairLine(null) is null, "strangers: no line");
+        var girls = PlynlingStatsUi.PairLine(new StatPair(PlynlingBond.BestFriends, 14, since, BothFemale: true));
+        Expect(girls?.StartsWith("**Meilleures amies** depuis le <t:") == true && girls.EndsWith("14 rencontres"), "two girls: " + girls);
+        var mixed = PlynlingStatsUi.PairLine(new StatPair(PlynlingBond.Rivals, 1, since, BothFemale: false));
+        Expect(mixed?.Contains("**Rivaux**") == true && mixed.EndsWith("1 rencontre"), "mixed rivals: " + mixed);
+    }
+
+    private static void NewLines()
+    {
+        var old = Now.AddDays(-30);
+        var facts = NoFacts with
+        {
+            Met = 4, Population = 9, FirstWinAfter = TimeSpan.FromHours(50), LuckiestPercent = 15, DecidedAlone = 2,
+            EventsLived = 3, EventStress = 40, Partner = new StatFriend("Rex", old), BreakUps = 0,
+        };
+        var a = Sheet("A", old, p => { p.Plays = 4; p.PlaysWon = 1; }, facts: facts,
+            counters: new() { [PlynlingCounters.Drill(PlynlingStat.Force)] = 3, [PlynlingCounters.Drill(PlynlingStat.Speed)] = 5 });
+        var b = Sheet("B", old, p => { p.Plays = 4; p.PlaysWon = 1; },
+            facts: NoFacts with { FirstWinAfter = TimeSpan.FromHours(10), LuckiestPercent = 40, DecidedAlone = 0, EventsLived = 1, EventStress = -5 });
+
+        Expect(LineOf(PlynlingStatsUi.Duel(a, b, StatsTab.Play), "Première victoire") is { Winner: 1 }, "the sooner first win wins");
+        var social = PlynlingStatsUi.Duel(a, b, StatsTab.Social);
+        Expect(LineOf(social, "coup de chance") is { Winner: -1 }, "the smaller chance won is the luckier");
+        Expect(LineOf(social, "sans son humain") is { Winner: 1 }, "fewer events left alone wins");
+        Expect(LineOf(social, "Stress laissé") is { Winner: 1, A: "+40" }, "less stress from stories wins: " + LineOf(social, "Stress laissé"));
+        Expect(LineOf(social, "Ruptures") is null, "no break-up on either side: left out");
+
+        var single = PlynlingStatsUi.Lines(a, StatsTab.Social).ToDictionary(l => l.Id);
+        Expect(single.GetValueOrDefault("met")?.Text == "4 / 9", "met: " + single.GetValueOrDefault("met")?.Text);
+        Expect(single.GetValueOrDefault("partner")?.Text.StartsWith("**Rex**, depuis le <t:") == true, "partner: " + single.GetValueOrDefault("partner")?.Text);
+
+        var play = PlynlingStatsUi.Lines(a, StatsTab.Play).ToDictionary(l => l.Id);
+        Expect(play.GetValueOrDefault("favstat")?.Text == "Vitesse (5)", "favourite stat: " + play.GetValueOrDefault("favstat")?.Text);
+        Expect(play.ContainsKey("drill.force") && !play.ContainsKey("drill.agility"), "drills: one line per stat drilled");
+
+        // A grave has no running streak, only its best.
+        var dead = Sheet("Mort", old, p => p.DiedAt = Now.AddDays(-1));
+        var life = PlynlingStatsUi.Lines(dead, StatsTab.Life).Select(l => l.Id).ToList();
+        Expect(!life.Contains("streak") && life.Contains("beststreak"), "a grave's streaks: " + string.Join(",", life));
+    }
+
+    // Anything Discord may draw as an emoji: the pictographic planes, the dingbats and symbols (♂ ♀ included),
+    // variation selectors. The bars (U+2581…2588), « · » and « — » are plain text.
+    private static bool IsEmoji(System.Text.Rune r) =>
+        r.Value is >= 0x1F000 and <= 0x1FAFF or >= 0x2600 and <= 0x27BF or >= 0x2B00 and <= 0x2BFF or 0xFE0F or 0x200D
+            or >= 0x2190 and <= 0x21FF or >= 0x2300 and <= 0x23FF or 0x00A9 or 0x00AE or 0x203C or 0x2049 or 0x2122 or 0x2139;
+
+    private static IEnumerable<string> Texts(IEnumerable<Discord.IMessageComponent> components)
+    {
+        foreach (var c in components)
+        {
+            switch (c)
+            {
+                case Discord.ContainerComponent x: foreach (var t in Texts(x.Components)) yield return t; break;
+                case Discord.SectionComponent x: foreach (var t in Texts(x.Components)) yield return t; break;
+                case Discord.ActionRowComponent x: foreach (var t in Texts(x.Components)) yield return t; break;
+                case Discord.TextDisplayComponent x: yield return x.Content; break;
+                case Discord.ButtonComponent x:
+                    yield return x.Label ?? "";
+                    if (x.Emote is not null) yield return "\U0001F600";       // an emote on a button counts too
+                    break;
+            }
+        }
     }
 
     // ---- Task 7: the cards at their fullest --------------------------------------------------------------------
@@ -460,30 +579,37 @@ public static class StatsChecks
         var facts = new StatFacts((int)Big, (int)Big, (int)Big, (int)Big,
             Enum.GetValues<TraitKind>().ToDictionary(k => k, _ => (int)Big), Enum.GetValues<MarkKind>().ToDictionary(k => k, _ => (int)Big),
             Enum.GetValues<PlynlingBond>().ToDictionary(k => k, _ => (int)Big), (int)Big, new string('*', 32), (int)Big,
-            (int)Big, (int)Big, (int)Big, (int)Big);
+            (int)Big, (int)Big, (int)Big, (int)Big,
+            Met: (int)Big, Population: (int)Big, Partner: new StatFriend(new string('*', 32), Now), BestFriend: new StatFriend(new string('_', 32), Now),
+            BreakUps: (int)Big, Heartbreaks: (int)Big, FirstWinAfter: TimeSpan.FromDays(399), FirstFriendAfter: TimeSpan.FromDays(399),
+            DecidedAlone: (int)Big, LuckiestPercent: 1, EventStress: -(int)Big);
         var ranks = Enum.GetValues<RankedStat>().ToDictionary(r => r, _ => new StatRank(999, 999));
+        var score = new StatScore(Big, 20261101, Big, 9999, 9999, Enumerable.Range(0, 14).Select(i => (long)i * Big).ToList());
         var p = PlynlingLife.Create(G, ulong.MaxValue, name, PlynlingSpecies.Cepe, PlynlingGender.Female, Now.AddDays(-400));
         p.Meals = p.Pets = p.Plays = p.PlaysWon = p.Visits = p.Hosted = p.FedByOthers = p.Drills = p.Score = Big;
         p.RpgXp = Big;
         p.Stress = 400;
         if (dead) { p.DiedAt = Now.AddDays(-1); p.DeathCause = DeathCause.Illness; }
         var carers = new List<PlynlingCarer> { new() { UserId = ulong.MaxValue - 1, Meals = Big, Pets = Big } };
-        return new PlynlingStatSheet(p, Now, true, counters, carers, facts, ranks);
+        return new PlynlingStatSheet(p, Now, true, counters, carers, facts, ranks, score);
     }
 
     private static void Cards()
     {
         var a = Fullest(new string('*', 32), dead: false);
         var b = Fullest(new string('_', 32), dead: true);
+        var pair = new StatPair(PlynlingBond.BestFriends, int.MaxValue, Now, BothFemale: true);
         foreach (var tab in Enum.GetValues<StatsTab>())
         {
             foreach (var (what, card) in new[] { ("single", PlynlingStatsCards.Build(a, tab)), ("dead", PlynlingStatsCards.Build(b, tab)),
-                         ("duel", PlynlingStatsCards.BuildDuel(a, b, tab)) })
+                         ("duel", PlynlingStatsCards.BuildDuel(a, b, tab, pair)) })
             {
                 var count = card.Components.Sum(Count);
                 var text = card.Components.Sum(TextLength);
                 Expect(count <= 40, $"{what} {tab}: {count} components");
                 Expect(text <= 4000, $"{what} {tab}: {text} characters");
+                var emoji = Texts(card.Components).SelectMany(t => t.EnumerateRunes()).Where(IsEmoji).Select(r => r.ToString()).Distinct().ToList();
+                Expect(emoji.Count == 0, $"{what} {tab}: no emoji on the card, found {string.Join(" ", emoji)}");
                 var ids = CustomIds(card.Components).ToList();
                 Expect(ids.Distinct().Count() == ids.Count && ids.Count == 5, $"{what} {tab}: custom-ids {string.Join(" ", ids)}");
             }
@@ -547,5 +673,57 @@ public static class StatsChecks
         }
         Expect((await SheetOf(db, a)).Facts.Badges == 1, "an unknown badge key is not counted");
         Expect(!(await SheetOf(db, b)).Ranks.ContainsKey(RankedStat.Badges), "only unknown keys: no badge rank");
+
+        // What 8.27.0 reads: relations with names, journal milestones, events, the buckets, the new ranks.
+        var together = Now.AddDays(-10);
+        using (var c = db.New())
+        {
+            c.PlynlingRelations.Add(new PlynlingRelation { PlynlingAId = a, PlynlingBId = b, Bond = PlynlingBond.Lovers, Meetings = 6, Affinity = 90, Since = together });
+            c.PlynlingRelations.Add(new PlynlingRelation { PlynlingAId = a, PlynlingBId = c3, Bond = PlynlingBond.BestFriends, Meetings = 2, Affinity = 70, Since = together });
+            c.PlynlingJournalEntries.Add(new PlynlingJournalEntry { PlynlingId = a, Kind = JournalKind.FirstWin, At = Now.AddDays(-28) });
+            c.PlynlingJournalEntries.Add(new PlynlingJournalEntry { PlynlingId = a, Kind = JournalKind.BrokeUp, At = Now.AddDays(-12), Detail = "X" });
+            foreach (var (alone, won, chance, stress) in new[] { (true, (bool?)null, (int?)null, 10), (false, true, 25, -3), (false, true, 60, 0), (false, false, 5, 0) })
+                c.PlynlingEventInstances.Add(new PlynlingEventInstance
+                {
+                    PlynlingId = a, EventKey = "x", CreatedAt = Now, AvailableAt = Now, ExpiresAt = Now, ResolvedAt = Now,
+                    DecidedAlone = alone, ChallengeSucceeded = won, ChancePercent = chance, StressDelta = stress,
+                });
+            c.PlynlingScoreDays.Add(new PlynlingScoreDay { PlynlingId = a, GuildId = G, Day = AppTime.DayKey(Now), Points = 30 });
+            c.PlynlingScoreDays.Add(new PlynlingScoreDay { PlynlingId = a, GuildId = G, Day = AppTime.DayKey(Now.AddDays(-1)), Points = 12 });
+            c.PlynlingScoreDays.Add(new PlynlingScoreDay { PlynlingId = c3, GuildId = G, Day = AppTime.DayKey(Now), Points = 99 });
+            c.PlynlingScoreDays.Add(new PlynlingScoreDay { PlynlingId = c3, GuildId = G, Day = AppTime.DayKey(Now.AddDays(-20)), Points = 500 });
+            var rowA = c.Plynlings.Single(x => x.Id == a);
+            rowA.Hosted = 3;
+            rowA.Plays = 20;
+            rowA.PlaysWon = 15;
+            var rowC = c.Plynlings.Single(x => x.Id == c3);
+            rowC.Plays = 9;
+            rowC.PlaysWon = 9;                                   // a perfect rate, but too few games to rank
+            await c.SaveChangesAsync();
+        }
+        var s2 = await SheetOf(db, a);
+        var f = s2.Facts;
+        Expect(f.Met == 2 && f.Population == 3, $"met {f.Met} of {f.Population}");
+        Expect(f.Partner?.Name == "Beta" && f.BestFriend?.Name == "Gamma", $"partner {f.Partner} / best friend {f.BestFriend}");
+        Expect(f.FirstWinAfter == TimeSpan.FromDays(2) && f.FirstFriendAfter is null, $"milestones: {f.FirstWinAfter} / {f.FirstFriendAfter}");
+        Expect(f.BreakUps == 1, "a break-up");
+        Expect(f.DecidedAlone == 1 && f.LuckiestPercent == 25 && f.EventStress == 7, $"events: {f.DecidedAlone} / {f.LuckiestPercent} / {f.EventStress}");
+        Expect(s2.History.Week == 42 && s2.History.Streak == 2, $"A's week {s2.History.Week}, streak {s2.History.Streak}");
+        Expect(s2.Ranks.GetValueOrDefault(RankedStat.Week) == new StatRank(2, 3), "the week rank reads the window, not the all-time: " + s2.Ranks.GetValueOrDefault(RankedStat.Week));
+        Expect(s2.Ranks.GetValueOrDefault(RankedStat.Baths) == new StatRank(1, 3), "the bath rank");
+        Expect(s2.Ranks.GetValueOrDefault(RankedStat.Hosted) == new StatRank(1, 3), "the hosted rank");
+        Expect(s2.Ranks.GetValueOrDefault(RankedStat.WinRate) == new StatRank(1, 3), "under ten games ranks no rate: " + s2.Ranks.GetValueOrDefault(RankedStat.WinRate));
+        Expect(!(await SheetOf(db, c3)).Ranks.ContainsKey(RankedStat.WinRate), "nine games: no win-rate rank");
+
+        using (var c = db.New())
+        {
+            var service = db.Service(c);
+            var pa = (await service.GetByIdAsync(a, Now))!;
+            var pc = (await service.GetByIdAsync(c3, Now))!;
+            var pm = (await service.GetByIdAsync(m, Now))!;
+            var pair = await service.GetStatPairAsync(pc, pa);              // the higher id first: still found
+            Expect(pair is { Bond: PlynlingBond.BestFriends, Meetings: 2, BothFemale: true }, "the duel's pair: " + pair);
+            Expect(await service.GetStatPairAsync(pa, pm) is null, "never met: no pair");
+        }
     }
 }

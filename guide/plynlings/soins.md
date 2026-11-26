@@ -200,17 +200,19 @@ Quelques rangs (la Longévité, le Joueur, le Gourmand…) gardent la récompens
 
 | Onglet | Ce qu'on y trouve |
 |---|---|
-| 🌱 Vie | âge, stade, adoption, score, niveau, stress, maladies, alertes de faim, gels |
-| 🍽️ Soins | repas (et ce qu'il a mangé, plat par plat), cailloux dépensés pour lui, caresses, bains, médicaments, combien de personnes s'occupent de lui et son plus grand fan |
-| 🎲 Jeux | parties et victoires, jeu par jeu, entraînements, fouilles, objets trouvés, cadeaux, cailloux qu'il t'a rapportés |
-| 🤝 Social | visites rendues et reçues, rencontres, amis, amours et ennemis, déclarations, événements vécus, défis réussis |
-| 🏅 Collection | badges, traits, souvenirs, surnoms |
+| Vie | âge, stade, adoption, score, points des 7 derniers jours, meilleure journée, les 14 derniers jours en barres, série de jours actifs (en cours et record), niveau, stress, maladies, alertes de faim, gels |
+| Soins | repas (et ce qu'il a mangé, plat par plat), cailloux dépensés pour lui, caresses, bains, médicaments, combien de personnes s'occupent de lui et son plus grand fan |
+| Jeux | parties et victoires, taux de victoire, première victoire, jeu par jeu, entraînements stat par stat, fouilles, objets trouvés, cadeaux, cailloux qu'il t'a rapportés |
+| Social | visites rendues et reçues, rencontres, combien de Plynlings du serveur il a rencontrés, son couple et sa meilleure amitié, première amitié, amis, amours et ennemis, ruptures, déclarations, événements vécus, ceux décidés sans toi, défis réussis, son plus beau coup de chance, le stress laissé par les histoires |
+| Collection | badges, traits, souvenirs, surnoms |
 
 N'importe qui peut changer d'onglet. Les statistiques d'un Plynling disparu restent consultables.
 
-**Son rang.** À côté de certains chiffres (repas, caresses, parties, visites, badges…), son rang parmi **tous** les Plynlings du serveur, disparus compris : 🥇, 🥈, 🥉, puis « 4e / 14 ». Pas de rang tant que le chiffre est à zéro.
+**Les jours actifs.** Un jour compte dans la série dès que ton Plynling y gagne des points (un repas, une caresse, une partie, un bon réveil…). Tant que la journée n'est pas finie, la série d'hier tient encore. Un jour sans rien, gel compris, la remet à zéro.
 
-**Le duel.** Ajoute `vs` pour mettre deux Plynlings côte à côte : **`/plynling stats vs:@quelqu'un`** compare le tien au sien, **`/plynling stats user:@a vs:@b`** compare ceux de deux autres personnes. Sur chaque ligne, le meilleur chiffre est en gras, et le bas de l'onglet dit qui mène. Pour la maladie, le stress et les alertes de faim, c'est le **plus petit** chiffre qui gagne. Les dates, le plat préféré, les gels et les relations ne comptent pas.
+**Son rang.** À côté de certains chiffres (score, points de la semaine, repas, caresses, bains, parties, taux de victoire, visites, visites reçues, badges…), son rang parmi **tous** les Plynlings du serveur, disparus compris : « 1er / 14 », « 4e / 14 ». Pas de rang tant que le chiffre est à zéro, ni de taux de victoire classé avant 10 parties.
+
+**Le duel.** Ajoute `vs` pour mettre deux Plynlings côte à côte : **`/plynling stats vs:@quelqu'un`** compare le tien au sien, **`/plynling stats user:@a vs:@b`** compare ceux de deux autres personnes. Sur chaque ligne, le meilleur chiffre est en gras, et le bas de l'onglet dit qui mène. Pour la maladie, le stress, les alertes de faim, les événements décidés sans toi, la première victoire ou amitié (plus tôt, c'est mieux) et le coup de chance (le plus petit pourcentage réussi), c'est le **plus petit** chiffre qui gagne. Les dates, le plat préféré, les gels et les relations ne comptent pas. Si les deux se connaissent, le duel commence par ce qu'ils sont l'un pour l'autre, depuis quand et combien de fois ils se sont vus.
 
 **L'astérisque.** Beaucoup de ces chiffres (bains, plats, jeu par jeu, fouilles, déclarations…) ne sont comptés que **depuis le 26/11**. Pour un Plynling adopté avant, ils portent un « * ». Dans un duel, une ligne avec un « * » ne compte pas si un seul des deux Plynlings était déjà né ce jour-là, pour ne pas comparer un chiffre partiel à un chiffre complet.
 

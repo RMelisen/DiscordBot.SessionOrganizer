@@ -19,9 +19,10 @@ public sealed record SheetLine(string Id, string Label, string Text, double? Val
 public sealed record DuelLine(string Label, string A, string B, int Winner);
 
 /// <summary>
-/// /plynling stats' wording (docs/agents/plynling.md, *Stats*): each tab's lines from a sheet, the duel's pairing and
+/// /plynling stats' wording (docs/agents/plynling/stats.md): each tab's lines from a sheet, the duel's pairing and
 /// leader rule, the footers. Pure, so the checks can build every card at its fullest. Labels are neutral (a
-/// duel puts a boy and a girl on one line); names come sanitised from the caller.
+/// duel puts a boy and a girl on one line); names come sanitised from the caller. **No emoji anywhere on the
+/// card, buttons included** (the owner's call, 8.27.0): words and numbers only.
 /// </summary>
 public static class PlynlingStatsUi
 {
@@ -36,34 +37,21 @@ public static class PlynlingStatsUi
         _ => "Collection",
     };
 
-    public static string TabEmoji(StatsTab tab) => tab switch
-    {
-        StatsTab.Life => "🌱",
-        StatsTab.Care => "🍽️",
-        StatsTab.Play => "🎲",
-        StatsTab.Social => "🤝",
-        _ => "🏅",
-    };
-
     public static string N(long n) => n.ToString("N0", Fr);
     public static string Percent(long part, long whole) => whole <= 0 ? "—" : $"{Math.Round(100.0 * part / whole):0} %";
+    private static string Days(long n) => n == 1 ? "1 jour" : $"{N(n)} jours";
+    private static string Date(DateTimeOffset at) => $"<t:{at.ToUnixTimeSeconds()}:D>";
 
-    public static string Rank(StatRank r) => r.Rank switch
-    {
-        1 => "🥇",
-        2 => "🥈",
-        3 => "🥉",
-        _ => $"{r.Rank}e / {r.Of}",
-    };
+    public static string Rank(StatRank r) => $"{(r.Rank == 1 ? "1er" : $"{r.Rank}e")} / {r.Of}";
 
     public static string GameName(PlynlingGame game) => game switch
     {
-        PlynlingGame.HideAndSeek => "🙈 Cache-cache",
-        PlynlingGame.RockPaperScissors => "✊ Pierre-papier-ciseaux",
-        PlynlingGame.PebbleBag => "👝 Le sac de cailloux",
-        PlynlingGame.Memory => "🍄 Mémoire",
-        PlynlingGame.LastPebble => "🪨 Le dernier caillou",
-        PlynlingGame.TreasureHunt => "🌰 Chasse au trésor",
+        PlynlingGame.HideAndSeek => "Cache-cache",
+        PlynlingGame.RockPaperScissors => "Pierre-papier-ciseaux",
+        PlynlingGame.PebbleBag => "Le sac de cailloux",
+        PlynlingGame.Memory => "Mémoire",
+        PlynlingGame.LastPebble => "Le dernier caillou",
+        PlynlingGame.TreasureHunt => "Chasse au trésor",
         _ => throw new ArgumentOutOfRangeException(nameof(game), game, "a new game needs its name here"),
     };
 
@@ -79,14 +67,45 @@ public static class PlynlingStatsUi
 
     private static string MarkName(MarkKind kind) => kind switch
     {
-        MarkKind.Epithet => "🏷️ Surnoms",
-        MarkKind.Keepsake => "🎒 Objets gardés",
-        _ => "🔓 Découvertes",
+        MarkKind.Epithet => "Surnoms",
+        MarkKind.Keepsake => "Objets gardés",
+        _ => "Découvertes",
     };
+
+    /// <summary>
+    /// The duel's opening line: what the two are to each other and since when, agreed in the feminine only when
+    /// both are girls. Null when they never met.
+    /// </summary>
+    public static string? PairLine(StatPair? pair)
+    {
+        if (pair is not { } x) return null;
+        var f = x.BothFemale;
+        var bond = x.Bond switch
+        {
+            PlynlingBond.Lovers => "En couple",
+            PlynlingBond.BestFriends => f ? "Meilleures amies" : "Meilleurs amis",
+            PlynlingBond.Friends => f ? "Amies" : "Amis",
+            PlynlingBond.Rivals => f ? "Rivales" : "Rivaux",
+            PlynlingBond.Enemies => f ? "Ennemies" : "Ennemis",
+            _ => "Se connaissent",
+        };
+        var meetings = x.Meetings == 1 ? "1 rencontre" : $"{N(x.Meetings)} rencontres";
+        return $"**{bond}** depuis le {Date(x.Since)} · {meetings}";
+    }
+
+    /// <summary>Fourteen days of points as a bar per day, scaled to the best of them, oldest first.</summary>
+    public static string Sparkline(IReadOnlyList<long> days)
+    {
+        const string Bars = "▁▂▃▄▅▆▇█";
+        var max = days.DefaultIfEmpty(0).Max();
+        if (max <= 0) return new string(Bars[0], days.Count);
+        // 0 is the flat bar; any point at all lifts the day to the second one at least.
+        return new string(days.Select(d => d <= 0 ? Bars[0] : Bars[1 + (int)Math.Round((Bars.Length - 2) * (double)d / max)]).ToArray());
+    }
 
     // Lines whose Id starts with one of these are list items: left out of the single view at 0, and of a duel
     // when both sides are at 0.
-    private static readonly string[] ListPrefixes = { "food.", "game.", "bond.", "mark." };
+    private static readonly string[] ListPrefixes = { "food.", "game.", "bond.", "mark.", "drill.", "love." };
     private static bool IsListItem(SheetLine l) => ListPrefixes.Any(l.Id.StartsWith);
 
     /// <summary>A tab's lines for the single view (list items at 0 left out).</summary>
@@ -142,14 +161,14 @@ public static class PlynlingStatsUi
         return aAhead ? -1 : 1;
     }
 
-    /// <summary>« 🏆 Pwet mène 7 à 4 », « 🤝 Égalité 5 à 5 », or null when no line competed.</summary>
+    /// <summary>« **Pwet** mène 7 à 4 », « Égalité 5 à 5 », or null when no line competed.</summary>
     public static string? DuelFooter(IReadOnlyList<DuelLine> lines, string aName, string bName)
     {
         var a = lines.Count(l => l.Winner == -1);
         var b = lines.Count(l => l.Winner == 1);
         if (a + b == 0) return null;
-        if (a == b) return $"🤝 Égalité {a} à {b}";
-        return a > b ? $"🏆 **{aName}** mène {a} à {b}" : $"🏆 **{bName}** mène {b} à {a}";
+        if (a == b) return $"Égalité {a} à {b}";
+        return a > b ? $"**{aName}** mène {a} à {b}" : $"**{bName}** mène {b} à {a}";
     }
 
     // ---- The tabs --------------------------------------------------------------------------------------------
@@ -166,78 +185,107 @@ public static class PlynlingStatsUi
     private static SheetLine Num(string id, string label, long n, Better better, bool since = false, StatRank? rank = null) =>
         new(id, label, N(n), n, better, since, rank);
 
+    // « au bout de 2 j 04 h » from its adoption, compared in minutes (sooner wins).
+    private static SheetLine After(string id, string label, TimeSpan after) =>
+        new(id, label, "au bout de " + LevelCardUi.Duration((long)after.TotalMinutes), Math.Floor(after.TotalMinutes), Better.Lower, false);
+
     private static StatRank? R(PlynlingStatSheet s, RankedStat stat) => s.Ranks.GetValueOrDefault(stat);
 
     private static IEnumerable<SheetLine> LifeLines(PlynlingStatSheet s)
     {
         var p = s.Plynling;
+        var h = s.History;
         var age = PlynlingLife.Age(p, s.Now);
-        yield return new SheetLine("age", "🎂 Âge", LevelCardUi.Duration((long)age.TotalMinutes), age.TotalMinutes, Better.Higher, false);
-        yield return new SheetLine("stage", "🌱 Stade", PlynlingCardUi.StageLabel(PlynlingLife.Stage(p, s.Now), p.Gender), null, Better.None, false);
-        yield return new SheetLine("adopted", "📅 Adoption", $"<t:{p.AdoptedAt.ToUnixTimeSeconds()}:D>", null, Better.None, false);
+        yield return new SheetLine("age", "Âge", LevelCardUi.Duration((long)age.TotalMinutes), age.TotalMinutes, Better.Higher, false);
+        yield return new SheetLine("stage", "Stade", PlynlingCardUi.StageLabel(PlynlingLife.Stage(p, s.Now), p.Gender), null, Better.None, false);
+        yield return new SheetLine("adopted", "Adoption", Date(p.AdoptedAt), null, Better.None, false);
         if (p.DiedAt is { } died)
-            yield return new SheetLine("died", "🕯️ Décès",
-                $"<t:{died.ToUnixTimeSeconds()}:D> ({(p.DeathCause == DeathCause.Illness ? "maladie" : "faim")})", null, Better.None, false);
-        yield return Num("score", "⭐ Score", p.Score, Better.Higher, rank: R(s, RankedStat.Score));
-        yield return Num("level", "🏋️ Niveau", PlynlingRpg.Level(p.RpgXp), Better.Higher, rank: R(s, RankedStat.Level));
-        yield return new SheetLine("stress", "😰 Stress", $"{N(p.Stress)} / 400", p.Stress, Better.Lower, false);
-        yield return Num("sick", "🤒 Fois malade", s.Facts.TimesSick, Better.Lower);
-        yield return Num("sickdays", "🛌 Matins de maladie", s.Count(PlynlingCounters.SickDays), Better.Lower, since: true);
-        yield return Num("warning", "😨 Alertes de faim", s.Count(PlynlingCounters.Warning), Better.Lower, since: true);
-        yield return Num("frozen", "🧊 Gels", s.Facts.TimesFrozen, Better.None);
+            yield return new SheetLine("died", "Décès",
+                $"{Date(died)} ({(p.DeathCause == DeathCause.Illness ? "maladie" : "faim")})", null, Better.None, false);
+        yield return Num("score", "Score", p.Score, Better.Higher, rank: R(s, RankedStat.Score));
+        yield return Num("week", "Points sur 7 jours", h.Week, Better.Higher, rank: R(s, RankedStat.Week));
+        if (h.BestDay > 0)
+        {
+            var day = AppTime.AtWallClock(new DateTime(h.BestDay / 10000, h.BestDay / 100 % 100, h.BestDay % 100, 12, 0, 0));
+            yield return new SheetLine("bestday", "Meilleure journée", $"{N(h.BestDayPoints)} points, le <t:{day.ToUnixTimeSeconds()}:d>",
+                h.BestDayPoints, Better.Higher, false);
+        }
+        if (h.Last14.Any(d => d > 0))
+            yield return new SheetLine("spark", "14 derniers jours", $"`{Sparkline(h.Last14)}`", null, Better.None, false);
+        // Days in a row it scored: a grave keeps its best run, not a running one.
+        if (p.DiedAt is null)
+            yield return new SheetLine("streak", "Série en cours", Days(h.Streak), h.Streak, Better.Higher, false);
+        yield return new SheetLine("beststreak", "Meilleure série", Days(h.BestStreak), h.BestStreak, Better.Higher, false);
+        yield return Num("level", "Niveau", PlynlingRpg.Level(p.RpgXp), Better.Higher, rank: R(s, RankedStat.Level));
+        yield return new SheetLine("stress", "Stress", $"{N(p.Stress)} / 400", p.Stress, Better.Lower, false);
+        yield return Num("sick", "Fois malade", s.Facts.TimesSick, Better.Lower);
+        yield return Num("sickdays", "Matins de maladie", s.Count(PlynlingCounters.SickDays), Better.Lower, since: true);
+        yield return Num("warning", "Alertes de faim", s.Count(PlynlingCounters.Warning), Better.Lower, since: true);
+        yield return Num("frozen", "Gels", s.Facts.TimesFrozen, Better.None);
         // Past freezes, plus the one still running (it is counted for good when it ends).
         var running = p.FrozenAt is { } since && s.Now > since ? (s.Now - since).TotalSeconds : 0;
         var frozenDays = (s.Count(PlynlingCounters.FrozenSeconds) + running) / 86_400.0;
-        yield return new SheetLine("frozendays", "❄️ Jours au frais", frozenDays.ToString("0.#", Fr), frozenDays, Better.None, true);
+        yield return new SheetLine("frozendays", "Jours au frais", frozenDays.ToString("0.#", Fr), frozenDays, Better.None, true);
     }
 
     private static IEnumerable<SheetLine> CareLines(PlynlingStatSheet s)
     {
         var p = s.Plynling;
-        yield return Num("meals", "🍽️ Repas", p.Meals, Better.Higher, rank: R(s, RankedStat.Meals));
-        yield return Num("fedbyothers", "💝 Repas offerts par d'autres", p.FedByOthers, Better.Higher);
+        yield return Num("meals", "Repas", p.Meals, Better.Higher, rank: R(s, RankedStat.Meals));
+        yield return Num("fedbyothers", "Repas offerts par d'autres", p.FedByOthers, Better.Higher);
         var foods = Enum.GetValues<PlynlingFood>().Select(f => (Food: f, N: s.Count(PlynlingCounters.Food(f)))).ToList();
         if (foods.Any(f => f.N > 0))
         {
             var fav = foods.OrderByDescending(f => f.N).ThenBy(f => f.Food).First();
-            yield return new SheetLine("favourite", "😋 Plat préféré", $"{PlynlingCatalog.Info(fav.Food).Name} ({N(fav.N)})", null, Better.None, true);
+            yield return new SheetLine("favourite", "Plat préféré", $"{PlynlingCatalog.Info(fav.Food).Name} ({N(fav.N)})", null, Better.None, true);
         }
         foreach (var (food, n) in foods)
             yield return Num("food." + food.ToString().ToLowerInvariant(), "· " + PlynlingCatalog.Info(food).Name, n, Better.Higher, since: true);
-        yield return Num("pantry", "🥫 Repas du garde-manger", s.Count(PlynlingCounters.MealPantry), Better.Higher, since: true);
-        yield return Num("spentowner", "🪙 Cailloux pour ses repas (son humain)", s.Count(PlynlingCounters.MealSpentOwner), Better.Higher, since: true);
-        yield return Num("spentothers", "🪙 Cailloux pour ses repas (les autres)", s.Count(PlynlingCounters.MealSpentOthers), Better.Higher, since: true);
-        yield return Num("pets", "🤗 Caresses", p.Pets, Better.Higher, rank: R(s, RankedStat.Pets));
-        yield return Num("petsowner", "🤗 Caresses de son humain", s.Count(PlynlingCounters.PetOwner), Better.Higher, since: true);
-        yield return Num("petsothers", "🤗 Caresses des autres", s.Count(PlynlingCounters.PetOthers), Better.Higher, since: true);
-        yield return Num("carers", "👥 Personnes aux petits soins", s.Carers.Count, Better.Higher, since: true);
+        yield return Num("pantry", "Repas du garde-manger", s.Count(PlynlingCounters.MealPantry), Better.Higher, since: true);
+        yield return Num("spentowner", "Cailloux pour ses repas (son humain)", s.Count(PlynlingCounters.MealSpentOwner), Better.Higher, since: true);
+        yield return Num("spentothers", "Cailloux pour ses repas (les autres)", s.Count(PlynlingCounters.MealSpentOthers), Better.Higher, since: true);
+        yield return Num("pets", "Caresses", p.Pets, Better.Higher, rank: R(s, RankedStat.Pets));
+        yield return Num("petsowner", "Caresses de son humain", s.Count(PlynlingCounters.PetOwner), Better.Higher, since: true);
+        yield return Num("petsothers", "Caresses des autres", s.Count(PlynlingCounters.PetOthers), Better.Higher, since: true);
+        yield return Num("carers", "Personnes aux petits soins", s.Carers.Count, Better.Higher, since: true);
         var fan = s.Carers.Where(c => c.UserId != p.OwnerId).OrderByDescending(c => c.Meals + c.Pets).ThenBy(c => c.UserId).FirstOrDefault();
         if (fan is not null)
-            yield return new SheetLine("fan", "🌟 Plus grand fan",
+            yield return new SheetLine("fan", "Plus grand fan",
                 $"<@{fan.UserId}> ({N(fan.Meals)} repas, {N(fan.Pets)} caresses)", null, Better.None, true);
         var free = s.Count(PlynlingCounters.BathFree);
         var soap = s.Count(PlynlingCounters.BathSoap);
-        yield return new SheetLine("baths", "🛁 Bains", soap > 0 ? $"{N(free + soap)} (dont {N(soap)} au savon)" : N(free + soap),
-            free + soap, Better.Higher, true);
-        yield return Num("medicine", "💊 Médicaments", s.Count(PlynlingCounters.Medicine), Better.None, since: true);
+        yield return new SheetLine("baths", "Bains", soap > 0 ? $"{N(free + soap)} (dont {N(soap)} au savon)" : N(free + soap),
+            free + soap, Better.Higher, true, R(s, RankedStat.Baths));
+        yield return Num("medicine", "Médicaments", s.Count(PlynlingCounters.Medicine), Better.None, since: true);
     }
 
     private static IEnumerable<SheetLine> PlayLines(PlynlingStatSheet s)
     {
         var p = s.Plynling;
-        yield return Num("plays", "🎲 Parties", p.Plays, Better.Higher, rank: R(s, RankedStat.Plays));
-        yield return Num("won", "🏆 Victoires", p.PlaysWon, Better.Higher);
+        yield return Num("plays", "Parties", p.Plays, Better.Higher, rank: R(s, RankedStat.Plays));
+        yield return Num("won", "Victoires", p.PlaysWon, Better.Higher);
         if (p.Plays > 0)
-            yield return new SheetLine("winrate", "📈 Taux de victoire", Percent(p.PlaysWon, p.Plays), (double)p.PlaysWon / p.Plays, Better.Higher, false);
+            yield return new SheetLine("winrate", "Taux de victoire", Percent(p.PlaysWon, p.Plays), (double)p.PlaysWon / p.Plays, Better.Higher, false,
+                R(s, RankedStat.WinRate));
+        if (s.Facts.FirstWinAfter is { } firstWin)
+            yield return After("firstwin", "Première victoire", firstWin);
         foreach (var game in Enum.GetValues<PlynlingGame>())
         {
             var played = s.Count(PlynlingCounters.Game(game));
             var won = s.Count(PlynlingCounters.GameWon(game));
-            yield return new SheetLine("game." + game.ToString().ToLowerInvariant(), GameName(game),
+            yield return new SheetLine("game." + game.ToString().ToLowerInvariant(), "· " + GameName(game),
                 $"{N(played)} {(played > 1 ? "parties" : "partie")} · {Percent(won, played)}", played, Better.Higher, true);
         }
-        yield return Num("drills", "💪 Entraînements", p.Drills, Better.Higher, rank: R(s, RankedStat.Drills));
-        yield return Num("forage", "🧺 Cueillettes", s.Count(PlynlingCounters.Forage), Better.Higher, since: true);
+        yield return Num("drills", "Entraînements", p.Drills, Better.Higher, rank: R(s, RankedStat.Drills));
+        var drills = PlynlingStats.Body.Select(st => (Stat: st, N: s.Count(PlynlingCounters.Drill(st)))).ToList();
+        if (drills.Any(d => d.N > 0))
+        {
+            var fav = drills.OrderByDescending(d => d.N).ThenBy(d => d.Stat).First();
+            yield return new SheetLine("favstat", "Stat la plus travaillée", $"{PlynlingStats.Name(fav.Stat)} ({N(fav.N)})", null, Better.None, true);
+        }
+        foreach (var (stat, n) in drills)
+            yield return Num("drill." + stat.ToString().ToLowerInvariant(), "· " + PlynlingStats.Name(stat), n, Better.Higher, since: true);
+        yield return Num("forage", "Cueillettes", s.Count(PlynlingCounters.Forage), Better.Higher, since: true);
         var finds = new[]
         {
             ("cueillette", PlynlingCounters.FindForage), ("jeux", PlynlingCounters.FindPlay), ("visites", PlynlingCounters.FindVisit),
@@ -245,51 +293,68 @@ public static class PlynlingStatsUi
         }.Select(f => (f.Item1, N: s.Count(f.Item2))).ToList();
         var found = finds.Sum(f => f.N);
         var detail = string.Join(", ", finds.Where(f => f.N > 0).Select(f => $"{f.Item1} {N(f.N)}"));
-        yield return new SheetLine("finds", "🔍 Objets trouvés", found > 0 ? $"{N(found)} ({detail})" : "0", found, Better.Higher, true);
+        yield return new SheetLine("finds", "Objets trouvés", found > 0 ? $"{N(found)} ({detail})" : "0", found, Better.Higher, true);
         var gifts = s.Count(PlynlingCounters.GiftCailloux) + s.Count(PlynlingCounters.GiftItems);
         var giftCailloux = s.Count(PlynlingCounters.GiftCaillouxTotal);
-        yield return new SheetLine("gifts", "🎀 Cadeaux trouvés", giftCailloux > 0 ? $"{N(gifts)} · {N(giftCailloux)} cailloux en tout" : N(gifts),
+        yield return new SheetLine("gifts", "Cadeaux trouvés", giftCailloux > 0 ? $"{N(gifts)} · {N(giftCailloux)} cailloux en tout" : N(gifts),
             gifts, Better.Higher, true);
         var earned = s.Count(PlynlingCounters.EarnGame) + s.Count(PlynlingCounters.EarnBadge) + s.Count(PlynlingCounters.EarnEvent) + giftCailloux;
-        yield return Num("earned", "🪙 Cailloux rapportés", earned, Better.Higher, since: true);
+        yield return Num("earned", "Cailloux rapportés", earned, Better.Higher, since: true);
     }
 
     private static IEnumerable<SheetLine> SocialLines(PlynlingStatSheet s)
     {
         var p = s.Plynling;
         var f = s.Facts;
-        yield return Num("visits", "🏠 Visites", p.Visits, Better.Higher, rank: R(s, RankedStat.Visits));
-        yield return Num("visitmade", "🚶 Visites rendues", s.Count(PlynlingCounters.VisitMade), Better.Higher, since: true);
-        yield return Num("visithosted", "🏡 Visites reçues", p.Hosted, Better.Higher, since: true);
-        yield return Num("visitgood", "✨ Bonnes visites", s.Count(PlynlingCounters.VisitGood), Better.Higher, since: true);
-        yield return Num("meetings", "🤝 Rencontres", f.Meetings, Better.Higher);
+        yield return Num("visits", "Visites", p.Visits, Better.Higher, rank: R(s, RankedStat.Visits));
+        yield return Num("visitmade", "Visites rendues", s.Count(PlynlingCounters.VisitMade), Better.Higher, since: true);
+        yield return Num("visithosted", "Visites reçues", p.Hosted, Better.Higher, since: true, rank: R(s, RankedStat.Hosted));
+        yield return Num("visitgood", "Bonnes visites", s.Count(PlynlingCounters.VisitGood), Better.Higher, since: true);
+        yield return Num("meetings", "Rencontres", f.Meetings, Better.Higher);
+        yield return new SheetLine("met", "Plynlings rencontrés", $"{N(f.Met)} / {N(f.Population)}", f.Met, Better.Higher, false);
         if (f.MostMetName is { } name)
-            yield return new SheetLine("mostmet", "👯 Le plus rencontré", $"**{PlynlingCardUi.SafeName(name)}** ({N(f.MostMetMeetings)})", null, Better.None, false);
+            yield return new SheetLine("mostmet", "Le plus rencontré", $"**{PlynlingCardUi.SafeName(name)}** ({N(f.MostMetMeetings)})", null, Better.None, false);
+        if (f.Partner is { } partner)
+            yield return new SheetLine("partner", "En couple avec", $"**{PlynlingCardUi.SafeName(partner.Name)}**, depuis le {Date(partner.Since)}",
+                null, Better.None, false);
+        if (f.BestFriend is { } friend)
+            yield return new SheetLine("bestfriend", "Meilleure amitié", $"**{PlynlingCardUi.SafeName(friend.Name)}**, depuis le {Date(friend.Since)}",
+                null, Better.None, false);
+        if (f.FirstFriendAfter is { } firstFriend)
+            yield return After("firstfriend", "Première amitié", firstFriend);
         foreach (var bond in new[] { PlynlingBond.Lovers, PlynlingBond.BestFriends, PlynlingBond.Friends, PlynlingBond.Acquaintances, PlynlingBond.Rivals, PlynlingBond.Enemies })
-            yield return Num("bond." + bond.ToString().ToLowerInvariant(), $"{PlynlingBonds.Emoji(bond)} {BondName(bond)}",
-                f.Bonds.GetValueOrDefault(bond), Better.None);
-        yield return Num("confessmade", "💌 Déclarations faites", s.Count(PlynlingCounters.ConfessMade), Better.Higher, since: true);
-        yield return Num("confessaccepted", "💘 Déclarations acceptées", s.Count(PlynlingCounters.ConfessAccepted), Better.Higher, since: true);
-        yield return Num("confessrefused", "💔 Déclarations refusées", s.Count(PlynlingCounters.ConfessRefused), Better.None, since: true);
-        yield return Num("confessreceived", "📨 Déclarations reçues", s.Count(PlynlingCounters.ConfessReceived), Better.Higher, since: true);
-        yield return Num("events", "📖 Événements vécus", f.EventsLived, Better.Higher, rank: R(s, RankedStat.EventsLived));
+            yield return Num("bond." + bond.ToString().ToLowerInvariant(), "· " + BondName(bond), f.Bonds.GetValueOrDefault(bond), Better.None);
+        yield return Num("love.breakups", "Ruptures", f.BreakUps, Better.None);
+        yield return Num("love.heartbreaks", "Chagrins d'amour", f.Heartbreaks, Better.None);
+        yield return Num("confessmade", "Déclarations faites", s.Count(PlynlingCounters.ConfessMade), Better.Higher, since: true);
+        yield return Num("confessaccepted", "Déclarations acceptées", s.Count(PlynlingCounters.ConfessAccepted), Better.Higher, since: true);
+        yield return Num("confessrefused", "Déclarations refusées", s.Count(PlynlingCounters.ConfessRefused), Better.None, since: true);
+        yield return Num("confessreceived", "Déclarations reçues", s.Count(PlynlingCounters.ConfessReceived), Better.Higher, since: true);
+        yield return Num("events", "Événements vécus", f.EventsLived, Better.Higher, rank: R(s, RankedStat.EventsLived));
+        // Left to decide alone: its human never answered in time.
+        yield return Num("alone", "Décidés sans son humain", f.DecidedAlone, Better.Lower);
         if (f.ChallengesTried > 0)
-            yield return new SheetLine("challenges", "🎯 Défis réussis",
+            yield return new SheetLine("challenges", "Défis réussis",
                 $"{N(f.ChallengesWon)} / {N(f.ChallengesTried)} ({Percent(f.ChallengesWon, f.ChallengesTried)})", f.ChallengesWon, Better.Higher, false);
-        yield return Num("stories", "📚 Histoires terminées", f.StoriesFinished, Better.Higher);
+        if (f.LuckiestPercent is { } luck)
+            yield return new SheetLine("luck", "Plus beau coup de chance", $"réussi avec {luck} % de chances", luck, Better.Lower, false);
+        if (f.EventsLived > 0)
+            yield return new SheetLine("eventstress", "Stress laissé par les histoires",
+                f.EventStress > 0 ? "+" + N(f.EventStress) : N(f.EventStress), f.EventStress, Better.Lower, false);
+        yield return Num("stories", "Histoires terminées", f.StoriesFinished, Better.Higher);
     }
 
     private static IEnumerable<SheetLine> CollectionLines(PlynlingStatSheet s)
     {
         var f = s.Facts;
-        yield return new SheetLine("badges", "🏅 Badges", $"{N(f.Badges)} / {N(PlynlingBadges.All.Count)}", f.Badges, Better.Higher, false,
+        yield return new SheetLine("badges", "Badges", $"{N(f.Badges)} / {N(PlynlingBadges.All.Count)}", f.Badges, Better.Higher, false,
             R(s, RankedStat.Badges));
         var traits = f.Traits.Values.Sum();
         var parts = new[] { (TraitKind.Childhood, "enfance"), (TraitKind.Personality, "caractère"), (TraitKind.Coping, "refuge") }
             .Where(t => f.Traits.GetValueOrDefault(t.Item1) > 0)
             .Select(t => $"{t.Item2} {f.Traits[t.Item1]}");
-        yield return new SheetLine("traits", "🧬 Traits", traits > 0 ? $"{N(traits)} ({string.Join(", ", parts)})" : "0", traits, Better.None, false);
-        yield return Num("memories", "💭 Souvenirs d'histoires", f.Memories, Better.Higher);
+        yield return new SheetLine("traits", "Traits", traits > 0 ? $"{N(traits)} ({string.Join(", ", parts)})" : "0", traits, Better.None, false);
+        yield return Num("memories", "Souvenirs d'histoires", f.Memories, Better.Higher);
         foreach (var kind in Enum.GetValues<MarkKind>())
             yield return Num("mark." + kind.ToString().ToLowerInvariant(), MarkName(kind), f.Marks.GetValueOrDefault(kind), Better.Higher);
     }

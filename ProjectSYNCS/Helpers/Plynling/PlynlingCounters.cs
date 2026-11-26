@@ -60,8 +60,11 @@ public static class PlynlingCounters
     public static string Food(PlynlingFood food) => "meal.food." + food.ToString().ToLowerInvariant();
     public static string Game(PlynlingGame game) => "play." + game.ToString().ToLowerInvariant();
     public static string GameWon(PlynlingGame game) => Game(game) + ".won";
+    /// <summary>Drills of one body stat (8.27.0). Built from the enum name like Food and Game: renaming a
+    /// PlynlingStat member orphans its count.</summary>
+    public static string Drill(PlynlingStat stat) => "drill." + stat.ToString().ToLowerInvariant();
 
-    /// <summary>Every key, the per-food and per-game ones expanded.</summary>
+    /// <summary>Every key, the per-food, per-game and per-drill ones expanded.</summary>
     public static IReadOnlyList<string> All => new[]
         {
             MealPantry, MealSpentOwner, MealSpentOthers, PetOwner, PetOthers, BathFree, BathSoap, Medicine,
@@ -72,6 +75,7 @@ public static class PlynlingCounters
         }
         .Concat(Enum.GetValues<PlynlingFood>().Select(Food))
         .Concat(Enum.GetValues<PlynlingGame>().SelectMany(g => new[] { Game(g), GameWon(g) }))
+        .Concat(PlynlingStats.Body.Select(Drill))
         .ToList();
 
     /// <summary>Adds <paramref name="amount"/> to one counter. Not saved: the caller's save carries it.</summary>

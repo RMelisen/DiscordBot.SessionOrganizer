@@ -516,10 +516,15 @@ looks after her, and dresses her each morning in one of her outfits, a different
   and the dead alike.
 - **Stats:** `/plynling stats [user]` shows a Plynling's whole life in numbers on five tabs (Vie,
   Soins, Jeux, Social, Collection): meals food by food, cailloux spent on it, pets, baths, each
-  game played and won, forages and finds, visits made and received, confessions, events, badges,
-  its biggest fan… Headline numbers carry its rank among every Plynling of the server, the dead
-  included (🥇, 🥈, 🥉, « 4e / 14 »). Add `vs:` for a duel: two Plynlings side by side, the better
+  game played and won, drills stat by stat, forages and finds, visits made and received, its
+  partner and best friend, how many of the server's Plynlings it met, confessions, events (and how
+  many it decided alone, its luckiest challenge), badges, its biggest fan… The Vie tab reads the
+  score's daily history: points this week, best day, the last 14 days as bars, and its streak of
+  active days. Headline numbers carry its rank among every Plynling of the server, the dead
+  included (« 1er / 14 », « 4e / 14 »; a win rate ranks from 10 games). Add `vs:` for a duel: two
+  Plynlings side by side, opened by what they are to each other when they have met, the better
   number in bold on each line and the leader in the footer (fewer sicknesses and less stress win).
+  The card carries no emoji, buttons included.
   Many counts started on 26/11; an older Plynling's are marked « * », and a duel line marked « * »
   is not a contest when only one of the two was born by then.
 - **Relationships:** every accepted visit plays out well or badly — usually well,

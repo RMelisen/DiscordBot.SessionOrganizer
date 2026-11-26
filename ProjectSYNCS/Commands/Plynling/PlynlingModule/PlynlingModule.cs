@@ -287,7 +287,8 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         }
         var mine = await _plynlings.GetStatSheetAsync(plynling, now);
         var theirs = await _plynlings.GetStatSheetAsync(other, now);
-        await Context.Interaction.ModifyCardAsync(PlynlingStatsCards.BuildDuel(mine, theirs, StatsTab.Life));
+        var pair = await _plynlings.GetStatPairAsync(plynling, other);
+        await Context.Interaction.ModifyCardAsync(PlynlingStatsCards.BuildDuel(mine, theirs, StatsTab.Life, pair));
     }
 
     // Everyone it has met and what they are to it — the living one, or else the latest grave.

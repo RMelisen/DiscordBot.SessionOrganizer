@@ -44,7 +44,8 @@ public class PlynlingStatsHandler : InteractionModuleBase<SocketInteractionConte
         }
         var sa = await _plynlings.GetStatSheetAsync(a, now);
         var sb = await _plynlings.GetStatSheetAsync(b, now);
-        await Context.Interaction.ModifyCardAsync(PlynlingStatsCards.BuildDuel(sa, sb, Tab(tabStr)));
+        var pair = await _plynlings.GetStatPairAsync(a, b);
+        await Context.Interaction.ModifyCardAsync(PlynlingStatsCards.BuildDuel(sa, sb, Tab(tabStr), pair));
     }
 
     private static StatsTab Tab(string s) =>

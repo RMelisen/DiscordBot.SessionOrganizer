@@ -43,6 +43,7 @@ public partial class PlynlingService
 
         var result = PlynlingRpg.Drill(p, traits, drill, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActTrain, 1, now);
+        await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.Drill(drill), 1);
         await PlynlingScore.AddAsync(_db_context, p,
             PlynlingScore.Drill + (result.LevelAfter - result.LevelBefore) * PlynlingScore.LevelUp, now);
         var badges = await AwardAsync(p, now);          // « Entraînement », « Niveau », « Athlète »

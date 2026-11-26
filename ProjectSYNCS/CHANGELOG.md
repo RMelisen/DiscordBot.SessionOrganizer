@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.27.0 — 2026-11-26
+
+- `/plynling stats` Vie tab: points over the last 7 days, best day, the last 14 days as bars, and the current and best streak of active days.
+- `/plynling stats` Jeux tab: first win, drills stat by stat and the most trained stat.
+- `/plynling stats` Social tab: how many of the server's Plynlings it has met, its partner and best friend, its first friendship, break-ups and heartbreaks, events decided without its human, its luckiest challenge, and the stress stories left.
+- New server ranks on `/plynling stats`: points this week, baths, visits received and win rate (from 10 games).
+- A `/plynling stats` duel opens with what the two Plynlings are to each other, since when and how often they met.
+- The `/plynling stats` card and its buttons no longer carry emoji; ranks read « 1er / 9 ».
+
 ## 8.26.1 — 2026-11-26
 
 - Plynling badges get their own pictures: a prize rosette per tier, with a subject per palier and moment.

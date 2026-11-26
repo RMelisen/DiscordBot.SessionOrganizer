@@ -36,12 +36,35 @@ A property, not a field (it reads `AppTime`'s zone, another file).
 
 Read-only and untracked: the counters, the carers, `StatFacts` (journal `FellSick` / `Frozen` counts —
 the journal is capped at 500, accepted —, badges, traits and marks by kind, memories, bonds by kind,
-meetings and the most met, resolved events, challenges, story endings) and the ranks.
+meetings and the most met, resolved events, challenges, story endings), the ranks and `StatScore`.
+
+8.27.0 added, all from existing tables (no new « * »):
+
+- **Relations**: `Met` (relation rows) out of `Population` (every other Plynling of the guild, dead and
+  mascot included — any can be met); the partner (`Lovers`, oldest) and the closest best friend (highest
+  affinity, then oldest), each with `PlynlingRelation.Since` (when the *current bond* began).
+- **Journal**: break-ups, heartbreaks, and `FirstWinAfter` / `FirstFriendAfter` (wall clock from adoption
+  to the first `FirstWin` / `BecameFriends`). The journal trims oldest first at 500, so a very long life
+  can lose them: the line is then absent, and a duel against an absent side is no contest. No stage ages:
+  stages follow lived age alone, the same for everyone.
+- **Events**: `DecidedAlone` (its human never answered in time), `LuckiestPercent` (lowest
+  `ChancePercent` among challenges won), `EventStress` (sum of `StressDelta`).
+- **`StatScore.From`** (pure) over its `PlynlingScoreDay` buckets, as of today or its death day: the
+  week (the same seven days as `/leaderboard`), the best day, the last 14 days (`Sparkline`), the
+  current streak (days in a row with points, ending today — or yesterday while today has none yet; a
+  grave shows none) and the best one. **A freeze breaks a streak** (no points while frozen), accepted.
+  Buckets only exist since the score shipped; no « * » for that, the older days simply are not there.
+- **`GetStatPairAsync`**: the duel's two Plynlings' relation, drawn as the duel's opening line
+  (`PairLine`, feminine only when both are girls), inside the tab's text so it costs no component.
+
+The one new counter is `drill.{stat}` (body stats, from the enum name), written in `TrainOnceAsync`.
 
 **Ranks** (`RankedStat`): among every Plynling of the guild, dead included, never the mascot — the
 population of `/leaderboard`'s Plynlings view; the denominator is that whole population. A value of 0
 gets no rank; ties share the better place (1 + how many are strictly ahead). Level ranks by
-`PlynlingRpg.Level`, not raw XP. The mascot's sheet has none. **Badges count like the journal**
+`PlynlingRpg.Level`, not raw XP. Baths sum `bath.free` + `bath.soap`; Week sums the last seven days'
+buckets (filtered by day in SQL); WinRate ranks in hundredths of a percent and only from
+`WinRateMinPlays` (10) games. The mascot's sheet has none. **Badges count like the journal**
 (`PlynlingJournalCards.BadgeText`): catalogue keys only, once each, so « n / total » never disagrees with
 it — the sheet and the badge rank both go through `KnownBadges`.
 
@@ -50,11 +73,18 @@ it — the sheet and the badge rank both go through `KnownBadges`.
 ## Lines and the duel — `Helpers/Plynling/PlynlingStatsUi` (pure)
 
 Each line is a `SheetLine` with a stable `Id` (a duel pairs lines by it), a `Value` to compare and a
-`Better`: `Higher` for counts, `Lower` for stress, sicknesses, sick mornings and hunger alerts (the
-healthier life wins), `None` for dates, stage, the favourite food, the fan, the most met, freezes,
-medicine, refused confessions, traits and bonds. **A « * » line is no contest when exactly one side is
-`Partial`.** List items (`food.`, `game.`, `bond.`, `mark.`) are one line each, left out at 0 (both
-sides at 0 in a duel). Equal values: nobody scores. Labels are neutral: a duel can pair a boy and a girl.
+`Better`: `Higher` for counts, `Lower` for stress, sicknesses, sick mornings, hunger alerts, events
+decided alone, the stress stories left, the first win / friendship (sooner wins, in minutes) and the
+luckiest challenge (the smaller chance), `None` for dates, stage, the favourite food and stat, the fan,
+the most met, the partner and best friend, the sparkline, freezes, medicine, refused confessions,
+break-ups, heartbreaks, traits and bonds. **A « * » line is no contest when exactly one side is
+`Partial`.** List items (`food.`, `game.`, `bond.`, `mark.`, `drill.`, `love.`) are one line each, left
+out at 0 (both sides at 0 in a duel). Equal values: nobody scores. Labels are neutral: a duel can pair
+a boy and a girl.
+
+**No emoji anywhere on the card** — labels, titles, ranks (« 1er / 9 », no medals), footers, buttons,
+not even the ♂/♀ symbols (the owner's call, 8.27.0). Checks section 74 scans every tab of both cards for
+any pictographic or symbol code point. The bars of `Sparkline` (U+2581–2588) are plain text.
 
 ## The cards — `Commands/Plynling/PlynlingStatsCards`, `Interactions/Components/PlynlingStatsHandler`
 
