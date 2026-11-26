@@ -1607,6 +1607,64 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("PlynlingBadges");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingCarer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Meals")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Pets")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PlynlingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlynlingId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("PlynlingCarers");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingCounter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PlynlingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Value")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlynlingId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("PlynlingCounters");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.PlynlingEventInstance", b =>
                 {
                     b.Property<int>("Id")
@@ -2586,6 +2644,24 @@ namespace ProjectSYNCS.Migrations
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.PlynlingBadge", b =>
+                {
+                    b.HasOne("ProjectSYNCS.Models.Plynling", null)
+                        .WithMany()
+                        .HasForeignKey("PlynlingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingCarer", b =>
+                {
+                    b.HasOne("ProjectSYNCS.Models.Plynling", null)
+                        .WithMany()
+                        .HasForeignKey("PlynlingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingCounter", b =>
                 {
                     b.HasOne("ProjectSYNCS.Models.Plynling", null)
                         .WithMany()

@@ -30,7 +30,7 @@ public class PlynlingCareService
         var key = (actorId, plynlingId);
         if (!_cooldowns.Pet.TryClaim(key, out var readyAt)) return new CareReply(null, PlynlingText.PetCooldown(readyAt));
 
-        var (outcome, plynling, badges) = await _plynlings.PetAsync(plynlingId, now);
+        var (outcome, plynling, badges) = await _plynlings.PetAsync(plynlingId, actorId, now);
         if (outcome != CareOutcome.Done || plynling is null)
         {
             _cooldowns.Pet.Release(key);

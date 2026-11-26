@@ -217,4 +217,9 @@ public class Plynling
     // Never stored.
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public List<(int Points, DateTimeOffset At)> PendingScore { get; } = new();
+
+    // Counters a Settle found (a morning spent sick, the time an expired freeze lasted), for the same writer
+    // (PlynlingCounters, /plynling stats). Never stored.
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public List<(string Key, long Amount)> PendingCounters { get; } = new();
 }

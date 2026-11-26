@@ -298,6 +298,13 @@ could never love again). `VisitAsync` takes a `Random` so scenes are checkable. 
 friends and partner fall to 20%) runs on death, from the sweep, and on abandonment before the row
 is deleted.
 
+## Stats — `/plynling stats`
+
+**Everything about the stats sheet, its counters (`PlynlingCounters`, append-only keys, never-saving
+writers, `PendingCounters`), its ranks and the duel is in `plynling/stats.md`.** Read it before
+touching a counter hook or the sheet. A new Plynling action that should show there needs its counter
+beside its `EconomyLog` call, like its score.
+
 ## Badges and journal
 
 `Helpers/Plynling/PlynlingBadges` is the catalog: tiered paliers and one-time moments, each with a

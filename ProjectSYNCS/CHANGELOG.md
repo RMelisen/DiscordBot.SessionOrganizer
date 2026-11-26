@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.26.0 — 2026-11-26
+
+- New `/plynling stats [user]`: a Plynling's whole life in numbers on five tabs (Vie, Soins, Jeux, Social, Collection), with its rank on the server for the headline numbers.
+- `/plynling stats vs:` puts two Plynlings side by side, the better number in bold on each line and the leader counted at the bottom.
+- Plynlings now count, from this version on: what they eat food by food, cailloux spent on their meals, pets from their owner and from others, who cares for them, baths, medicine, sick mornings, hunger alerts, days frozen, each game played and won, gifts, forages and finds, visits made, confessions, and the cailloux they earn their owner.
+
 ## 8.25.0 — 2026-11-26
 
 - Plynling badges become tiered ladders, Bronze to Diamant, like the member badges: Longévité, Joueur, Champion, Voyageur, Hôte, Gourmand, Pot de colle, Chouchou du village, Entraînement, Niveau and Athlète. Badges already earned keep their place as tiers; the tiers a Plynling already qualifies for are awarded within the hour.

@@ -127,6 +127,7 @@ public partial class PlynlingService
             {
                 p.WarningSent = true;
                 notice = SweepNotice.Warning;
+                await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.Warning, 1);   // a close call (/plynling stats)
             }
             await _db_context.SaveChangesAsync();
             return new SweepItem(p, notice, told.Distinct().ToList());

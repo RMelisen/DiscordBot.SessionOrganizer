@@ -20,11 +20,11 @@ public partial class PlynlingService
     // with (it died, was frozen or abandoned mid-game): then nothing is paid.
     // A win may also find an item (ItemCatalog.PlayFindChance), in the same save.
     public Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges, ItemFind? Find)> FinishPlayAsync(
-        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now, Random? rng = null) =>
-        UnitAsync(() => FinishPlayOnceAsync(plynlingId, ownerId, won, pebbles, now, rng));
+        int plynlingId, ulong ownerId, PlynlingGame game, bool won, long pebbles, DateTimeOffset now, Random? rng = null) =>
+        UnitAsync(() => FinishPlayOnceAsync(plynlingId, ownerId, game, won, pebbles, now, rng));
 
     private async Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges, ItemFind? Find)> FinishPlayOnceAsync(
-        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now, Random? rng)
+        int plynlingId, ulong ownerId, PlynlingGame game, bool won, long pebbles, DateTimeOffset now, Random? rng)
     {
         rng ??= Random.Shared;
         var plynling = await GetByIdAsync(plynlingId, now);
@@ -39,12 +39,16 @@ public partial class PlynlingService
         {
             wallet.Balance += pebbles;
             await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.EarnGame, pebbles, now);
+            await PlynlingCounters.AddAsync(_db_context, plynling, PlynlingCounters.EarnGame, pebbles);
         }
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActGame, 1, now);
         await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Play, now);
+        await PlynlingCounters.AddAsync(_db_context, plynling, PlynlingCounters.Game(game), 1);
+        if (won) await PlynlingCounters.AddAsync(_db_context, plynling, PlynlingCounters.GameWon(game), 1);
         var find = won && rng.NextDouble() < ItemCatalog.PlayFindChance
             ? await InventoryService.GrantAsync(_db_context, plynling.GuildId, ownerId, ItemCatalog.DrawCollectible(rng, now), now)
             : null;
+        if (find is not null) await PlynlingCounters.AddAsync(_db_context, plynling, PlynlingCounters.FindPlay, 1);
         var badges = await AwardAsync(plynling, now);                   // pays into the same wallet
         await _db_context.SaveChangesAsync();
         return (plynling, wallet.Balance, badges, find);
@@ -168,6 +172,7 @@ public partial class PlynlingService
         var visitPoints = PlynlingScore.Visit + (good ? PlynlingScore.VisitGoodScene : 0);
         await PlynlingScore.AddAsync(_db_context, visitor, visitPoints, now);
         await PlynlingScore.AddAsync(_db_context, host, visitPoints, now);
+        await CountVisitAsync(visitor, host, good, play.Confess, confession, visitorFind is not null, hostFind is not null);
         await _db_context.SaveChangesAsync();
         // Sometimes something is left behind (FlushOnActionsAsync rolls it per Plynling and day).
         QueueOnAction(OnAction.AfterVisit, visitor, host.Id);
@@ -175,6 +180,27 @@ public partial class PlynlingService
         await FlushOnActionsAsync(now);
         return new VisitOutcome(visitor, host, visitorBadges, hostBadges, good, before, after, confession, happiness,
             visitorFind, hostFind);
+    }
+
+    // A visit's counters (/plynling stats), in the visit's save.
+    private async Task CountVisitAsync(Plynling visitor, Plynling host, bool good, bool confessed, Confession confession,
+        bool visitorFound, bool hostFound)
+    {
+        await PlynlingCounters.AddAsync(_db_context, visitor, PlynlingCounters.VisitMade, 1);
+        if (good)
+        {
+            await PlynlingCounters.AddAsync(_db_context, visitor, PlynlingCounters.VisitGood, 1);
+            await PlynlingCounters.AddAsync(_db_context, host, PlynlingCounters.VisitGood, 1);
+        }
+        if (confessed)
+        {
+            await PlynlingCounters.AddAsync(_db_context, visitor, PlynlingCounters.ConfessMade, 1);
+            await PlynlingCounters.AddAsync(_db_context, host, PlynlingCounters.ConfessReceived, 1);
+            if (confession == Confession.Accepted) await PlynlingCounters.AddAsync(_db_context, visitor, PlynlingCounters.ConfessAccepted, 1);
+            if (confession == Confession.Refused) await PlynlingCounters.AddAsync(_db_context, visitor, PlynlingCounters.ConfessRefused, 1);
+        }
+        if (visitorFound) await PlynlingCounters.AddAsync(_db_context, visitor, PlynlingCounters.FindVisit, 1);
+        if (hostFound) await PlynlingCounters.AddAsync(_db_context, host, PlynlingCounters.FindVisit, 1);
     }
 
     // A change of bond between two Plynlings: both journal it, and getting closer may earn a badge.

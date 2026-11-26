@@ -74,8 +74,8 @@ public abstract partial class PlynlingModule : SyncsModuleBase
                 "toutes ont les mêmes chances. Garçon ou fille ? Surprise.\n" +
                 "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.\n" +
                 "**`/plynling list`** — Les Plynlings vivants du serveur, du plus vieux au plus jeune.\n" +
-                "**`/plynling journal [user]`** — Ses souvenirs et ses **badges** (gagnés en vivant, jouant, visitant ; " +
-                "chacun rapporte quelques cailloux).\n" +
+                "**`/plynling journal [user]`** — Ses souvenirs et ses **badges**.\n" +
+                "**`/plynling stats [user] [vs]`** — Sa vie en chiffres, ou un duel.\n" +
                 "Il grandit : **bébé** sa première semaine, **ado** jusqu'à 14 jours, **adulte**, " +
                 "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.")
             .AddField("S'en occuper",

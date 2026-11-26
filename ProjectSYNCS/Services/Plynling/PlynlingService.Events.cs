@@ -361,9 +361,11 @@ public partial class PlynlingService
                     var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
                     wallet.Balance += c.Amount;
                     await EconomyLog.AddAsync(_db_context, p.GuildId, EconomyLog.EarnEvent, c.Amount, now);
+                    await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.EarnEvent, c.Amount);
                     break;
                 case GiveItem gi when !PlynlingMascot.Is(p) && ItemCatalog.ByKey(gi.ItemKey) is { } item:
                     await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, item, now);
+                    await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.FindEvent, 1);
                     break;
                 case LiftNeed n:
                     PlynlingLife.Lift(p, now, n.Need, n.Amount);

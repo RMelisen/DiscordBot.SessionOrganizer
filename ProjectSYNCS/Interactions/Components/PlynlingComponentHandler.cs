@@ -510,7 +510,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         {
             var won = session.State.Status == GameStatus.Won;
             var pebbles = won ? PlynlingLife.RollPlayPebbles(Random.Shared) : 0;
-            var (after, balance, badges, find) = await _plynlings.FinishPlayAsync(plynling.Id, session.OwnerId, won, pebbles, now);
+            var (after, balance, badges, find) = await _plynlings.FinishPlayAsync(plynling.Id, session.OwnerId, session.State.Game, won, pebbles, now);
             if (after is not null)
             {
                 plynling = after;

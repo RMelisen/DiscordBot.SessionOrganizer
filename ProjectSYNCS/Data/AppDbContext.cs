@@ -30,6 +30,10 @@ public class AppDbContext : DbContext
             if (entry.State == EntityState.Modified) entry.Entity.Version++;
         foreach (var entry in ChangeTracker.Entries<PlynlingRelation>())
             if (entry.State == EntityState.Modified) entry.Entity.Version++;
+        foreach (var entry in ChangeTracker.Entries<PlynlingCounter>())
+            if (entry.State == EntityState.Modified) entry.Entity.Version++;
+        foreach (var entry in ChangeTracker.Entries<PlynlingCarer>())
+            if (entry.State == EntityState.Modified) entry.Entity.Version++;
     }
 
     public DbSet<SessionEvent> SessionEvents => Set<SessionEvent>();
@@ -72,6 +76,8 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
     public DbSet<PlynlingScoreDay> PlynlingScoreDays => Set<PlynlingScoreDay>();
+    public DbSet<PlynlingCounter> PlynlingCounters => Set<PlynlingCounter>();
+    public DbSet<PlynlingCarer> PlynlingCarers => Set<PlynlingCarer>();
     public DbSet<PlynlingOwnerScore> PlynlingOwnerScores => Set<PlynlingOwnerScore>();
     public DbSet<VisitStoryRecord> VisitStoryRecords => Set<VisitStoryRecord>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
@@ -454,6 +460,23 @@ public class AppDbContext : DbContext
             e.Property(x => x.GuildId).HasConversion<long>();
             e.HasIndex(x => new { x.PlynlingId, x.Day }).IsUnique();
             e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        // /plynling stats' counters and carers: one row per (Plynling, key) and per (Plynling, person), gone with an
+        // abandoned one, kept on a dead one. Each has its own Version token (BumpVersions).
+        modelBuilder.Entity<PlynlingCounter>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PlynlingId, x.Key }).IsUnique();
+            e.Property(x => x.Version).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<PlynlingCarer>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.PlynlingId, x.UserId }).IsUnique();
+            e.Property(x => x.Version).IsConcurrencyToken();
         });
 
         // A person's Plynling score across every Plynling they had: no foreign key, it outlives them all.

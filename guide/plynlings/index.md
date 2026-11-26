@@ -175,6 +175,7 @@ Chacune existe aussi en `/pl`.
 | `/plynling forage [place]` | L'envoyer fouiller : un objet ou de quoi manger, toutes les 4 h | [Soins](soins.md) |
 | `/plynling passion` | Lui apprendre une seconde passion (ou l'effacer) | [Soins](soins.md) |
 | `/plynling journal [user]` | Ses souvenirs et ses badges | [Soins](soins.md) |
+| `/plynling stats [user] [vs]` | Toute sa vie en chiffres, ou un duel entre deux Plynlings | [Soins](soins.md#ses-statistiques) |
 | `/plynling wardrobe` | L'habiller avec tes cosmétiques | [Soins](soins.md) |
 | `/plynling freeze [user]` | Le geler pour les vacances | [Soins](soins.md) |
 | `/plynling thaw [user]` | Le dégeler | [Soins](soins.md) |

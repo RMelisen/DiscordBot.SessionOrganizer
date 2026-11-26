@@ -50,6 +50,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         _logger = logger;
     }
 
+    [NoPremiumPrank]
     [SlashCommand("adopt", "Adopter un Plynling — gratuit, mais il faudra s'en occuper")]
     public async Task AdoptAsync(
         [Summary("name", "Son nom")] [MaxLength(InputCaps.PlynlingName)] string name)
@@ -142,6 +143,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
 
     // Your own Plynling only, one game an hour — claimed here, at the start, so abandoning a
     // game never rolls a new one. The game itself runs in PlynlingComponentHandler.
+    [NoPremiumPrank]
     [SlashCommand("play", "Jouer avec ton Plynling — un mini-jeu au hasard, une fois par heure")]
     public async Task PlayAsync()
     {
@@ -168,6 +170,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
     // An invitation, not a visit: the visitor picks what its Plynling does, then the other owner picks
     // how theirs reacts, within two hours (PlynlingComponentHandler). This message is the one send that pings —
     // the invited owner only, since it is addressed to them.
+    [NoPremiumPrank]
     [SlashCommand("visit", "Emmener ton Plynling rendre visite à celui de quelqu'un")]
     public async Task VisitAsync([Summary("user", "Chez qui aller")] IUser user)
     {
@@ -226,6 +229,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
     }
 
     // Its stats, badges and moments — the living one, or else the latest grave, like view.
+    [NoPremiumPrank]
     [SlashCommand("journal", "Le journal d'un Plynling : ses badges et ses souvenirs (le tien par défaut)")]
     public async Task JournalAsync([Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
     {
@@ -243,6 +247,47 @@ public abstract partial class PlynlingModule : SyncsModuleBase
         // Progress toward the next tiers, for the living only: a grave's ladders are done.
         var facts = plynling.DiedAt is null ? await _plynlings.BadgeFactsAsync(plynling, now) : null;
         await Context.Interaction.RespondCardAsync(PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations, facts));
+    }
+
+    // Its whole life in numbers, five tabs — or two side by side with `vs` (docs/agents/plynling.md, *Stats*).
+    // Each one is the living one, or else the latest grave, like view. Deferred first: a sheet reads a lot.
+    [SlashCommand("stats", "Les statistiques d'un Plynling, ou un duel entre deux (le tien par défaut)")]
+    [NoPremiumPrank]                                   // answers through Context.Interaction (ModifyCardAsync)
+    public async Task StatsAsync(
+        [Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null,
+        [Summary("vs", "Comparer avec le Plynling de quelqu'un")] IUser? vs = null)
+    {
+        var target = user ?? Context.User;
+        var now = DateTimeOffset.UtcNow;
+        await DeferAsync();
+        var plynling = await _plynlings.GetShownAsync(Context.Guild.Id, target.Id, now);
+        if (plynling is null)
+        {
+            await RefuseAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id));
+            return;
+        }
+        if (vs is null)
+        {
+            var sheet = await _plynlings.GetStatSheetAsync(plynling, now);
+            await Context.Interaction.ModifyCardAsync(PlynlingStatsCards.Build(sheet, StatsTab.Life));
+            return;
+        }
+
+        // Both Plynlings found before either sheet is read: a refused duel reads nothing more.
+        var other = await _plynlings.GetShownAsync(Context.Guild.Id, vs.Id, now);
+        if (other is null)
+        {
+            await RefuseAsync(vs.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(vs.Id));
+            return;
+        }
+        if (other.Id == plynling.Id)
+        {
+            await RefuseAsync(PlynlingText.StatsSamePlynling);
+            return;
+        }
+        var mine = await _plynlings.GetStatSheetAsync(plynling, now);
+        var theirs = await _plynlings.GetStatSheetAsync(other, now);
+        await Context.Interaction.ModifyCardAsync(PlynlingStatsCards.BuildDuel(mine, theirs, StatsTab.Life));
     }
 
     // Everyone it has met and what they are to it — the living one, or else the latest grave.
@@ -271,6 +316,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
             components: BuildListButtons(0, ListPages(living.Count)), allowedMentions: AllowedMentions.None);
     }
 
+    [NoPremiumPrank]
     [SlashCommand("view", "Voir un Plynling (le tien par défaut)")]
     public async Task ViewAsync(
         [Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
@@ -307,6 +353,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
     // Without `user`, the owner freezes their own under the self-freeze rules. With a
     // different `user`, it is a staff freeze: no rules, lifted by staff only, and the
     // owner is told by DM so it never looks like a bug.
+    [NoPremiumPrank]
     [SlashCommand("freeze", "Geler un Plynling : plus rien ne bouge (vacances)")]
     public async Task FreezeAsync(
         [Summary("user", "Staff : le Plynling de quelqu'un d'autre")] IUser? user = null)
@@ -347,6 +394,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
                 _picker.Pick(BotResponses.PlynlingStaffFreezeDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
     }
 
+    [NoPremiumPrank]
     [SlashCommand("thaw", "Dégeler un Plynling")]
     public async Task ThawAsync(
         [Summary("user", "Staff : le Plynling de quelqu'un d'autre")] IUser? user = null)
@@ -465,6 +513,7 @@ public abstract partial class PlynlingModule : SyncsModuleBase
 
     // The cosmetics screen (CosmeticCards) opened on the wardrobe — the same screen as
     // /inventory cosmetics. Without a living Plynling it still opens: the shop and recipes work.
+    [NoPremiumPrank]
     [SlashCommand("wardrobe", "Habiller ton Plynling avec tes cosmétiques")]
     public async Task WardrobeAsync()
     {

@@ -159,5 +159,8 @@ MultiServerChecks.Run(Fail);
 // 73. Ping-Qilin's daily outfit: the looks, the week decks, the seasons: MascotWardrobeChecks.cs.
 MascotWardrobeChecks.Run(Fail);
 
+// 74. /plynling stats: counters, their hooks, the sheet, ranks, duel lines, cards: StatsChecks.cs.
+await StatsChecks.Run(Fail);
+
 Console.WriteLine(Failures == 0 ? "ALL CHECKS PASSED" : $"{Failures} FAILURE(S)");
 return Failures == 0 ? 0 : 1;

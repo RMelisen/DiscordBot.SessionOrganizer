@@ -53,6 +53,10 @@ public static class PlynlingText
 
     public static string NoneFor(ulong userId) => $"<@{userId}> n'a pas de Plynling.";
 
+    // /plynling stats: a duel of one Plynling against itself; and a stats card whose Plynling was abandoned since.
+    public const string StatsSamePlynling = "C'est le même Plynling des deux côtés : choisis quelqu'un d'autre pour `vs`.";
+    public const string StatsGone = "Ce Plynling n'existe plus.";
+
     // About the person, not a Plynling (the abandoned one is gone): generic masculine.
     public static string AdoptCooldown(DateTimeOffset ready) =>
         $"Tu viens d'abandonner un Plynling. Tu pourras en adopter un autre <t:{ready.ToUnixTimeSeconds()}:R>.";

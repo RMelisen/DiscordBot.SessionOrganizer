@@ -194,6 +194,29 @@ Et quelques badges qui ne se gagnent **qu'une fois** :
 
 Quelques rangs (la Longévité, le Joueur, le Gourmand…) gardent la récompense qu'ils avaient avant les paliers. Les visites reçues ne comptent que depuis la version 8.25.0.
 
+## Ses statistiques
+
+**`/plynling stats`** (ajoute `user` pour celui de quelqu'un d'autre) affiche toute sa vie en chiffres, en cinq onglets :
+
+| Onglet | Ce qu'on y trouve |
+|---|---|
+| 🌱 Vie | âge, stade, adoption, score, niveau, stress, maladies, alertes de faim, gels |
+| 🍽️ Soins | repas (et ce qu'il a mangé, plat par plat), cailloux dépensés pour lui, caresses, bains, médicaments, combien de personnes s'occupent de lui et son plus grand fan |
+| 🎲 Jeux | parties et victoires, jeu par jeu, entraînements, fouilles, objets trouvés, cadeaux, cailloux qu'il t'a rapportés |
+| 🤝 Social | visites rendues et reçues, rencontres, amis, amours et ennemis, déclarations, événements vécus, défis réussis |
+| 🏅 Collection | badges, traits, souvenirs, surnoms |
+
+N'importe qui peut changer d'onglet. Les statistiques d'un Plynling disparu restent consultables.
+
+**Son rang.** À côté de certains chiffres (repas, caresses, parties, visites, badges…), son rang parmi **tous** les Plynlings du serveur, disparus compris : 🥇, 🥈, 🥉, puis « 4e / 14 ». Pas de rang tant que le chiffre est à zéro.
+
+**Le duel.** Ajoute `vs` pour mettre deux Plynlings côte à côte : **`/plynling stats vs:@quelqu'un`** compare le tien au sien, **`/plynling stats user:@a vs:@b`** compare ceux de deux autres personnes. Sur chaque ligne, le meilleur chiffre est en gras, et le bas de l'onglet dit qui mène. Pour la maladie, le stress et les alertes de faim, c'est le **plus petit** chiffre qui gagne. Les dates, le plat préféré, les gels et les relations ne comptent pas.
+
+**L'astérisque.** Beaucoup de ces chiffres (bains, plats, jeu par jeu, fouilles, déclarations…) ne sont comptés que **depuis le 26/11**. Pour un Plynling adopté avant, ils portent un « * ». Dans un duel, une ligne avec un « * » ne compte pas si un seul des deux Plynlings était déjà né ce jour-là, pour ne pas comparer un chiffre partiel à un chiffre complet.
+
+!!! syncs smug ""
+    Évidemment que je compte tout. C'est mon métier. Maintenant, vous aussi, vous pouvez voir les chiffres. Ne vous plaignez pas s'ils piquent ♡
+
 ## L'habiller
 
 **`/plynling wardrobe`** ouvre ta **garde-robe** : thème de carte, titre, jusqu'à trois accessoires (dessinés sur son portrait), aura, cadre de tombe. Choisis un article pour l'**essayer** sur sa carte avant de payer. C'est le même écran que `/inventory cosmetics`, avec la boutique et la fabrication : tout est sur [Cailloux et objets](../cailloux.md).

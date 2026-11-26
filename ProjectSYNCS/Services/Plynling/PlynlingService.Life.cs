@@ -177,6 +177,11 @@ public partial class PlynlingService
             DiscardChanges();
             return GiftResult.None;
         }
+        catch (DbUpdateException ex) when (EconomySave.IsRace(ex))
+        {
+            DiscardChanges();                                       // a counter's first row raced: the draw stays unspent
+            return GiftResult.None;
+        }
     }
 
     private async Task<GiftResult> DrawGiftAsync(Plynling p, DateTimeOffset now, Random rng)
@@ -187,12 +192,16 @@ public partial class PlynlingService
         if (found > 0 && rng.NextDouble() >= ItemCatalog.GiftCaillouxShare)
         {
             result = new GiftResult(0, await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, ItemCatalog.DrawCollectible(rng, now), now));
+            await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.GiftItems, 1);
+            await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.FindGift, 1);
         }
         else if (found > 0)
         {
             var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
             wallet.Balance += found;
             await EconomyLog.AddAsync(_db_context, p.GuildId, EconomyLog.EarnGift, found, now);
+            await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.GiftCailloux, 1);
+            await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.GiftCaillouxTotal, found);
             result = new GiftResult(found, null);
         }
         await _db_context.SaveChangesAsync();
@@ -228,6 +237,8 @@ public partial class PlynlingService
             .ToDictionary(i => i.Key, i => i.Quantity);
         var find = await InventoryService.GrantAsync(_db_context, guildId, ownerId, item, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActForage, 1, now);
+        await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.Forage, 1);
+        await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.FindForage, 1);
         await PlynlingScore.AddAsync(_db_context, p, PlynlingScore.Forage, now);
         await _db_context.SaveChangesAsync();
         return new ForageResult(CareOutcome.Done, p, find, Place: at, NowReady: Recipes.NowReady(before, item.Key));
@@ -395,6 +406,7 @@ public partial class PlynlingService
             var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
             wallet.Balance += reward;
             await EconomyLog.AddAsync(_db_context, p.GuildId, EconomyLog.EarnBadge, reward, now);
+            await PlynlingCounters.AddAsync(_db_context, p, PlynlingCounters.EarnBadge, reward);
         }
         return fresh;
     }
@@ -449,6 +461,10 @@ public partial class PlynlingService
         foreach (var (points, at) in p.PendingScore)
             await PlynlingScore.AddAsync(_db_context, p, points, at);
         p.PendingScore.Clear();
+        // The counters a Settle found (/plynling stats).
+        foreach (var (key, amount) in p.PendingCounters)
+            await PlynlingCounters.AddAsync(_db_context, p, key, amount);
+        p.PendingCounters.Clear();
     }
 
     // The {T} of a trait reveal: the traits of a kind this pass just added, as "key,key". Null without.

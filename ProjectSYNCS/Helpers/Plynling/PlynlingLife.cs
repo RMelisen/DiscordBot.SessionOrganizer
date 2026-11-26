@@ -414,6 +414,7 @@ public static class PlynlingLife
         // 0 = the onset morning. Rounded, because a clock-change night is 23 or 25 hours.
         var sickMorning = (int)Math.Round((morning - p.SickSince!.Value).TotalDays);
         if (sickMorning == 0) return;
+        p.PendingCounters.Add((PlynlingCounters.SickDays, 1));     // a morning lived sick (/plynling stats)
         var previous = MorningAt(MorningDayAtOrBefore(morning - TimeSpan.FromHours(1)));
         var dosed = p.LastMedicineAt is { } dose && dose >= previous;
         if (sickMorning >= PlynlingSickness.GraceMornings && !dosed
@@ -653,8 +654,12 @@ public static class PlynlingLife
         p.NeedsAsOf = at;
     }
 
+    // Every thaw goes through here (own, staff, expired), so the time frozen is counted once, for whoever saves
+    // the row next (FlushMomentsAsync, /plynling stats).
     private static void EndFreeze(Plynling p, DateTimeOffset at)
     {
+        if (p.FrozenAt is { } since && at > since)
+            p.PendingCounters.Add((PlynlingCounters.FrozenSeconds, (long)(at - since).TotalSeconds));
         if (!p.FrozenByStaff) p.LastSelfThawAt = at;
         p.FrozenAt = null;
         p.FreezeUntil = null;

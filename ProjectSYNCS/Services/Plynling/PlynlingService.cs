@@ -196,12 +196,19 @@ public partial class PlynlingService
 
         var wasStarving = PlynlingLife.HungerAt(plynling, now) < PlynlingLife.StarvingBelow;
         var factor = PlynlingLife.MealFactor(plynling, now);
-        if (fromPantry) await InventoryService.TakeAsync(_db_context, plynling.GuildId, actorId, foodKey, pantryNeeded);
+        if (fromPantry)
+        {
+            await InventoryService.TakeAsync(_db_context, plynling.GuildId, actorId, foodKey, pantryNeeded);
+            await PlynlingCounters.AddAsync(_db_context, plynling, PlynlingCounters.MealPantry, 1);
+        }
         else
         {
             wallet.Balance -= price;
             await EconomyLog.AddAsync(_db_context, plynling.GuildId, isOwner ? EconomyLog.SpendMeal : EconomyLog.SpendMealOther, price, now);
+            await PlynlingCounters.AddAsync(_db_context, plynling, isOwner ? PlynlingCounters.MealSpentOwner : PlynlingCounters.MealSpentOthers, price);
         }
+        await PlynlingCounters.AddAsync(_db_context, plynling, PlynlingCounters.Food(food), 1);
+        await PlynlingCounters.AddCarerAsync(_db_context, plynling, actorId, meals: 1, pets: 0);
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMeal, 1, now);
         await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Meal(food), now);
         PlynlingLife.Feed(plynling, info, now);
@@ -218,10 +225,10 @@ public partial class PlynlingService
             fromPantry ? pantryNeeded : 0, left);
     }
 
-    public Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetAsync(int plynlingId, DateTimeOffset now) =>
-        UnitAsync(() => PetOnceAsync(plynlingId, now));
+    public Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetAsync(int plynlingId, ulong actorId, DateTimeOffset now) =>
+        UnitAsync(() => PetOnceAsync(plynlingId, actorId, now));
 
-    private async Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetOnceAsync(int plynlingId, DateTimeOffset now)
+    private async Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetOnceAsync(int plynlingId, ulong actorId, DateTimeOffset now)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null) return (CareOutcome.NoPlynling, null, NoBadges);
@@ -234,6 +241,8 @@ public partial class PlynlingService
         plynling.Pets++;
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActPet, 1, now);
         await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Pet, now);
+        await PlynlingCounters.AddAsync(_db_context, plynling, plynling.OwnerId == actorId ? PlynlingCounters.PetOwner : PlynlingCounters.PetOthers, 1);
+        await PlynlingCounters.AddCarerAsync(_db_context, plynling, actorId, meals: 0, pets: 1);
         var badges = await AwardAsync(plynling, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, badges);
@@ -274,6 +283,7 @@ public partial class PlynlingService
         await RelieveAsync(plynling, CareAct.Bath, now);
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActBath, 1, now);
         await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Bath, now);
+        await PlynlingCounters.AddAsync(_db_context, plynling, useSoap ? PlynlingCounters.BathSoap : PlynlingCounters.BathFree, 1);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, soap, useSoap);
     }
@@ -321,6 +331,7 @@ public partial class PlynlingService
         plynling.LastMedicineAt = now;
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMedicine, 1, now);
         await PlynlingScore.AddAsync(_db_context, plynling, PlynlingScore.Medicine, now);
+        await PlynlingCounters.AddAsync(_db_context, plynling, PlynlingCounters.Medicine, 1);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, fromPantry, fromPantry ? 0 : ItemCatalog.MedicinePrice, wallet.Balance);
     }
@@ -409,6 +420,7 @@ public partial class PlynlingService
 
         PlynlingLife.Thaw(plynling, now);
         await AddMomentAsync(plynling, JournalKind.Thawed, null, now);
+        await FlushMomentsAsync(plynling);                   // the time frozen (/plynling stats)
         await _db_context.SaveChangesAsync();
         return (ThawOutcome.Thawed, plynling);
     }

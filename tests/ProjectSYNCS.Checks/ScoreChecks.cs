@@ -202,7 +202,7 @@ public static class ScoreChecks
 
         // A pet, a drill (an adulte trains).
         using (var c = new AppDbContext(opts))
-            Expect((await Service(c).PetAsync(a, Now)).Outcome == CareOutcome.Done, "a pet");
+            Expect((await Service(c).PetAsync(a, Owner, Now)).Outcome == CareOutcome.Done, "a pet");
         Expect(Read(a).Score == before + PlynlingScore.Pet, "a pet scores " + PlynlingScore.Pet);
         before = Read(a).Score;
         var badgesBefore = Badges(a);
@@ -218,7 +218,7 @@ public static class ScoreChecks
         using (var c = new AppDbContext(opts))
             await Service(c).FeedAsync(m, Owner, PlynlingFood.Shiitake, Now);
         using (var c = new AppDbContext(opts))
-            await Service(c).PetAsync(m, Now);
+            await Service(c).PetAsync(m, Owner, Now);
         Expect(Read(m).Score == 0 && Bucket(m) == 0 && OwnerTotal(Bot) == 0, "the mascot never scores");
 
         // A bond scores each side once per pair: making up after drifting apart adds nothing.
