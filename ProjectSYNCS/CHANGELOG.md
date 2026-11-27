@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.28.1 — 2026-11-27
+
+- The shift posted from the `/work` reminder DM no longer says it came from the DM: just the mention and the shift.
+
 ## 8.28.0 — 2026-11-27
 
 - The `/work` reminder DM has a « Travailler » button: it does the shift from the DM, posts it in the Plynling channel so it stays visible, and links to that post.

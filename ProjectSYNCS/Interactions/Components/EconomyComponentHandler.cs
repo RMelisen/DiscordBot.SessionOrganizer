@@ -95,7 +95,7 @@ public class EconomyComponentHandler : InteractionModuleBase<SocketInteractionCo
         {
             var channel = await _announcer.ResolveGameChannelAsync(guildId);
             if (channel is null) return null;
-            return await channel.SendMessageAsync($"<@{Context.User.Id}>, depuis son rappel en MP\n{text}",
+            return await channel.SendMessageAsync($"<@{Context.User.Id}>\n{text}",
                 allowedMentions: AllowedMentions.None);
         }
         catch (Exception ex)
