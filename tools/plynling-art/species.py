@@ -24,7 +24,11 @@ CX = 16.0                    # the face's own axis: eyes at 12-13 and 18-19, fee
 
 
 def stem_palette(p):
-    """STEM, leaned toward the species' own colour when it has one (a gold chanterelle)."""
+    """The species' own stem ramp (a Mycena's lavender), else STEM leaned toward its colour (a
+    gold chanterelle), else STEM. A lean squeezes the ramp's steps together; an own ramp keeps
+    them apart."""
+    if "stem" in p:
+        return p["stem"]
     tint = p.get("stem_tint")
     return STEM if tint is None else [lerp(c, tint[0], tint[1]) for c in STEM]
 
@@ -601,9 +605,9 @@ def mystique(state, frame=0, shadow=True, stage="adult"):
         k = y - y0
         a, b = (12, 19) if (k <= 3 or y >= 24) else (11, 20)
         shade_row(g, S, y, a, b, "stem", 1 if (k <= 1 or y == 27) else 0)
-        for x in (13, 17):                                             # faint fibres
-            if k > 2 and (y + x) % 3 != 0 and g.r[y][x] == "stem":
-                g.put(x, y, lerp(g.c[y][x], S[0], 0.35))
+        for x in (13, 17):                                             # faint fibres, a step lighter
+            if k > 2 and (y + x) % 3 != 0 and g.r[y][x] == "stem" and g.c[y][x] in S:
+                g.put(x, y, S[max(0, S.index(g.c[y][x]) - 1)])
     feet(g, S)
     gills(g, p, y0, 8, 23)
     apex, rim = 1.0 + sag, 11.5 + sag
@@ -614,6 +618,7 @@ def mystique(state, frame=0, shadow=True, stage="adult"):
         half = 9.0 * math.sin(min(1.0, t * 1.05) * math.pi / 2) ** 0.7
         if t < 0.14:
             half = min(half, 2.2)                                      # the bump (umbo)
+        lines = {math.floor(CX + k * half / 3) for k in range(-2, 3)}  # one pixel per striation per row: unbroken lines
         for x in range(N):
             dx = x + 0.5 - CX
             if abs(dx) > half:
@@ -622,7 +627,7 @@ def mystique(state, frame=0, shadow=True, stage="adult"):
             c = cap[1] if u < -0.3 else (cap[2] if u < 0.5 else cap[3])
             if t < 0.2:
                 c = cap[3] if u > -0.3 else cap[2]                     # the bump is darker
-            if t > 0.35 and abs(u * 4 - round(u * 4)) < 0.15:
+            if t > 0.35 and x in lines:
                 c = cap[min(4, cap.index(c) + 1)]                      # striations
             g.put(x, y, c, "cap")
     for x in range(N):                                                 # the glowing rim
@@ -660,6 +665,7 @@ def mystique_baby(state, frame, shadow):
         half = 7.2 * math.sin(min(1.0, t * 1.05) * math.pi / 2) ** 0.8
         if t < 0.14:
             half = min(half, 1.8)                                      # the bump (umbo)
+        lines = {math.floor(CX + k * half / 2) for k in range(-1, 2)}
         for x in range(N):
             dx = x + 0.5 - CX
             if abs(dx) > half:
@@ -668,7 +674,7 @@ def mystique_baby(state, frame, shadow):
             c = cap[1] if u < -0.3 else (cap[2] if u < 0.5 else cap[3])
             if t < 0.2:
                 c = cap[3] if u > -0.3 else cap[2]
-            if t > 0.35 and abs(u * 3 - round(u * 3)) < 0.15:
+            if t > 0.35 and x in lines:
                 c = cap[min(4, cap.index(c) + 1)]                      # striations
             g.put(x, y, c, "cap")
     for x in range(N):
