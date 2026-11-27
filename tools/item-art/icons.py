@@ -2275,17 +2275,10 @@ def outlined(*fill):
                     else c for x, c in enumerate(r)) for y, r in enumerate(rows)]
 
 
-def tile(kind, *symbol, at=None, glints=()):
-    """A 22×22 trait tile: a 1-pixel outline with cut corners, a two-pixel rim, a two-tone
-    background, and the symbol ("." where the background shows, at most 16×16) centred on it — or
-    with its top left at `at`. The symbol may cover the rim's inner line, nothing further out.
-    glints are (x, y, char), set last."""
+def tile_frame(kind):
+    """The bare tile of a trait kind, as rows of characters (lint.py lints it once, apart from the
+    symbols)."""
     lit, shade, inner, bg, bg_shade = TRAIT_KINDS[kind]
-    rows = [r for r in symbol if r.strip(".")]
-    left = min(len(r) - len(r.lstrip(".")) for r in rows)
-    width = max(len(r.rstrip(".")) for r in rows) - left
-    rows = [r[left:left + width].ljust(width, ".") for r in rows]
-    ox, oy = at or ((22 - width) // 2, (22 - len(rows)) // 2)
     grid = []
     for y in range(22):
         row = []
@@ -2301,6 +2294,20 @@ def tile(kind, *symbol, at=None, glints=()):
             else:
                 row.append(bg if x + y <= 21 else bg_shade)
         grid.append(row)
+    return ["".join(r) for r in grid]
+
+
+def tile(kind, *symbol, at=None, glints=()):
+    """A 22×22 trait tile: a 1-pixel outline with cut corners, a two-pixel rim, a two-tone
+    background, and the symbol ("." where the background shows, at most 16×16) centred on it — or
+    with its top left at `at`. The symbol may cover the rim's inner line, nothing further out.
+    glints are (x, y, char), set last."""
+    rows = [r for r in symbol if r.strip(".")]
+    left = min(len(r) - len(r.lstrip(".")) for r in rows)
+    width = max(len(r.rstrip(".")) for r in rows) - left
+    rows = [r[left:left + width].ljust(width, ".") for r in rows]
+    ox, oy = at or ((22 - width) // 2, (22 - len(rows)) // 2)
+    grid = [list(r) for r in tile_frame(kind)]
     for sy, r in enumerate(rows):
         for sx, c in enumerate(r):
             if c == ".":
@@ -3096,20 +3103,26 @@ SHIELD_TIERS = {
 }
 
 
+def shield_frame(tier):
+    """The bare SHIELD in a tier's colours, glints included, as rows of characters."""
+    lit, shade, inner, field, field_shade, glint, count = SHIELD_TIERS[tier]
+    grid = [[{"L": lit, "S": shade, "M": inner, "f": field if x + y <= 21 else field_shade}.get(c, c)
+             for x, c in enumerate(r)] for y, r in enumerate(SHIELD)]
+    for x, y in SHIELD_GLINTS[:count]:
+        grid[y][x] = glint
+    return ["".join(r) for r in grid]
+
+
 def shield(tier, *subject, at=None, glints=()):
     """A 22×22 badge: the SHIELD in the tier's colours and the subject ("." where the shield shows,
     at most 16×16) centred on it — or with its top left at `at`. The subject may cover the field
     and the rim's inner line, nothing further out. glints are (x, y, char), set last."""
-    lit, shade, inner, field, field_shade, glint, count = SHIELD_TIERS[tier]
     rows = [r for r in subject if r.strip(".")]
     left = min(len(r) - len(r.lstrip(".")) for r in rows)
     width = max(len(r.rstrip(".")) for r in rows) - left
     rows = [r[left:left + width].ljust(width, ".") for r in rows]
     ox, oy = at or ((22 - width) // 2, 3 + (15 - len(rows)) // 2)
-    grid = [[{"L": lit, "S": shade, "M": inner, "f": field if x + y <= 21 else field_shade}.get(c, c)
-             for x, c in enumerate(r)] for y, r in enumerate(SHIELD)]
-    for x, y in SHIELD_GLINTS[:count]:
-        grid[y][x] = glint
+    grid = [list(r) for r in shield_frame(tier)]
     for sy, r in enumerate(rows):
         for sx, c in enumerate(r):
             if c == ".":
@@ -3623,20 +3636,26 @@ ROSETTE = (
 ROSETTE_GLINTS = ((7, 3), (4, 6), (11, 2), (3, 10))
 
 
+def rosette_frame(tier):
+    """The bare ROSETTE in a tier's colours, glints included, as rows of characters."""
+    lit, shade, inner, field, field_shade, glint, count = SHIELD_TIERS[tier]
+    grid = [[{"L": lit, "S": shade, "M": inner, "f": field if x + y <= 20 else field_shade}.get(c, c)
+             for x, c in enumerate(r)] for y, r in enumerate(ROSETTE)]
+    for x, y in ROSETTE_GLINTS[:count]:
+        grid[y][x] = glint
+    return ["".join(r) for r in grid]
+
+
 def rosette(tier, *subject):
     """A 22×22 Plynling badge: the ROSETTE in the tier's colours (SHIELD_TIERS) and the subject (an
     outlined fill of at most 8×8, "." where the rosette shows) on its medallion."""
-    lit, shade, inner, field, field_shade, glint, count = SHIELD_TIERS[tier]
     rows = [r for r in subject if r.strip(".")]
     left = min(len(r) - len(r.lstrip(".")) for r in rows)
     width = max(len(r.rstrip(".")) for r in rows) - left
     rows = [r[left:left + width].ljust(width, ".") for r in rows]
     assert width <= 10 and len(rows) <= 10, "a rosette's subject is at most 8×8 before its outline"
     ox, oy = (22 - width) // 2, (20 - len(rows)) // 2
-    grid = [[{"L": lit, "S": shade, "M": inner, "f": field if x + y <= 20 else field_shade}.get(c, c)
-             for x, c in enumerate(r)] for y, r in enumerate(ROSETTE)]
-    for x, y in ROSETTE_GLINTS[:count]:
-        grid[y][x] = glint
+    grid = [list(r) for r in rosette_frame(tier)]
     for sy, r in enumerate(rows):
         for sx, c in enumerate(r):
             if c == ".":

@@ -146,7 +146,9 @@ the bot.
   `python lint.py` is a table of every species × face × stage; a species (`python lint.py cepe`,
   `cepe happy --stage baby --frames all`) lists each finding's pixels; `--palette` is the whole
   set's colours grouped into clusters of twins. A finding is a place to look, not always a
-  fault: the Cèpe's scales are specks on purpose. Exit code 0 unless `--fail`.
+  fault: the Cèpe's scales are specks on purpose. Exit code 0 unless `--fail`. The shape checks
+  (specks, floating, jaggies) live in `tools/pixel-checks/pixelchecks.py`, shared with the icons'
+  `item-art/lint.py`: a change there changes both.
 
 ## The palette lock: palette.py
 

@@ -32,6 +32,20 @@ the pack's colours) to match it.
 - Interface marks (`ui.<key>`, `UiIcons`): 16×16 like items, e.g. the small check drawn small on purpose.
 - `check.py` — grid shape, palette, a 1-pixel `#272736` outline wherever the drawing meets air,
   nothing on the frame's edge, and an exact ×8 (or ×4) export.
+- `lint.py` — advisory, like the Plynlings' linter: how an icon *reads*, in palette letters and
+  grid cells. `python lint.py` is a table of every icon and frame with a finding; name groups,
+  keys or patterns (`badges_paliers`, `col.galet`, `'badge.voice_*'`) for each finding's cells,
+  `--grid` for the grid with row and column numbers. A badge or trait is linted on its subject
+  alone (the cells that differ from its frame); each frame's shape once per family and its
+  colours once per tier (`--frames`); a subject drawn the same on several icons is one row
+  (`+4 alike`). It flags: more than 7 colours (outline aside); **twins** that touch (`a`/`A`,
+  `M`/`n`, `q`/`v`… within ΔE 7, so the line between them vanishes at 22 px); **specks** (not
+  glints, `#` holes, diagonal strokes or dot patterns); **crumbs** of 1–2 pixels; **jaggies** on
+  all four edges of the silhouette (flat shoulders aside); **thick** 2×2 outline on the
+  silhouette (inner doubled lines are separators); and **dark** edges, a stretch of `k`, `T` or
+  `u` just inside the outline, which Discord's dark theme (#313338, ΔE 8.8 from the outline)
+  swallows. Exit code 0 unless `--fail`. The shape checks live in `tools/pixel-checks/`, shared
+  with `plynling-art/lint.py`.
 - `overrides/<key>.png` — a hand-edited grid at the key's size that replaces its grid (same checks).
 
 Style: light from the top left, 4–7 colours, the object filling about 14×14, rarity in glints

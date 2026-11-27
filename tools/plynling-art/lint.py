@@ -30,6 +30,9 @@ import sys
 import palette
 import zoom
 
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "pixel-checks"))
+from pixelchecks import body_mask, floating, jaggies, specks  # noqa: E402  (shared with item-art/lint.py)
+
 STAGES = ("adult", "baby")
 
 
@@ -84,105 +87,6 @@ def where(im, colour, cap=6):
     px = im.load()
     pts = [(x, y) for y in range(im.height) for x in range(im.width) if px[x, y] == colour]
     return pts[:cap], len(pts)
-
-
-def specks(im):
-    px, w, h = im.load(), im.width, im.height
-    found = []
-    for y in range(1, h - 1):
-        for x in range(1, w - 1):
-            p = px[x, y]
-            if p[3] != 255:
-                continue
-            sides = {px[x + 1, y], px[x - 1, y], px[x, y + 1], px[x, y - 1]}
-            if len(sides) != 1:
-                continue
-            c = sides.pop()
-            if c == p or c[3] != 255:
-                continue
-            corners = [px[x + dx, y + dy] for dx in (-1, 1) for dy in (-1, 1)]
-            if sum(k == c for k in corners) >= 3:
-                found.append((x, y))
-    return found
-
-
-def body_mask(im):
-    """Opaque pixels, and the largest 8-connected piece of them."""
-    w, h = im.size
-    px = im.load()
-    on = {(x, y) for y in range(h) for x in range(w) if px[x, y][3] == 255}
-    best, seen = set(), set()
-    for start in on:
-        if start in seen:
-            continue
-        piece, todo = set(), [start]
-        seen.add(start)
-        while todo:
-            x, y = todo.pop()
-            piece.add((x, y))
-            for dx in (-1, 0, 1):
-                for dy in (-1, 0, 1):
-                    n = (x + dx, y + dy)
-                    if n in on and n not in seen:
-                        seen.add(n)
-                        todo.append(n)
-        if len(piece) > len(best):
-            best = piece
-    return on, best
-
-
-def floating(on):
-    return sorted((x, y) for x, y in on
-                  if not any((x + dx, y + dy) in on for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy))
-
-
-def runs(edge):
-    """An edge as (first row, rows in the run, sideways jump to the next run), top to bottom."""
-    out, rows = [], sorted(edge)
-    i = 0
-    while i < len(rows):
-        j = i
-        while j + 1 < len(rows) and rows[j + 1] == rows[j] + 1 and edge[rows[j + 1]] == edge[rows[i]]:
-            j += 1
-        if j + 1 < len(rows) and rows[j + 1] == rows[j] + 1:
-            out.append((rows[i], j - i + 1, edge[rows[j + 1]] - edge[rows[i]]))
-        i = j + 1
-    return out
-
-
-def jaggies(body):
-    """Zigzags in the run lengths of the left and right edges, within each stretch that keeps
-    going the same way. Returns (side, row, the slopes around it)."""
-    if not body:
-        return []
-    left, right = {}, {}
-    for x, y in body:
-        left[y] = min(left.get(y, x), x)
-        right[y] = max(right.get(y, x), x)
-    found = []
-    for side, edge in (("left", left), ("right", right)):
-        segs = runs(edge)
-        arcs, cur = [], []
-        for s in segs:
-            if cur and (s[2] > 0) != (cur[-1][2] > 0):
-                arcs.append(cur)
-                cur = []
-            cur.append(s)
-        arcs.append(cur)
-        for arc in arcs:
-            slope = [r / abs(j) for _, r, j in arc]
-            for i in range(1, len(arc) - 2):
-                a, b, c, d = slope[i - 1:i + 3]
-                d1, d2, d3 = b - a, c - b, d - c
-                if not (d1 and d2 and d3) or (d1 > 0) == (d2 > 0) or (d2 > 0) == (d3 > 0):
-                    continue
-                before = slope[i - 2] if i >= 2 else None
-                after = slope[i + 3] if i + 3 < len(slope) else None
-                if a == c and b == d and (before in (None, b) or after in (None, a)):
-                    continue                    # a regular staircase that goes on: a straight line
-                row = arc[i][0]
-                found.append((side, row, edge[row], [round(v, 2) for v in (a, b, c, d)]))
-    return found
 
 
 def lint(im, bare=None, twin=6.0, key=None):
