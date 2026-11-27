@@ -2,7 +2,7 @@
 wear the shared face and extras from sprites.py. sprites.build(state, sp) dispatches here
 through DRAW.
 
-The Cèpe is the original sprite, unchanged. The other five were reshaped after real species:
+The Cèpe is the original sprite, its cap's edge hand-set. The other five were reshaped after real species:
 the fly agaric's skirt, the field mushroom's button cap, the green russula's flat cap, a
 Mycena's bell, a chanterelle's funnel. Their face is clipped to the body so a narrow stem
 never has blush floating beside it, and their sweat drops and frost are measured from the
@@ -29,11 +29,16 @@ def stem_palette(p):
     return STEM if tint is None else [lerp(c, tint[0], tint[1]) for c in STEM]
 
 
-# ---- the Cèpe: the original sprite, unchanged ------------------------------------------
+# ---- the Cèpe: the original sprite -----------------------------------------------------
+
+# The cap's first filled pixel on the left, row by row from its top (the right side mirrors it).
+# A hand-set curve, not a sampled ellipse: its steps only shrink (3, 2, 2, 1, 1, 1, then straight
+# down), where the ellipse stepped 3, 2, 1, 2, 0, 1 and the dome's side zigzagged.
+CEPE_CAP = (12, 9, 7, 5, 4, 3, 2, 2, 1, 1, 1, 1)
 
 def cepe(state, frame=0, shadow=True, stage="adult"):
     """The original Plynling: a broad cap, gills, a chubby body. The adult is the original
-    sprite, untouched; a baby is drawn by cepe_baby, and every other stage wears the adult."""
+    sprite with a hand-set cap edge (CEPE_CAP); a baby is drawn by cepe_baby, and every other stage wears the adult."""
     if stage == "baby":
         return cepe_baby(state, frame, shadow)
     p = SPECIES["cepe"]
@@ -52,7 +57,7 @@ def cepe(state, frame=0, shadow=True, stage="adult"):
                 c = lerp(c, cap[4], 0.3)
             g.put(x, y, c, "cap")
 
-    spans = {16: (12, 19), 17: (11, 20), 26: (11, 20), 27: (12, 19)}             # body
+    spans = {16: (12, 19), 17: (11, 20), 26: (11, 20), 27: (11, 20)}             # body
     for y in range(16 + dy, 28):
         x0, x1 = spans[y - dy] if y - dy in (16, 17) else (spans[y] if y in (26, 27) else (10, 21))
         for x in range(x0, x1 + 1):
@@ -70,13 +75,16 @@ def cepe(state, frame=0, shadow=True, stage="adult"):
         g.put(x, 28, STEM[3], "stem")
 
     cx, cy, rx, ry = 15.5, 14.0 + dy + sag, 14.6 + 0.9 * pose.widen, 11.4       # cap, wider on the out-breath
+    top = 3 + dy + sag
     for y in range(N):
         for x in range(N):
-            if y > 14 + dy + sag:
+            row = y - top
+            if not 0 <= row < len(CEPE_CAP):
                 continue
-            rr = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
-            if rr > 1:
+            left = max(0, CEPE_CAP[row] - (1 if pose.widen and row >= 2 else 0))
+            if not left <= x <= N - 1 - left:
                 continue
+            rr = min(1.0, ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2)     # the shading still follows the dome
             d = ((x - 10) / 8.5) ** 2 + ((y - (6.5 + dy + sag)) / 5.2) ** 2
             i = 0 if d < 0.16 else (1 if d < 0.55 else 2)
             far = x > cx or y > cy - 3
@@ -125,9 +133,11 @@ def cepe_baby(state, frame, shadow):
     cut = BABY_CUT + sag
     gills(g, p, cut + 1, x0 - 4, x1 + 4)
     for y in range(cut + 1):
-        for x in range(N):
-            if ((x + 0.5 - 15.5) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1:
-                g.put(x, y, shade_cap(x, y, cap, 15.5, cy, rx, ry, 10, cy - 7.5, 8.5, 5.2, cut - 1), "cap")
+        inside = [x for x in range(N) if ((x + 0.5 - 15.5) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1]
+        if len(inside) < 3:                          # a lone crown pixel would poke a nub above the outline
+            continue
+        for x in inside:
+            g.put(x, y, shade_cap(x, y, cap, 15.5, cy, rx, ry, 10, cy - 7.5, 8.5, 5.2, cut - 1), "cap")
     for sx, sy, r in p["spots"]:                                      # the scales, moved with the cap
         oy = sy + (cy - 14.0)
         for y in range(N):
