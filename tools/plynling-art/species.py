@@ -856,43 +856,50 @@ def coprin_cap(g, p, apex, rim, half, egg=False):
                 continue
             nx = dx / max(h, 0.1)
             light = -0.55 * nx + 0.75 * math.sqrt(max(0.0, 1 - nx * nx)) - 0.45 * t + (0.15 if t < 0.3 else 0)
-            i = tone(light, (0.62, 0.38, 0.12, -0.12), x, y)
+            i = tone(light, (0.92, 0.5, 0.18, -0.1), x, y)              # pure white only where the light peaks
             if not egg and y >= rim - 1:
                 i = min(4, i + 1)                                      # the flare's underside, in shadow
             c = cap[min(i, 4)]
-            if t < 0.17:                                               # the skullcap, smooth ochre
-                c = lerp(tip[0], (255, 240, 214), 0.5) if light > 0.55 else tip[0] if light > 0.2 else tip[1]
+            cut = 0.17 + 0.07 * (x % 2)                                # the skullcap's edge, a scalloped fringe
+            if t < cut:                                                # the skullcap: a lit dome of its own
+                k = 0 if light > 1.05 else 1 if light > 0.55 else 2 if light > 0.15 else 3
+                c = COPRIN_SKULL[k]
             g.put(x, y, c, "cap")
             xs.append(x)
         if xs:
             edges[y] = (xs[0], xs[-1])
 
+    # The wig: short white locks (mèches) hanging in staggered rows, and no brown below the skullcap
+    # (brown specks there read as dirt). A lock is a strand a shade lighter with a groove a shade
+    # darker on its right, the groove's foot a shade deeper still: on the lit side, where the
+    # strand can't get any lighter, the grooves alone draw the locks. Shades are steps of the
+    # cap's own ramp, never mixes or browns, so the wig adds no colour of its own.
+    def step(x, y, k):
+        c = g.c[y][x]
+        return cap[max(0, min(3, cap.index(c) + k))] if c in cap else c
+
     first = apex + max(3, int(height * 0.2))
-    for i, y in enumerate(range(first, rim - 1, 3)):                   # the wig: rows of hanging scales
+    gap, tall = (4, 2) if egg else (3, 2)
+    for i, y in enumerate(range(first, rim - 1, tall + 1)):          # a row of gap between rows of locks
         a, b = edges[y]
-        t = (y - apex) / height
-        brown = max(0.0, 0.8 - t * 1.3)
-        point = lerp(cap[3], tip[1], 0.35 + brown * 0.5)
-        width = 5 if egg else 4                                        # an egg's scales are fewer, fainter
-        for x0 in range(a + (i % 2) * (width // 2), b - 1, width):
-            mid = x0 + width // 2
-            if g.r[y][x0] == "cap":
-                g.put(x0, y, lerp(g.c[y][x0], cap[0], 0.6))           # the scale's lit top
-            for x in range(x0 + 1, min(b, x0 + width)):
-                if g.r[y][x] == "cap":
-                    g.put(x, y, lerp(g.c[y][x], cap[3], 0.35))
-            if g.r[y][mid] == "cap":
-                g.put(mid, y, point)
-            if not egg and y + 1 < rim - 1 and g.r[y + 1][mid] == "cap":
-                g.put(mid, y + 1, point)                               # its hanging point
-                if g.r[y + 1][mid + 1] == "cap":
-                    g.put(mid + 1, y + 1, lerp(g.c[y + 1][mid + 1], cap[4], 0.35))   # and its shadow
+        for j, x0 in enumerate(range(a + 1 + i % 2, b, gap)):
+            y0 = y + (j % 2 if not egg else 0)                          # neighbouring locks end at different rows
+            for dy in range(tall):
+                yy = y0 + dy
+                if yy >= rim - 1:
+                    break
+                if g.r[yy][x0] == "cap":
+                    g.put(x0, yy, step(x0, yy, -1))                     # the strand
+                if g.r[yy][x0 + 1] == "cap":
+                    g.put(x0 + 1, yy, step(x0 + 1, yy, 2 if dy == tall - 1 else 1))   # its groove
         if not egg:                                                    # the curls scallop the outline
             g.put(a - 1, y + 1, cap[2], "cap")
             g.put(b + 1, y + 1, cap[3], "cap")
 
 
 INK_PINK, INK_GREY, INK_GLOSS = (222, 188, 188), (112, 96, 106), (104, 98, 132)
+# the skullcap, lit to shadowed: a highlight, the two ochres of SPECIES["coprin"]["spot"], a deep brown
+COPRIN_SKULL = ((236, 210, 168), (216, 176, 122), (160, 118, 74), (116, 82, 52))
 
 
 def ink_rim(g, p, rim, level, drips):
@@ -913,9 +920,44 @@ def ink_rim(g, p, rim, level, drips):
         for y, c, k in ((rim - tall, INK_GREY, 0.75), (rim - tall - 1, INK_PINK, 0.5)):
             if g.r[y][x] == "cap":
                 g.put(x, y, lerp(g.c[y][x], c, k))
+    for x in range(N):                                                 # a wet glint on the lit half of the band
+        if x % 5 == 2 and x + 0.5 < CX and g.c[rim - 1][x] == ink:
+            g.put(x, rim - 1, INK_SHINE)
     for x, length in drips:
         for k in range(1, length + 1):
-            g.put(x, rim + k, INK_GLOSS if k == 1 and length > 1 else deep if k == length else ink, "cap")
+            c = INK_GLOSS if k == 1 and length > 1 else deep if k == length else ink
+            if length >= 3 and k == length - 1:
+                c = INK_SHINE                                          # a long drip's bead catches the light
+            g.put(x, rim + k, c, "cap")
+
+
+INK_SHINE = (168, 164, 196)
+
+
+def cast_shadow(g, S, rim, depth=(2, 1)):
+    """The cap's shadow on the body just under it: the first body rows below the rim, a step or
+    two down the body's own ramp (a column with a drip hanging over it is left alone)."""
+    for x in range(N):
+        y = rim + 1
+        while y < N and g.r[y][x] is None:
+            y += 1
+        if y >= N or g.r[y][x] != "stem":
+            continue
+        for k, down in enumerate(depth):
+            if y + k < N and g.r[y + k][x] == "stem" and g.c[y + k][x] in S:
+                g.put(x, y + k, S[min(4, S.index(g.c[y + k][x]) + down)])
+
+
+def selout(g, cap, blank, apex, rim):
+    """Selective outline: the cap's outline a shade lighter where the light falls (the upper
+    left), so the dome reads round instead of cut out. `blank` is the grid's empty pixels before
+    the outline was drawn."""
+    for y in range(N):
+        for x in range(N):
+            if not blank[y][x] or g.c[y][x] != cap[4]:
+                continue
+            if x + 0.5 < CX - 0.5 and y < apex + (rim - apex) * 0.6:
+                g.put(x, y, cap[3])
 
 
 def ink_drop(im, pose, rim, x):
@@ -956,8 +998,11 @@ def coprin(state, frame=0, shadow=True, stage="adult"):
     apex, rim = 2 + sag, 16 + sag
     coprin_cap(g, p, apex, rim, 6.8)
     ink_rim(g, p, rim, COPRIN_INK[state], COPRIN_DRIPS[COPRIN_INK[state]])
+    cast_shadow(g, STEM, rim)
     arms(g, STEM)
+    blank = [[c is None for c in row] for row in g.c]
     outline(g, p["cap"])
+    selout(g, p["cap"], blank, apex, rim)
     im = finish(g, p, state, STEM, face_oy=1, shadow=shadow, pose=pose)
     ink_drop(im, pose, rim, 9)
     return im
@@ -975,8 +1020,11 @@ def coprin_baby(state, frame, shadow):
     coprin_cap(g, p, apex, rim, 6.2, egg=True)
     level = COPRIN_BABY_INK[state]
     ink_rim(g, p, rim, level, COPRIN_BABY_DRIPS[level])
+    cast_shadow(g, STEM, rim)
     arms(g, STEM, BABY_ARMS)
+    blank = [[c is None for c in row] for row in g.c]
     outline(g, p["cap"])
+    selout(g, p["cap"], blank, apex, rim)
     return finish(g, p, state, STEM, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
 
