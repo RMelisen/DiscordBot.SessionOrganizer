@@ -23,14 +23,27 @@ SICK_TINT = (150, 200, 120)
 CX = 16.0                    # the face's own axis: eyes at 12-13 and 18-19, feet likewise
 
 
+BAYER = ((0, 8, 2, 10), (12, 4, 14, 6), (3, 11, 1, 9), (15, 7, 13, 5))
+
+
+def bayer(x, y):
+    """An ordered-dither threshold in (0, 1): a blend drawn as a pattern of two existing colours
+    instead of a band of new in-between mixes."""
+    return (BAYER[y % 4][x % 4] + 0.5) / 16
+
+
+def nearest_of(c, colours):
+    """The colour among `colours` closest to c (by eye, in Lab): a blend computed smoothly, then
+    drawn only in colours the sprite already has, so a fade adds no mixes of its own."""
+    import palette
+    lab = palette.lab(c)
+    return min(colours, key=lambda k: palette.distance(lab, palette.lab(k)))
+
+
 def stem_palette(p):
-    """The species' own stem ramp (a Mycena's lavender), else STEM leaned toward its colour (a
-    gold chanterelle), else STEM. A lean squeezes the ramp's steps together; an own ramp keeps
-    them apart."""
-    if "stem" in p:
-        return p["stem"]
-    tint = p.get("stem_tint")
-    return STEM if tint is None else [lerp(c, tint[0], tint[1]) for c in STEM]
+    """The species' own stem ramp (a Mycena's lavender, a chanterelle's gold), else STEM. An own
+    ramp, not STEM leaned toward a colour: a lean squeezed the steps to dE 3-5 apart."""
+    return p.get("stem", STEM)
 
 
 # ---- the Cèpe: the original sprite -----------------------------------------------------
@@ -741,7 +754,7 @@ def dore(state, frame=0, shadow=True, stage="adult"):
                 i = tone(-0.6 * u + math.sqrt(max(0.0, 1 - u * u)) * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
                 if y >= 26:
                     i = min(4, i + 1)
-                c = lerp(c, S[i], t)
+                c = nearest_of(lerp(c, S[i], t), cap + S)              # cap gold fades into stem gold, in golds that exist
             g.put(x, y, c, "cap" if y < blend0 else "stem")
     for k in range(-5, 6):                                             # forked ridges, fading onto the stem
         x_top, x_bot = CX + k * 2.4, CX + k * 0.7
@@ -750,7 +763,9 @@ def dore(state, frame=0, shadow=True, stage="adult"):
             x = int(math.floor(x_top + (x_bot - x_top) * f))
             if g.c[y][x] is not None and y - rim_top(x) > 2.5:
                 dark = cap[3] if k < 0 else cap[4]
-                g.put(x, y, lerp(dark, g.c[y][x], max(0.0, f - 0.55) * 1.6))
+                c = g.c[y][x]
+                if max(0.0, f - 0.55) * 1.6 < bayer(x, y):          # the ridge thins out down the stem
+                    g.put(x, y, S[min(4, S.index(c) + 1)] if c in S else dark)   # on the stem, its own gold a shade down
     feet(g, S)
     arms(g, S)
     outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
@@ -799,7 +814,7 @@ def dore_baby(state, frame, shadow):
                 i = tone(-0.6 * u + math.sqrt(max(0.0, 1 - u * u)) * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
                 if y >= 27:
                     i = min(4, i + 1)
-                c = lerp(c, S[i], t)
+                c = nearest_of(lerp(c, S[i], t), cap + S)              # cap gold fades into stem gold, in golds that exist
             g.put(x, y, c, "cap" if y < blend0 else "stem")
     for k in (-3, -1, 1, 3):                                           # a few soft ridges
         x_top, x_bot = CX + k * 2.6, CX + k * 0.9
@@ -808,7 +823,9 @@ def dore_baby(state, frame, shadow):
             x = int(math.floor(x_top + (x_bot - x_top) * f))
             if g.c[y][x] is not None and y - rim_top(x) > 2.2:
                 dark = cap[2] if k < 0 else cap[3]
-                g.put(x, y, lerp(dark, g.c[y][x], max(0.0, f - 0.45) * 1.8))
+                c = g.c[y][x]
+                if max(0.0, f - 0.45) * 1.8 < bayer(x, y):
+                    g.put(x, y, S[min(4, S.index(c) + 1)] if c in S else dark)
     arms(g, S, BABY_ARMS)
     outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
     return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)

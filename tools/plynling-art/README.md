@@ -11,7 +11,9 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   (shaggy ink cap): a shaded, flaring bell whose rim melts into ink through pink and grey — the
   hungrier it is, the more (`COPRIN_INK`) — with a falling ink drop as its idle touch. The face is
   clipped to each body; sweat drops and frost are measured from the model, not from fixed spots.
-  `stem_tint` in `common.SPECIES` colours a stem (the Mycena's lavender, the chanterelle's gold).
+  `stem` in `common.SPECIES` gives a species its own stem ramp (the Mycena's lavender, the
+  chanterelle's gold); the others use `STEM`. A ramp of its own, not `STEM` leaned toward a colour:
+  a lean squeezes the steps to ΔE 3–5 apart and the shading disappears.
 - `motion.py` — the idle loop every Plynling shares: 16 frames of 125 ms (2 s). `pose(sp, state, f)`
   says where everything sits on frame f: the breath, the blink, each mood's touch (hop, tear,
   sweat, shudder, frost star) and each species' own (the Cèpe's cap widens, the Amanite's skirt
@@ -154,9 +156,9 @@ nearest locked colour within ΔE 6 (never visible); one further from all of them
 - **Colours the code names stay exact**: every RGB constant in `common`, `sprites`, `species` and
   `dirt` (the cap ramps, `STEM`, `INK`, `WHITE`…) and each `stem_palette` that is drawn as-is is
   locked outright; only the mixes made from them merge. So near-twins among the named colours
-  remain for a redraw to settle — chiefly the Mycena's and the Doré's stem ramps, squeezed by
-  `stem_tint` into steps ΔE 3–5 apart, and the white caps and spots beside `STEM[0]` — and `lint.py`
-  lists them. `lock --fresh --merge-declared` merges those too.
+  remain for a redraw to settle, and `lint.py` lists them (`lock --fresh --merge-declared` merges
+  those too). The 2026-11 repass settled most of them; the eye shine's `WHITE` beside `STEM[0]`
+  and the frost's two blues remain, shared by every species.
 - `python palette.py lock` admits the new colours a drawing change brought in, **appending only**:
   locked colours stay, so one new colour never moves the rest of the set. `--fresh` rebuilds it.
   Run it after changing a drawing, then re-export.
