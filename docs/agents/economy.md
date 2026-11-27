@@ -123,6 +123,14 @@ records the time it *started*, and an older stamp landing after it would hide th
 member asked). The paid `/work` footer hints at `/balance` while the reminder is off. The checks pin
 the rule (section 40).
 
+**The DM's « Travailler » button** (`work:dm:<guildId>`, `EconomyComponentHandler`; a DM has no
+guild, so the id carries it) runs the same `PebbleService.WorkAsync` + `EconomyModule.WorkReply` as
+`/work` and `;work`, after checking the clicker is still a member. A paid shift is **also posted in
+the Plynling channel** (`ResolveGameChannelAsync`, where deaths go; no fallback), the clicker as a silent pill, so a shift done from a DM
+stays as visible as one done there; the DM then shows the result and a link button to that post (a
+button cannot move anyone to a channel by itself). A failed post costs the post, never the pay. A
+refusal (already worked elsewhere) stays private. Either way the button is removed.
+
 ## `/daily` — the streak
 
 Once per **Paris calendar day**, a claim pays cailloux and sometimes an item, both growing with the

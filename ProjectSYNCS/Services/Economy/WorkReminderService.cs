@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
@@ -13,7 +14,8 @@ namespace ProjectSYNCS.Services;
 /// saying `/work` is ready again. Its own 2-minute loop (a couple of minutes late is nothing on a
 /// 4-hour cooldown). Each wallet is claimed before the DM goes out, so a crash costs the DM and never
 /// sends a second; a refused DM is dropped, never relayed to a channel. Not muted by silence mode:
-/// the member asked for it, like a /remindme.
+/// the member asked for it, like a /remindme. The DM carries a « Travailler » button that does the
+/// shift from there (EconomyComponentHandler).
 /// </summary>
 public class WorkReminderService : BackgroundService
 {
@@ -41,14 +43,14 @@ public class WorkReminderService : BackgroundService
             if (_client.ConnectionState != ConnectionState.Connected) continue;
 
             var now = DateTimeOffset.UtcNow;
-            List<(int Id, ulong UserId)> due;
+            List<(int Id, ulong GuildId, ulong UserId)> due;
             try
             {
                 await using var scope = _services.CreateAsyncScope();
                 var wallets = await scope.ServiceProvider.GetRequiredService<PebbleService>().GetReminderWalletsAsync();
                 due = wallets
                     .Where(w => PebbleEconomy.WorkReminderDue(w.LastWorkAt, w.WorkRemindedAt, now))
-                    .Select(w => (w.Id, w.UserId))
+                    .Select(w => (w.Id, w.GuildId, w.UserId))
                     .ToList();
             }
             catch (Exception ex)
@@ -57,11 +59,11 @@ public class WorkReminderService : BackgroundService
                 continue;
             }
 
-            foreach (var (id, userId) in due)
+            foreach (var (id, guildId, userId) in due)
             {
                 try
                 {
-                    await RemindAsync(id, userId);
+                    await RemindAsync(id, guildId, userId);
                 }
                 catch (Exception ex)
                 {
@@ -71,7 +73,7 @@ public class WorkReminderService : BackgroundService
         }
     }
 
-    private async Task RemindAsync(int walletId, ulong userId)
+    private async Task RemindAsync(int walletId, ulong guildId, ulong userId)
     {
         await using (var scope = _services.CreateAsyncScope())
         {
@@ -83,7 +85,8 @@ public class WorkReminderService : BackgroundService
         {
             var user = await _client.GetUserAsync(userId);
             if (user is null) return;
-            await user.SendMessageAsync(_picker.Pick(BotResponses.WorkReadyLines), allowedMentions: AllowedMentions.None);
+            await user.SendMessageAsync(_picker.Pick(BotResponses.WorkReadyLines), allowedMentions: AllowedMentions.None,
+                components: EconomyModule.WorkReadyComponents(guildId));
         }
         catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
         {

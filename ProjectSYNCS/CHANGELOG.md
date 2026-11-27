@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.28.0 — 2026-11-27
+
+- The `/work` reminder DM has a « Travailler » button: it does the shift from the DM, posts it in the Plynling channel so it stays visible, and links to that post.
+
 ## 8.27.0 — 2026-11-26
 
 - `/plynling stats` Vie tab: points over the last 7 days, best day, the last 14 days as bars, and the current and best streak of active days.

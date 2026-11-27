@@ -36,7 +36,7 @@ Sauter un jour remet ta série à 1. Sauf si c'est ma faute : un jour où j'ai �
 
 ### `/balance`
 
-Tes cailloux, **visibles par toi uniquement**. Le bouton 🔔 t'envoie un message privé dès que ton prochain `/work` est prêt (un message par boulot) ; reclique pour l'arrêter.
+Tes cailloux, **visibles par toi uniquement**. Le bouton 🔔 t'envoie un message privé dès que ton prochain `/work` est prêt (un message par boulot) ; reclique pour l'arrêter. Dans ce message, le bouton **Travailler** fait ton service sans repasser par le serveur : je l'annonce quand même dans le salon des Plynlings, et je te mets un lien pour y aller.
 
 ### `/pay`
 

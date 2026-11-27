@@ -128,6 +128,17 @@ public class EconomyModule : SyncsModuleBase
         "🔔 C'est noté. Je t'écris en MP à la fin de chaque repos.\n-# Il faut que tes MP soient ouverts aux membres du serveur.";
     public const string RemindOffNotice = "🔕 Plus de rappel en MP.";
 
+    // The reminder DM's button: the shift itself, for the server the reminder is about (a DM has
+    // no guild, so the id carries it). EconomyComponentHandler answers it.
+    public const string WorkFromDmPrefix = "work:dm:";
+
+    public static MessageComponent WorkReadyComponents(ulong guildId) =>
+        new ComponentBuilder()
+            .WithButton("Travailler", $"{WorkFromDmPrefix}{guildId}", ButtonStyle.Primary)
+            .Build();
+
+    public const string WorkFromDmGone = "Tu n'es plus sur ce serveur. Pas de serveur, pas de boulot.";
+
     // Public when it goes through, so the gift is seen; both people as pills, never pinged. The amount
     // and the tax are capped at the option too, so Discord refuses them before anything runs. Deferred,
     // since the save comes before anything shows; a refusal stays private, like /daily's.

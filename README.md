@@ -642,7 +642,8 @@ looks after her, and dresses her each morning in one of her outfits, a different
   day, more each day in a row up to 100, with a growing chance of an item; missing a day starts
   the streak over, and your best streak earns the « Assiduité » badge) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private; its 🔔 button switches on a DM
-  that tells you when your next `/work` is ready.
+  that tells you when your next `/work` is ready. The DM's « Travailler » button does the shift
+  right there; it is also posted in the Plynling channel, and the DM links to that post.
 - **Giving and spending:** `/pay member amount` gives someone 10 to 2 000 cailloux a day; a 10 %
   tax is added on top, paid by the giver, and simply disappears. Cailloux given to the jar (and nothing
   else) count toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
