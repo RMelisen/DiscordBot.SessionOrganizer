@@ -137,11 +137,11 @@ def cepe_baby(state, frame, shadow):
     cut = BABY_CUT + sag
     gills(g, p, cut + 1, x0 - 4, x1 + 4)
     for y in range(cut + 1):
-        inside = [x for x in range(N) if ((x + 0.5 - 15.5) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1]
+        inside = [x for x in range(N) if ((x + 0.5 - CX) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1]
         if len(inside) < 3:                          # a lone crown pixel would poke a nub above the outline
             continue
         for x in inside:
-            g.put(x, y, shade_cap(x, y, cap, 15.5, cy, rx, ry, 10, cy - 7.5, 8.5, 5.2, cut - 1), "cap")
+            g.put(x, y, shade_cap(x, y, cap, CX, cy, rx, ry, 10, cy - 7.5, 8.5, 5.2, cut - 1), "cap")
     for sx, sy, r in p["spots"]:                                      # the scales, moved with the cap
         oy = sy + (cy - 14.0)
         for y in range(N):
@@ -523,7 +523,7 @@ def russule(state, frame=0, shadow=True, stage="adult"):
     pose = pose_for("russule", state, frame)
     sag = 1 if state == "starving" else 0
     g = Grid()
-    spans = {12: (12, 19), 13: (11, 20), 26: (11, 20), 27: (12, 19)}
+    spans = {12: (12, 19), 13: (11, 20), 26: (11, 20), 27: (11, 20)}
     for y in range(12 + sag, 28):
         x0, x1 = spans.get(y - sag if y - sag in (12, 13) else y, (10, 21))
         for x in range(x0, x1 + 1):
@@ -535,10 +535,10 @@ def russule(state, frame=0, shadow=True, stage="adult"):
             g.put(x, y, S[i], "stem")
     feet(g, S)
     def tip(x):                                                       # the same tilt as the cap's
-        return int(round(1.2 * pose.tilt * (x + 0.5 - 15.5) / 14.0))
+        return int(round(1.2 * pose.tilt * (x + 0.5 - CX) / 14.0))
     gills(g, p, 12 + sag, 4, 27, tip)
     for x in range(2, 30):
-        nx = (x + 0.5 - 15.5) / 14.0
+        nx = (x + 0.5 - CX) / 14.0
         if abs(nx) > 1:
             continue
         lean = 1.2 * pose.tilt * nx                                   # one edge up, the other down
@@ -547,7 +547,7 @@ def russule(state, frame=0, shadow=True, stage="adult"):
         for y in range(int(top), int(bottom) + 1):
             if y + 0.5 < top:
                 continue
-            c = shade_cap(x, y, cap, 15.5, 9.5 + sag, 14.0, 3.5, 9, 8 + sag, 7, 1.6, 11 + sag)
+            c = shade_cap(x, y, cap, CX, 9.5 + sag, 14.0, 3.5, 9, 8 + sag, 7, 1.6, 11 + sag)
             if abs(nx) < 0.3 and y + 0.5 - top < 1.2:
                 c = cap[3]                                            # the dip, in shadow
             g.put(x, y, c, "cap")
@@ -567,10 +567,10 @@ def russule_baby(state, frame, shadow):
     half = 10.5
 
     def tip(x):
-        return int(round(1.2 * pose.tilt * (x + 0.5 - 15.5) / half))
+        return int(round(1.2 * pose.tilt * (x + 0.5 - CX) / half))
     gills(g, p, 19 + sag, 7, 24, tip)
     for x in range(N):
-        nx = (x + 0.5 - 15.5) / half
+        nx = (x + 0.5 - CX) / half
         if abs(nx) > 1:
             continue
         lean = 1.2 * pose.tilt * nx
@@ -579,7 +579,7 @@ def russule_baby(state, frame, shadow):
         for y in range(int(top), int(bottom) + 1):
             if y + 0.5 < top:
                 continue
-            c = shade_cap(x, y, cap, 15.5, 16.8 + sag, half, 3.0, 10, 15.5 + sag, 5.5, 1.4, 18 + sag)
+            c = shade_cap(x, y, cap, CX, 16.8 + sag, half, 3.0, 10, 15.5 + sag, 5.5, 1.4, 18 + sag)
             if abs(nx) < 0.3 and y + 0.5 - top < 1.2:
                 c = cap[3]                                            # the dip, in shadow
             g.put(x, y, c, "cap")
