@@ -475,10 +475,10 @@ def rose(state, frame=0, shadow=True, stage="adult"):
         g.put(x, 18 + sag, S[1] if x < 16 else S[3], "stem")          # a thin ring
     gills(g, p, 15 + sag, 7, 24)
     gills(g, p, 16 + sag, 9, 22)
-    cx, cy, rx, ry = 15.5, 10.5 + sag, 13.0, 9.6 + 1.0 * pose.puff       # puffed: its crown rises a row
+    cx, cy, rx, ry = CX, 10.5 + sag, 13.0, 9.6 + 1.0 * pose.puff       # puffed: its crown rises a row
     for y in range(N):
         for x in range(N):
-            if y > 15 + sag or ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
+            if not 1 <= y <= 15 + sag or ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:   # row 0 is the outline's
                 continue
             if y >= 14 + sag and abs(x + 0.5 - cx) < 7:
                 continue                                              # the opening under the curled rim
@@ -499,11 +499,12 @@ def rose_baby(state, frame, shadow):
     baby_body(g, S)
     gills(g, p, 18 + sag, 9, 22)
     gills(g, p, 19 + sag, 11, 20)
-    cx, cy, rx, ry = 15.5, 14.5 + sag, 10.8, 8.2 + 1.0 * pose.puff
+    cx, cy, rx, ry = CX, 14.5 + sag, 10.8, 8.2 + 1.0 * pose.puff
     for y in range(19 + sag):
-        for x in range(N):
-            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
-                continue
+        inside = [x for x in range(N) if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1]
+        if len(inside) < 6:                          # a short crown row would sit on the cap as a knob
+            continue
+        for x in inside:
             if y >= 18 + sag and abs(x + 0.5 - cx) < 6:
                 continue                                              # the opening under the curled rim
             g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 11, 10 + sag, 6.5, 3.8, 18 + sag), "cap")
