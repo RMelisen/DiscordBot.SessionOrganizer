@@ -50,11 +50,15 @@ public static class ItemEmojis
     // also its five badges' subject: redrawing one means revising all six (the checks hold this).
     private static readonly Dictionary<string, int> Revisions = new(StringComparer.Ordinal)
     {
-        ["col.abeille"] = 2, ["col.bague"] = 2, ["col.bouton"] = 2, ["col.carte_tresor"] = 2,
-        ["col.chataigne"] = 2, ["col.coquelicot"] = 2, ["col.coquillage"] = 2, ["col.grillon"] = 2,
-        ["col.moustique"] = 2, ["col.primevere"] = 2, ["col.cle_rouillee"] = 2, ["col.piece_ancienne"] = 2,
-        ["col.silex"] = 2, ["col.agate"] = 2, ["col.feuille_chene"] = 2, ["col.mouche"] = 2,
-        ["col.meteorite"] = 2,
+        ["col.abeille"] = 3, ["col.agate"] = 3, ["col.amethyste"] = 2, ["col.bague"] = 2,
+        ["col.bille"] = 2, ["col.bouton"] = 3, ["col.caillou_plat"] = 2, ["col.carte_tresor"] = 3,
+        ["col.cerise"] = 2, ["col.chataigne"] = 3, ["col.chenille"] = 2, ["col.citrouille"] = 2,
+        ["col.cle_rouillee"] = 3, ["col.coccinelle"] = 2, ["col.coquelicot"] = 3, ["col.coquillage"] = 3,
+        ["col.coquille_escargot"] = 2, ["col.couronne"] = 2, ["col.cristal_givre"] = 2, ["col.feuille_chene"] = 2,
+        ["col.flocon"] = 2, ["col.fourmi"] = 2, ["col.galet"] = 2, ["col.gland"] = 2,
+        ["col.grillon"] = 3, ["col.meteorite"] = 3, ["col.morpho_bleu"] = 2, ["col.mouche"] = 3,
+        ["col.moustique"] = 3, ["col.opale"] = 2, ["col.piece_ancienne"] = 2, ["col.plume"] = 2,
+        ["col.plume_doree"] = 2, ["col.pomme_pin"] = 2, ["col.primevere"] = 2, ["col.silex"] = 3,
         ["cos.accessory.collier_coquillages"] = 2, ["cos.accessory.moufles"] = 2, ["cos.accessory.casquette"] = 2,
         ["cos.accessory.lunettes"] = 2, ["cos.accessory.haut_de_forme"] = 2,
         ["cos.grave.aura_doree"] = 2, ["cos.grave.clair_de_lune"] = 2, ["cos.grave.lanternes"] = 2,

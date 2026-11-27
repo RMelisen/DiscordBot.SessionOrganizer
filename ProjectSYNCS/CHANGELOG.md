@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.28.3 — 2026-11-27
+
+- 32 of the first collectibles' icons are redrawn to read at emoji size: an arrowhead silex, an open amethyst geode, a banded agate, a scale-patterned pine cone, a feather with its quill, a treasure map with its X, a scallop shell, a poppy with its black heart, a fan of frost crystals, a fly seen from above, a striped bee, an inchworm with a head, and more.
+
 ## 8.28.2 — 2026-11-27
 
 - Every Plynling is redrawn, adult and baby: rounder caps centred on the face, shading with clearer steps, a shadow under the cap, and an outline that lightens where the light falls.
