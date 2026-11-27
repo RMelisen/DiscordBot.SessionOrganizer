@@ -43,7 +43,8 @@ def marks(state, sp, frame=0, stage="adult"):
     finally:
         for name, fn in originals.items():
             setattr(species, name, fn)
-    return canvas
+    import palette
+    return palette.snap(canvas, palette.tint_key(state))   # the colours the marks have on the bare picture
 
 
 # ---- the face -------------------------------------------------------------------------

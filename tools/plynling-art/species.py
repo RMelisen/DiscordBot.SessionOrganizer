@@ -12,6 +12,7 @@ import math
 
 from PIL import Image
 import dirt
+import palette
 
 from common import N, Grid, lerp, tone, SPECIES, SPOTS, STEM, STEM_OUT, INK
 from motion import moved, pose as pose_for
@@ -345,7 +346,7 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
         extras(im, state, p, pose)
     if dirt.ACTIVE:
         dirt.stink(im, pose.f, fly)
-    return im
+    return palette.snap(im, palette.tint_key(state, dirt.ACTIVE))   # onto this tint's locked palette
 
 
 # ---- Amanite: a fly agaric ----------------------------------------------------------------

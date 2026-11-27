@@ -112,3 +112,58 @@ new names (the bot links those); its old bare files stay for posted messages. A 
 ## Layers for runtime drawing
 
 `python export.py layers` writes `ProjectSYNCS/Assets/Plynlings/` (deleted first; 12 012 files, about 10.8 MB), the pictures the bot lays over each other instead of reading a pre-dressed file: `base/<shape>_<face>[_dirty]`, `acc/<shape>_<face>_<acc>[_<full style>]` (clean faces only: dirty shares the clean layer), `aura/<shape>_<face>_<aura>[_tall]` (raw, unmasked particles; `_tall` is the 320 px hat canvas, adults only) and `marks/<shape>_<face>` (heart, sweat, « z », frost; no file for content and sad). Every file is an 8x lossless loop on the shared 125 ms timing, its layers sitting at the foot of the largest canvas in play. `sprites.marks()` draws the mood extras alone.
+
+## Looking closely: zoom.py and lint.py
+
+Two read-only helpers for fixing single pixels; they write only into `out/` (git-ignored), never into
+the bot.
+
+- `zoom.py` — one frame blown up (×20) with numbered rows and columns, a grid bolder every 4 cells,
+  transparency as a checkerboard, and every colour listed with its count. `--letters` writes each
+  cell's legend symbol in it; `--text` prints the same grid as text instead. `--strip` lays out the
+  16 frames with an onion skin (where the previous frame had a pixel and this one has none, in
+  faint red) and prints how many pixels each frame changes and where. Before an edit, `--raw` keeps
+  the bare 32×32; after it, `--diff` shows before | after | changes and lists every changed pixel
+  with its old and new colour. It also takes any picture file (an exported ×8 one is shrunk back
+  to its art pixels): `python zoom.py ../../assets/plynlings/plynling_cepe_happy_v5.webp --frame 3`.
+  `--unlocked` draws the sprite as drawn, before the palette lock: `--unlocked --raw` then `--diff`
+  shows exactly what the lock moves.
+- `lint.py` — advisory checks on fully opaque pixels: how many colours a sprite uses; **twins**
+  (a colour within CIE76 ΔE 6 of a more-used one, which the eye can't tell apart: it could be that
+  one); **unlocked** colours (outside its tint's palette in `palette_lock.py`); **specks** (a lone
+  pixel in a flat patch); **floating** body pixels; **jaggies** (a zigzag
+  in the run lengths of the silhouette's left or right edge, like 3,1,2 where a curve wants 3,2,1).
+  The silhouette is traced from the frame redrawn without its mood marks and the dirt's wisps.
+  `python lint.py` is a table of every species × face × stage; a species (`python lint.py cepe`,
+  `cepe happy --stage baby --frames all`) lists each finding's pixels; `--palette` is the whole
+  set's colours grouped into clusters of twins. A finding is a place to look, not always a
+  fault: the Cèpe's scales are specks on purpose. Exit code 0 unless `--fail`.
+
+## The palette lock: palette.py
+
+The drawings mix colours freely (`lerp` gradients, the frozen / starving / sick / dirt tints mixed
+pixel by pixel), which left 1 296 colours across every frame, most of them a twin of another. So
+every finished frame snaps its opaque pixels to a locked palette: `species.finish` and
+`sprites.marks` end in `palette.snap(im, palette.tint_key(state, dirty))`. A pixel moves to the
+nearest locked colour within ΔE 6 (never visible); one further from all of them stays as drawn and
+`lint.py` reports it as unlocked. Partly transparent pixels (shadow, halo) are never touched.
+
+- **One palette per tint** (`clean`, `frozen`, `starving`, `sick`, each also `_dirty`): a tinted
+  pixel only snaps to colours drawn under the same tint. One shared palette sent half of a sick
+  stem back to the clean cream and left the tint patchy.
+- **Colours the code names stay exact**: every RGB constant in `common`, `sprites`, `species` and
+  `dirt` (the cap ramps, `STEM`, `INK`, `WHITE`…) and each `stem_palette` that is drawn as-is is
+  locked outright; only the mixes made from them merge. So near-twins among the named colours
+  remain for a redraw to settle — chiefly the Mycena's and the Doré's stem ramps, squeezed by
+  `stem_tint` into steps ΔE 3–5 apart, and the white caps and spots beside `STEM[0]` — and `lint.py`
+  lists them. `lock --fresh --merge-declared` merges those too.
+- `python palette.py lock` admits the new colours a drawing change brought in, **appending only**:
+  locked colours stay, so one new colour never moves the rest of the set. `--fresh` rebuilds it.
+  Run it after changing a drawing, then re-export.
+- `python palette.py compare` writes one sheet per species into `out/palette/`: each stage's faces
+  and two dirty ones, as drawn and locked, with the colour counts.
+
+The lock brought the set from 1 296 drawn colours to 504 locked across the seven palettes (the
+clean one: 202 → 107; the adult Doré's eleven sheet faces from 299 colours to 134), moving no pixel
+by more than ΔE 6. A change to the lock changes the pictures: it needs a new `ART_VERSION` and a
+full export, like any redraw.
