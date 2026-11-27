@@ -49,7 +49,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   greenish flush instead of the pink, a green tint over the whole Plynling, a sliding fever sweat
   drop and a fever shiver (the starving shudder: in place, never sideways). 14 files, added without
   a version bump.
-- **The dirt** (`dirt.py`, `build(..., dirty=True)`, `plynling_<species>[_baby]_<face>_dirty_v5.webp`,
+- **The dirt** (`dirt.py`, `build(..., dirty=True)`, `plynling_<species>[_baby]_<face>_dirty_v7.webp`,
   98 files) marks a « sale » Plynling on its card, for the living faces in `DIRTY_STATES` — not
   frozen (the ice covers it), not angry and not the visit pictures. A brownish grime tint, mud on the
   cap, a streak and splashes on the body — painted on the model *before* the face, so the face is
@@ -58,7 +58,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   Russule's tipping cap, and outside the starving cold sweat; it is drawn before the wisps so they go
   round it. Everything is placed from the drawing, so it fits every species and stage. Added
   without a version bump.
-- **Visit pictures** (`plynling_<species>[_baby]_<face>_visit_v5.webp`, 56 files: happy, content, sad
+- **Visit pictures** (`plynling_<species>[_baby]_<face>_visit_v7.webp`, 56 files: happy, content, sad
   and angry, adults and babies) are the same animation on a larger transparent canvas
   (`VISIT_CANVAS = 40` cells against the sprite's 32, so the sprite fills 80 % of its tile; still
   whole-pixel scaling, so the pixel art stays sharp). A visit shows two Plynlings side by side in a
@@ -106,14 +106,15 @@ old files) or `python export.py layers` (the layers only).
 
 **Changing the art:** bump `ART_VERSION` in `export.py` **and** `PlynlingArt.Version` in the
 bot, re-export, commit, push. The bot links to GitHub raw URLs on `main`, and Discord caches
-images by URL — a new version must be a new filename, never an overwrite. The art is at **v5**
+images by URL — a new version must be a new filename, never an overwrite. The art is at **v7**
 (v3 the idle animation; v5 dropped the sparkles the Mycena, the Doré (Girolle) and the Coprin wore from the
-retired rarity tiers — no species is drawn as rarer than another). Frame 0 of every loop is the
+retired rarity tiers — no species is drawn as rarer than another; v7 the repass with `lint.py` and the
+palette lock, every species redrawn). Frame 0 of every loop is the
 still, so a client that cannot animate WebP shows a picture that makes sense. A new species'
 drawing function must take `frame` and route through `finish` with its pose, or it will not move.
 
 **Redrawing one species** without renaming everything: add it to `REDRAWN` in `export.py` **and**
-`PlynlingArt.Redrawn` in the bot with the next version (the Coprin is at 6: its idle drop turned black),
+`PlynlingArt.Redrawn` in the bot with the next version (8; none is redrawn since v7),
 then `python export.py redraw <species>` and `python export.py layers`. Its bare and visit pictures get
 new names (the bot links those); its old bare files stay for posted messages. A full `python export.py` deletes the superseded bare files.
 
@@ -133,7 +134,7 @@ the bot.
   faint red) and prints how many pixels each frame changes and where. Before an edit, `--raw` keeps
   the bare 32×32; after it, `--diff` shows before | after | changes and lists every changed pixel
   with its old and new colour. It also takes any picture file (an exported ×8 one is shrunk back
-  to its art pixels): `python zoom.py ../../assets/plynlings/plynling_cepe_happy_v5.webp --frame 3`.
+  to its art pixels): `python zoom.py ../../assets/plynlings/plynling_cepe_happy_v7.webp --frame 3`.
   `--unlocked` draws the sprite as drawn, before the palette lock: `--unlocked --raw` then `--diff`
   shows exactly what the lock moves.
 - `lint.py` — advisory checks on fully opaque pixels: how many colours a sprite uses; **twins**

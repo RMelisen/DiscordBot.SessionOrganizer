@@ -372,7 +372,7 @@ every Ready and on `JoinedGuild`.
 ## Art
 
 - **Living = animated WebP; memorials and foods = PNG.** `PlynlingArt.Sprite` ends in `.webp`, the
-  others `.png`; they share `Version` (4) but not the extension — don't tidy them into one. A client
+  others `.png`; they share `Version` (7) but not the extension — don't tidy them into one. A client
   that can't animate shows frame 0, kept pixel-identical to the v2 still. Idle motion lives in
   `tools/plynling-art/motion.py`, and **nothing moves side to side** (the owner rejected every
   left-right motion) — keep motion vertical or in place.
@@ -385,7 +385,7 @@ every Ready and on `JoinedGuild`.
   shrink kept the adult's full-size cap.
 - `PlynlingArt.Key` is exhaustive and **throws** on an unkeyed species (never default to one).
 - **One species redrawn = new bare names for it only**: `PlynlingArt.Redrawn` (must match `REDRAWN` in
-  `export.py`) gives its bare and visit files their own version (Coprin 6), instead of a `Version` bump
+  `export.py`) gives its bare and visit files their own version (none since the v7 repass), instead of a `Version` bump
   renaming every species' files. How to export one: `tools/plynling-art/README.md`.
 - **Dressed pictures are drawn at runtime** (8.9.0, several accessories make pre-rendering every
   combination impossible): `PlynlingPainter` composes the bare picture with `PlynlingLook` (accessories with their

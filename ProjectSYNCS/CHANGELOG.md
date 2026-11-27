@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.28.2 — 2026-11-27
+
+- Every Plynling is redrawn, adult and baby: rounder caps centred on the face, shading with clearer steps, a shadow under the cap, and an outline that lightens where the light falls.
+- The Mycena's stem is lavender, the Girolle's gold with its cap fading into it, the Rosé's cap a cool white.
+- The Coprin's wig is white shaggy locks under a shaded brown tip; its ink shines.
+- The Amanite's skirt hangs in folds with a scalloped hem, and its white spots stand out from the cap.
+
 ## 8.28.1 — 2026-11-27
 
 - The shift posted from the `/work` reminder DM no longer says it came from the DM: just the mention and the shift.

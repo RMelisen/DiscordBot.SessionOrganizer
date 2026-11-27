@@ -35,13 +35,12 @@ from auras import AURA_STATES, AURAS, _Spray, _bounds
 from accessories import HAT_AT, HAT_CANVAS
 from sprites import build, marks
 
-ART_VERSION = 5
+ART_VERSION = 7
 # A species redrawn since ART_VERSION: its bare and visit pictures (the ones the bot links) take this
 # version instead, so Discord's URL cache can't keep the old drawing, without renaming every other
 # species' files. Its old bare files stay (posted messages link them). Must match PlynlingArt.Redrawn
-# in the bot.
-# coprin 6: the idle ink drop turned black.
-REDRAWN = {"coprin": 6}
+# in the bot. The next one takes 8.
+REDRAWN = {}
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))

@@ -14,12 +14,12 @@ namespace ProjectSYNCS.Helpers;
 // do not move and stay PNG.
 public static class PlynlingArt
 {
-    public const int Version = 5;
+    public const int Version = 7;
 
     // A species redrawn since Version: its bare and visit pictures take this version instead, so a new
     // drawing gets new URLs without renaming every other file. Must match REDRAWN in
-    // tools/plynling-art/export.py. Coprin 6: the idle ink drop turned black.
-    private static readonly IReadOnlyDictionary<string, int> Redrawn = new Dictionary<string, int> { ["coprin"] = 6 };
+    // tools/plynling-art/export.py. Empty since the v7 repass; the next redraw takes 8.
+    private static readonly IReadOnlyDictionary<string, int> Redrawn = new Dictionary<string, int>();
 
     /// <summary>The version in the bare and visit file names of the species keyed <paramref name="key"/> (<see cref="Key"/>).</summary>
     public static int VersionOf(string key) => Redrawn.GetValueOrDefault(key, Version);
