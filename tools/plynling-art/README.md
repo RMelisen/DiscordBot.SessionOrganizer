@@ -14,6 +14,12 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   `stem` in `common.SPECIES` gives a species its own stem ramp (the Mycena's lavender, the
   chanterelle's gold); the others use `STEM`. A ramp of its own, not `STEM` leaned toward a colour:
   a lean squeezes the steps to ΔE 3–5 apart and the shading disappears.
+  `finish()` gives every species the same finish: `overhang_shadow` darkens the body rows under a
+  cap or a skirt, and `lit_outline` lightens the cap's outline on the lit upper left (switches
+  `OVERHANG_SHADOW`, `LIT_OUTLINE`). The Coprin shades itself (`cast_shadow`, `selout`) and sets
+  `g.shaded`; the Doré opts out of the shadow (`overhang=False`), which would cut its funnel's fade.
+  The Amanite's skirt hangs in folds with a scalloped hem (`skirt`, shared by adult and baby), and
+  its cap has a crescent highlight and raised spots (`AMANITE_POLISH`).
 - `motion.py` — the idle loop every Plynling shares: 16 frames of 125 ms (2 s). `pose(sp, state, f)`
   says where everything sits on frame f: the breath, the blink, each mood's touch (hop, tear,
   sweat, shudder, frost star) and each species' own (the Cèpe's cap widens, the Amanite's skirt

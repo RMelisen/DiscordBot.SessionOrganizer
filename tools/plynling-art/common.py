@@ -14,7 +14,7 @@ SPOTS = [(8, 10, 1.7), (16, 5, 2.0), (23, 9, 1.5), (12, 12, 1.1), (20, 12, 1.0),
 SCALES = [(9, 9, 0.8), (18, 6, 0.8), (22, 11, 0.7), (13, 11, 0.6), (6, 11, 0.6)]
 SPECIES = {
     "amanite":  dict(cap=[(255, 160, 142), (238, 96, 86), (206, 50, 58), (148, 30, 50), (92, 20, 40)],
-                     spot=((252, 247, 238), (212, 198, 190)), spots=SPOTS, gill=(238, 222, 200)),
+                     spot=((255, 252, 242), (212, 198, 190)), spots=SPOTS, gill=(238, 222, 196)),   # spot and gills: STEM[0], STEM[2]
     "cepe":     dict(cap=[(230, 178, 120), (190, 132, 80), (152, 98, 58), (110, 68, 42), (70, 42, 30)],
                      spot=((208, 158, 106), (130, 84, 50)), spots=SCALES, gill=(206, 196, 120)),
     "rose":     dict(cap=[(244, 244, 246), (226, 226, 230), (204, 202, 208), (166, 160, 168), (112, 104, 110)],
@@ -27,7 +27,8 @@ SPECIES = {
                      anger_nudge=(1, 2)),     # a Mycena's stem: lavender, near see-through
     "dore":     dict(cap=[(255, 248, 186), (252, 216, 96), (224, 170, 42), (162, 112, 26), (100, 66, 18)],
                      spot=((255, 255, 240), (236, 206, 140)), spots=SPOTS, gill=(250, 232, 176),
-                     stem=[(255, 242, 196), (250, 226, 150), (238, 204, 116), (212, 170, 84), (172, 130, 58)]),   # a chanterelle is gold from cap to foot
+                     stem=[(255, 242, 196), (250, 226, 150), (238, 204, 116), (212, 170, 84), (172, 130, 58)],   # a chanterelle is gold from cap to foot
+                     overhang=False),     # its funnel fades into the stem: no cast shadow at the join
     "coprin":   dict(cap=[(255, 252, 242), (250, 240, 220), (238, 222, 196), (212, 190, 162), (128, 102, 84)],   # STEM[:4] + STEM_OUT: one white flesh, cap to foot
                      spot=((216, 176, 122), (160, 118, 74)), spots=SCALES, gill=(44, 28, 40),   # the ink is INK
                      anger_nudge=(1, 2)),

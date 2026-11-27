@@ -332,6 +332,11 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
     this model. `original` is the Cèpe: its face is not clipped, and its sweat and frost sit
     where they always have rather than being measured."""
     pose = pose or pose_for(None, state, 0)
+    if not getattr(g, "shaded", False):                  # the Coprin shades itself (cast_shadow, selout)
+        if OVERHANG_SHADOW and p.get("overhang", True):
+            overhang_shadow(g, S)
+        if LIT_OUTLINE:
+            lit_outline(g, p["cap"])
     tops, bottoms = cap_profile(g)
     kw = dict(blink=pose.blink, tear=pose.tear, drool=pose.drool)
     if dirt.ACTIVE:
@@ -378,28 +383,66 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
 
 # ---- Amanite: a fly agaric ----------------------------------------------------------------
 
-def skirt(g, S, y0, mode):
-    """The fly agaric's ring, hanging from row y0. At rest (0) it is three widening rows over a
-    toothed hem. It moves like fabric: billowed (1) it is a pixel wider each side with its hem
-    lifted, the scallops showing as shading; draped (-1) it hangs a row longer and straighter.
-    The halves (0.5, -0.5) are the way back to rest."""
-    rows = {                      # (first, last) column of each row, top down, and the teeth
-        0:    ([(10, 21), (9, 22), (8, 23)], range(8, 24, 2)),
-        1:    ([(10, 21), (8, 23), (7, 24)], ()),
-        0.5:  ([(10, 21), (9, 22), (8, 23)], ()),
-        -1:   ([(10, 21), (9, 22), (9, 22), (9, 22)], range(10, 22, 2)),
-        -0.5: ([(10, 21), (9, 22), (8, 23), (9, 22)], ()),
-    }[mode]
-    spans, teeth = rows
-    for k, (a, b) in enumerate(spans):
-        c = S[min(k, 2)]
+SKIRT = {0: [(10, 21), (9, 22), (8, 23)], 1: [(10, 21), (8, 23), (7, 24)], 0.5: [(10, 21), (9, 22), (8, 23)],
+         -1: [(10, 21), (9, 22), (9, 22), (9, 22)], -0.5: [(10, 21), (9, 22), (8, 23), (9, 22)]}
+BABY_SKIRT = {0: [(10, 21), (9, 22)], 1: [(10, 21), (8, 23)], 0.5: [(10, 21), (9, 22)],
+              -1: [(10, 21), (9, 22), (9, 22)], -0.5: [(10, 21), (9, 22), (9, 22)]}
+
+
+def skirt(g, S, y0, mode, spans=SKIRT):
+    """The fly agaric's ring, hanging from row y0 like a curtain: vertical folds every 4 px (a
+    lit crest, a valley a shade down), lit on the left and shaded on the right, the top row
+    lighter where it flares. Its hem hangs a row lower under each crest, a scalloped edge, and
+    between the scallops in the middle the ring's dark inside shows. It moves like fabric:
+    billowed (1) wider with its hem lifted, so more of the inside shows; draped (-1) a row
+    longer and straighter; the halves (0.5, -0.5) are the way back to rest."""
+    rows = spans[mode]
+    hem = mode in (0, -1, -0.5)
+
+    def shade(x, k):
+        base = min(k, 1) + (0 if x < 14 else 1 if x <= 18 else 2)
+        return S[max(0, min(4, base + (-1, 0, 1, 0)[(x - 8) % 4]))]  # crest, side, valley, side
+
+    for k, (a, b) in enumerate(rows):
         for x in range(a, b + 1):
-            shade = S[3] if x > 18 else c
-            if mode == 1 and k == 2 and x % 2 == 0:
-                shade = S[3]                                          # the lifted hem's scallops
-            g.put(x, y0 + k, shade, "ring")
-    for x in teeth:
-        g.put(x, y0 + len(spans), S[3], "ring")                       # its ragged hem
+            g.put(x, y0 + k, shade(x, k), "ring")
+    a, b = rows[-1]
+    y = y0 + len(rows)
+    for x in range(a, b + 1):
+        crest = (x - 8) % 4 in (0, 1)
+        if hem and crest:
+            g.put(x, y, shade(x, 1), "ring")                          # a scallop of the hem
+        elif 12 <= x <= 19:
+            g.put(x, y, S[4] if not crest else S[3], "ring")          # the inside, between them
+
+
+AMANITE_POLISH = True       # the crescent highlight and the raised spots
+
+
+def crescent(g, cap, lx, ly, lrx, lry):
+    """The cap's highlight as a crescent along the dome's lit edge, not a flat blob: the lit
+    ellipse, hollowed by the same ellipse moved down and right."""
+    for y in range(N):
+        for x in range(N):
+            if g.r[y][x] != "cap" or g.c[y][x] not in (cap[0], cap[1]):
+                continue
+            d = ((x - lx) / lrx) ** 2 + ((y - ly) / lry) ** 2
+            d2 = ((x - lx - 1.6) / lrx) ** 2 + ((y - ly - 1.0) / lry) ** 2
+            if d < 0.3 and d2 >= 0.2:
+                g.put(x, y, cap[0])
+            elif g.c[y][x] == cap[0]:
+                g.put(x, y, cap[1])
+
+
+def raised(g, p, cap, below):
+    """Each white spot casts a pixel of shadow down and to the right on the red, so the warts
+    sit on the cap instead of being painted on it."""
+    spots = set(p["spot"])
+    marks = [(x + 1, y + 1) for y in range(N) for x in range(N)
+             if g.r[y][x] == "cap" and g.c[y][x] in spots]
+    for x, y in marks:
+        if x < N and y < below and g.r[y][x] == "cap" and g.c[y][x] not in spots:
+            g.put(x, y, cap[3])
 
 
 AMANITE_SPOTS = ((9, 5.5, 1.4), (16, 2.5, 1.7), (22, 5, 1.4), (12.5, 8, 0.9), (19, 8, 1.0), (5, 8.2, 0.8), (26, 8, 0.8))
@@ -418,17 +461,21 @@ def amanite(state, frame=0, shadow=True, stage="adult"):
     feet(g, S)
     skirt(g, S, 11 + sag, pose.skirt)
     gills(g, p, 10 + sag, 4, 27)
-    cx, cy, rx, ry = 15.5, 10.0 + sag, 12.4, 9.6
+    cx, cy, rx, ry = CX, 10.0 + sag, 12.4, 9.6
     for y in range(N):
         for x in range(N):
             if y > 9 + sag or ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
                 continue
             g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 11, 3.5 + sag, 7, 3.6, 9 + sag), "cap")
+    if AMANITE_POLISH:
+        crescent(g, cap, 11, 3.5 + sag, 7, 3.6)
     for sx, sy, r in AMANITE_SPOTS:
         for y in range(N):
             for x in range(N):
                 if (x - sx) ** 2 + (y - sy - sag) ** 2 <= r * r and g.r[y][x] == "cap" and y < 9 + sag:
                     g.put(x, y, p["spot"][0] if (x - sx) + (y - sy - sag) <= r * 0.55 else p["spot"][1])
+    if AMANITE_POLISH:
+        raised(g, p, cap, 9 + sag)
     arms(g, S)
     outline(g, cap)
     return finish(g, p, state, S, shadow=shadow, pose=pose)
@@ -443,29 +490,22 @@ def amanite_baby(state, frame, shadow):
     sag = 1 if state == "starving" else 0
     g = Grid()
     baby_body(g, S, top=18)
-    y0 = 18 + sag                                                     # the skirt, small
-    rows = {0: [(10, 21), (9, 22)], 1: [(10, 21), (8, 23)], 0.5: [(10, 21), (9, 22)],
-            -1: [(10, 21), (9, 22), (9, 22)], -0.5: [(10, 21), (9, 22), (9, 22)]}[pose.skirt]
-    teeth = range(10, 22, 2) if pose.skirt in (0, -1) else ()
-    for k, (a, b) in enumerate(rows):
-        for x in range(a, b + 1):
-            shade = S[3] if x > 18 else S[min(k, 2)]
-            if pose.skirt == 1 and k == 1 and x % 2 == 0:
-                shade = S[3]                                          # the lifted hem's scallops
-            g.put(x, y0 + k, shade, "ring")
-    for x in teeth:
-        g.put(x, y0 + len(rows), S[3], "ring")
+    skirt(g, S, 18 + sag, pose.skirt, BABY_SKIRT)                   # the skirt, small
     gills(g, p, 17 + sag, 7, 24)
-    cx, cy, rx, ry = 15.5, 17.0 + sag, 10.2, 8.4
+    cx, cy, rx, ry = CX, 17.0 + sag, 10.2, 8.4
     for y in range(17 + sag):
         for x in range(N):
             if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1:
                 g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 12, 11.5 + sag, 6, 3.2, 16 + sag), "cap")
+    if AMANITE_POLISH:
+        crescent(g, cap, 12, 11.5 + sag, 6, 3.2)
     for sx, sy, r in scaled(AMANITE_SPOTS, (15.5, 10.0), (15.5, 17.0 + sag), 10.2 / 12.4, 8.4 / 9.6):
         for y in range(N):
             for x in range(N):
                 if (x - sx) ** 2 + (y - sy) ** 2 <= r * r and g.r[y][x] == "cap" and y < 16 + sag:
                     g.put(x, y, p["spot"][0] if (x - sx) + (y - sy) <= r * 0.55 else p["spot"][1])
+    if AMANITE_POLISH:
+        raised(g, p, cap, 16 + sag)
     arms(g, S, BABY_ARMS)
     outline(g, cap)
     return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
@@ -951,6 +991,49 @@ def ink_rim(g, p, rim, level, drips):
 INK_SHINE = (168, 164, 196)
 
 
+OVERHANG_SHADOW = True      # every species: what overhangs the body (cap, skirt) shades it
+LIT_OUTLINE = True          # every species: the cap's outline a shade lighter where the light falls
+
+
+def overhang_shadow(g, S, depth=(2, 1)):
+    """The shadow a cap or a skirt casts on the body under it, for any species: below the
+    bottom of each overhanging run (past its outline), the first body rows go a step or two down
+    the body's own ramp. A one-pixel-wide caster (a drip) casts nothing."""
+    casters = ("cap", "ring")
+    for x in range(1, N - 1):
+        for y in range(N - 1):
+            if g.r[y][x] not in casters or g.r[y + 1][x] in casters:
+                continue
+            if g.r[y][x - 1] not in casters or g.r[y][x + 1] not in casters:
+                continue
+            yy = y + 1
+            while yy < N and g.r[yy][x] is None:
+                yy += 1
+            if yy >= N or g.r[yy][x] != "stem":
+                continue
+            for k, down in enumerate(depth):
+                if yy + k < N and g.r[yy + k][x] == "stem" and g.c[yy + k][x] in S:
+                    g.put(x, yy + k, S[min(4, S.index(g.c[yy + k][x]) + down)])
+
+
+def lit_outline(g, cap):
+    """Selective outline for any species, once the outline is drawn: the cap's outline pixels a
+    shade lighter on the upper left, where the light falls, so the dome reads round."""
+    rows = [y for y in range(N) for x in range(N) if g.r[y][x] == "cap"]
+    if not rows:
+        return
+    apex, rim = min(rows), max(rows)
+    for y in range(N):
+        for x in range(N):
+            if g.r[y][x] is not None or g.c[y][x] != cap[4]:
+                continue
+            if not any(0 <= x + dx < N and 0 <= y + dy < N and g.r[y + dy][x + dx] == "cap"
+                       for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                continue
+            if x + 0.5 < CX - 0.5 and y < apex + (rim - apex) * 0.6:
+                g.put(x, y, cap[3])
+
+
 def cast_shadow(g, S, rim, depth=(2, 1)):
     """The cap's shadow on the body just under it: the first body rows below the rim, a step or
     two down the body's own ramp (a column with a drip hanging over it is left alone)."""
@@ -1020,6 +1103,7 @@ def coprin(state, frame=0, shadow=True, stage="adult"):
     blank = [[c is None for c in row] for row in g.c]
     outline(g, p["cap"])
     selout(g, p["cap"], blank, apex, rim)
+    g.shaded = True
     im = finish(g, p, state, STEM, face_oy=1, shadow=shadow, pose=pose)
     ink_drop(im, pose, rim, 9)
     return im
@@ -1042,6 +1126,7 @@ def coprin_baby(state, frame, shadow):
     blank = [[c is None for c in row] for row in g.c]
     outline(g, p["cap"])
     selout(g, p["cap"], blank, apex, rim)
+    g.shaded = True
     return finish(g, p, state, STEM, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
 
